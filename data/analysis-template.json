@@ -1,0 +1,190 @@
+{
+  "companies": [
+    {
+      "metadata": {
+        "name": "",
+        "symbol": "",
+        "sector": "",
+        "listingExchange": "DSE",
+        "reportingCurrency": "BDT",
+        "coverageNotes": ""
+      },
+      "filings": [
+        {
+          "period": "FY2024",
+          "type": "Annual Report",
+          "url": "",
+          "downloadedOn": "",
+          "notes": ""
+        }
+      ],
+      "priceSnapshot": {
+        "asOf": "",
+        "lastPriceTk": null,
+        "ycp": null,
+        "priceVs52WeekHighPct": null,
+        "vwapPremiumPct": null,
+        "betaVsDSEX": null,
+        "rsi14": null,
+        "ma50vs200Signal": "",
+        "ema20Trend": "",
+        "blockTradeSignal": "",
+        "priceActionNotes": ""
+      },
+      "ownership": {
+        "insiderHoldingPct": null,
+        "institutionalHoldingPct": null,
+        "sponsorNotes": "",
+        "recentChanges": ""
+      },
+      "valuation": {
+        "marketCapTkCrore": null,
+        "sharesOutstandingCrore": null,
+        "pe": null,
+        "forwardPe": null,
+        "pb": null,
+        "evToEbitda": null
+      },
+      "profitability": {
+        "revenueCAGR5YPct": null,
+        "epsCAGR5YPct": null,
+        "averageROE5YPct": null,
+        "averageROA5YPct": null,
+        "operatingMarginPct": null,
+        "netMarginPct": null
+      },
+      "incomeDistributions": {
+        "dividendYieldPct": null,
+        "dividendPayoutPct": null,
+        "dividendGrowth5YPct": null,
+        "bonusIssuesNotes": ""
+      },
+      "cashFlow": {
+        "freeCashFlowMarginPct": null,
+        "positiveFCFYears5": null,
+        "fcfNotes": ""
+      },
+      "leverage": {
+        "debtToEquity": null,
+        "netDebtToEBITDA": null,
+        "interestCoverage": null,
+        "reservesToEquityPct": null,
+        "shortTermLoanGrowthPct": null,
+        "longTermLoanGrowthPct": null
+      },
+      "liquidity": {
+        "currentRatio": null,
+        "quickRatio": null
+      },
+      "history": {
+        "revenueTkCrore": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "epsTk": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "dividendPerShareTk": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "freeCashFlowTkCrore": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "roePct": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "roaPct": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "operatingMarginPct": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "netMarginPct": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "debtToEquity": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "netDebtToEBITDA": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "shortTermLoanTkCrore": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "longTermLoanTkCrore": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ],
+        "beta": [
+          {
+            "year": 2024,
+            "value": null,
+            "source": ""
+          }
+        ]
+      },
+      "sources": [
+        {
+          "type": "Investor Presentation",
+          "period": "Q1 FY2025",
+          "url": "",
+          "notes": ""
+        }
+      ],
+      "governance": {
+        "boardNotes": "",
+        "auditOpinion": "",
+        "esgFlags": "",
+        "watchForRisks": "",
+        "catalysts": ""
+      },
+      "chartGuideAnchors": ["#pe", "#eps", "#de"]
+    }
+  ]
+}

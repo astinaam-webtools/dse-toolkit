@@ -8,6 +8,8 @@ A mobile-first glossary built for long-term value investors focused on the Dhaka
 - Instant search with token matching
 - Highlight matched words in results
 - Installable PWA with offline cache (manifest + service worker)
+- Dedicated chart-reading playbook (`guides.html`) with anchor links from every relevant term
+- Dedicated behaviour analyzer page (`analyzer.html`) that classifies a stock as value/growth/income/defensive/cyclical based on your inputs
 - Small, dependency-free static site — ideal for GitHub Pages
 
 ## Local development
@@ -22,6 +24,28 @@ python3 -m http.server 8000
 ```
 
 While the server is running, open Chrome DevTools → Application → Service Workers to confirm the worker (`sw.js`) registers correctly. Toggle “Offline” to simulate no connectivity; the glossary should still load thanks to the precache.
+
+### Chart guide & analyzer
+
+- Visit `/guides.html` to read how to pull metrics such as VWAP, RSI, YCP, reserves, loans, etc. directly from StockNow/TradingView charts. Each glossary card links to its anchor.
+- Open `/analyzer.html`, enter the metrics you copied, and review the suggested investing buckets plus “when to invest” tips. Adjust the heuristics by tweaking `src/lib/behaviorProfiler.js` if your strategy differs.
+
+### Analysis templates (CSV & JSON)
+
+**CSV snapshot**
+
+- Use `data/analysis-template.csv` when you want to capture headline metrics for multiple companies quickly. The header already includes valuation (P/E, Forward P/E, P/B, EV/EBITDA), profitability (5Y revenue/EPS CAGR, ROE, ROA, margins, free-cash-flow), capital structure (debt-to-equity, net-debt/EBITDA, interest coverage, loan growth), liquidity (current/quick), technicals (price vs. 52w high, VWAP premium, RSI, MA50 vs MA200, EMA20 trend), ownership, and qualitative note columns (governance, risks, price action, guide anchors).
+- Tie each numeric field back to the chart playbook: e.g., `PE`, `PB`, `DividendYieldPct` map to the P/E and dividend cards; `DebtToEquity` and loan growth columns map to the leverage cards; `BetaVsDSEX`, `RSI14`, and moving-average signals map to their respective technical guides.
+- Add one row per company. Keep the `ChartGuideAnchors` column for quick links like `#pe,#de,#beta` so you can jump into `guides.html` while reviewing.
+
+**JSON deep dive**
+
+- Use `data/analysis-template.json` when you need a richer research notebook that stores multi-year figures alongside the exact filing/source. The template starts with an empty company object containing:
+	- `filings` and `sources` lists so you can paste report URLs, periods, and notes.
+	- A structured `history` section for five-year series (revenue, EPS, dividends, FCF, ROE/ROA, margins, leverage, loan balances, beta) with `{ year, value, source }` entries.
+	- Buckets for `valuation`, `profitability`, `incomeDistributions`, `cashFlow`, `leverage`, `liquidity`, and `priceSnapshot` so derived ratios live next to the raw data you used.
+	- `ownership`, `governance`, `watchForRisks`, and `chartGuideAnchors` arrays for qualitative insights and quick jumps into `guides.html` (e.g., `[#pe, #de, #beta]`).
+- Duplicate the sample object for each company, keep nulls until you have the numbers, and update `source` fields with references like "FY2024 annual report pg. 34".
 
 ## Deploy to GitHub Pages
 

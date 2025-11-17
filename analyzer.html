@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>DSE stock behaviour analyzer</title>
+    <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+    <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="analyzer-page">
+    <header class="hero hero--sub">
+      <div class="hero__content">
+        <p class="eyebrow">Analyzer</p>
+        <h1>Understand how a DSE stock behaves</h1>
+        <p class="lead">Plug in the latest chart metrics to see which behaviour buckets fit your stock: value, growth, income, defensive, cyclical, or blue-chip.</p>
+        <div class="hero__actions">
+          <a class="btn btn--solid" href="#analyzer">Analyze a stock</a>
+          <a class="btn" href="./index.html">← Back to glossary</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="analyzer" id="analyzer">
+        <header>
+          <h2>Stock behaviour analyzer</h2>
+          <p>Paste the numbers from your DSE advanced chart. We’ll highlight whether the stock behaves like value, growth, income, defensive, cyclical, or blue-chip.</p>
+          <p class="muted">Need help pulling each metric? Visit the <a href="./guides.html">chart playbook</a>.</p>
+        </header>
+        <form id="behavior-form" class="analyzer-form">
+          <div class="form-grid">
+            <label class="form-field">
+              <span>Sector</span>
+              <p class="form-hint">Match the sector tag used on DSE quotes so behaviour comparisons stay apples-to-apples.</p>
+              <select name="sector">
+                <option value="financials">Financials</option>
+                <option value="consumer-staples">Consumer Staples</option>
+                <option value="consumer-discretionary">Consumer Discretionary</option>
+                <option value="industrials">Industrials</option>
+                <option value="materials">Materials</option>
+                <option value="energy">Energy</option>
+                <option value="healthcare">Healthcare</option>
+                <option value="utilities">Utilities</option>
+                <option value="telecom">Telecom</option>
+                <option value="technology">Technology</option>
+                <option value="others" selected>Other / Mixed</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span>Market cap (Tk crore)</span>
+              <p class="form-hint">Formula: current price × shares outstanding ÷ 10,000,000.</p>
+              <input type="number" name="marketCap" min="0" step="100" placeholder="5000" />
+            </label>
+            <label class="form-field">
+              <span>Revenue CAGR (5y %)</span>
+              <p class="form-hint">Use revenue trend from the income statement: <a href="./guides.html#eps">guide</a>. CAGR = [(Revenue<sub>t</sub> ÷ Revenue<sub>t-5</sub>)<sup>1/5</sup> − 1] × 100.</p>
+              <input type="number" name="revenueCagr" min="0" step="0.1" placeholder="12" />
+            </label>
+            <label class="form-field">
+              <span>EPS CAGR (5y %)</span>
+              <p class="form-hint">Track EPS line in the <a href="./guides.html#eps">EPS guide</a> and compute the 5-year CAGR.</p>
+              <input type="number" name="epsCagr" min="0" step="0.1" placeholder="15" />
+            </label>
+            <label class="form-field">
+              <span>P/E</span>
+              <p class="form-hint">See the <a href="./guides.html#pe">P/E guide</a>: market price ÷ trailing EPS.</p>
+              <input type="number" name="pe" min="0" step="0.1" placeholder="10" />
+            </label>
+            <label class="form-field">
+              <span>P/B</span>
+              <p class="form-hint">Book value per share = equity ÷ shares. P/B = price ÷ book value per share.</p>
+              <input type="number" name="pb" min="0" step="0.01" placeholder="1.0" />
+            </label>
+            <label class="form-field">
+              <span>Dividend yield (%)</span>
+              <p class="form-hint">Refer to the <a href="./guides.html#dividend-yield">dividend yield guide</a>: annual cash dividend ÷ price × 100.</p>
+              <input type="number" name="dividendYield" min="0" step="0.1" placeholder="4.5" />
+            </label>
+            <label class="form-field">
+              <span>Payout ratio (%)</span>
+              <p class="form-hint">Formula: dividend per share ÷ EPS × 100 (check the dividend tab beside EPS).</p>
+              <input type="number" name="payoutRatio" min="0" max="120" step="1" placeholder="50" />
+            </label>
+            <label class="form-field">
+              <span>Positive FCF years (last 5)</span>
+              <p class="form-hint">Count how many of the last 5 annual cash-flow statements show free cash flow &gt; 0.</p>
+              <input type="number" name="fcfYears" min="0" max="5" step="1" placeholder="4" />
+            </label>
+            <label class="form-field">
+              <span>Debt-to-equity</span>
+              <p class="form-hint">Use the <a href="./guides.html#de">D/E guide</a>: interest-bearing debt ÷ shareholder equity.</p>
+              <input type="number" name="debtToEquity" min="0" step="0.1" placeholder="0.7" />
+            </label>
+            <label class="form-field">
+              <span>Beta (vs. DSEX)</span>
+              <p class="form-hint">Follow the <a href="./guides.html#beta">beta guide</a> or pull it from TradingView’s statistics pane.</p>
+              <input type="number" name="beta" min="0" step="0.01" placeholder="0.85" />
+            </label>
+            <label class="form-field">
+              <span>Price vs 52w high (% below)</span>
+              <p class="form-hint">Formula: ((52w high − current price) ÷ 52w high) × 100. Use quote overview.</p>
+              <input type="number" name="priceVsHigh" min="0" step="0.1" placeholder="10" />
+            </label>
+          </div>
+          <button type="submit" class="btn btn--solid">Analyze behaviour</button>
+        </form>
+        <div id="analysis-output" class="analysis-output">
+          <p class="muted">Fill the form above to see which behaviour buckets match your stock.</p>
+        </div>
+      </section>
+
+      <section class="chart-cta">
+        <h2>Need the formulas?</h2>
+        <p>Each metric is mapped out inside the <a href="./guides.html">advanced chart playbook</a> with screenshots and DSE-specific notes.</p>
+        <a class="btn" href="./guides.html">Open chart guide →</a>
+      </section>
+    </main>
+
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

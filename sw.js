@@ -1,14 +1,18 @@
-const CACHE_NAME = 'stock-glossary-v1';
+const CACHE_NAME = 'stock-glossary-v3';
 const RUNTIME_CACHE = 'runtime-stock-glossary';
 const PRECACHE_URLS = [
   './',
   './index.html',
+  './analyzer.html',
+  './guides.html',
   './styles.css',
   './manifest.webmanifest',
+  './favicon.ico',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './src/app.js',
   './src/data/terms.js',
+  './src/lib/behaviorProfiler.js',
   './src/lib/filterTerms.js'
 ];
 

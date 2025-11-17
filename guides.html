@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Advanced Chart Playbook · Bangladesh Stock Glossary</title>
+  <meta name="theme-color" content="#0f9d58" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./favicon.ico" sizes="any" />
+  <link rel="apple-touch-icon" sizes="192x192" href="./icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero hero--compact">
+    <div class="hero__content">
+      <p class="eyebrow">Advanced chart guide</p>
+      <h1>Read metrics directly from your trading platform</h1>
+      <p class="lead">Use this playbook to locate each ratio or indicator on StockNow/TradingView style charts, learn what “good” looks like, and decide whether the reading supports value, growth, income, or defensive behaviour.</p>
+      <a class="btn" href="./index.html">← Back to glossary</a>
+    </div>
+  </header>
+
+  <main class="guide">
+    <section class="guide__intro">
+      <p>Each section below mirrors a glossary card. Tap the anchor icon to copy the link, then add personal screenshots later. The “Signals” lines map every reading to the behaviour buckets we surface inside the analyzer.</p>
+    </section>
+
+    <section class="guide-list">
+      <article id="pe" class="guide-card">
+        <header>
+          <h2>P/E Ratio</h2>
+          <p class="guide-tag">Valuation</p>
+        </header>
+        <p><strong>Where to find:</strong> Fundamental panels on StockNow, DSE mobile app, or TradingView’s “Financials → Valuation”.</p>
+        <p><strong>Manual calc:</strong> Current market price ÷ trailing twelve-month EPS.</p>
+        <p><strong>Signals:</strong> &lt;12 → value entry candidates; 12–20 neutral; &gt;25 requires growth visibility.</p>
+        <p class="screenshot-note">Screenshot placeholder — drop your chart snapshot here later.</p>
+      </article>
+
+      <article id="eps" class="guide-card">
+        <header>
+          <h2>EPS Trend</h2>
+          <p class="guide-tag">Profitability</p>
+        </header>
+        <p><strong>Where:</strong> Advanced chart → “Financials → Income Statement → EPS” line plot.</p>
+        <p><strong>Calc:</strong> Net profit attributable ÷ weighted shares. Track CAGR over 3–5 years.</p>
+        <p><strong>Signals:</strong> CAGR &gt;15% with low volatility → growth; flat/declining warns against overpaying.</p>
+        <p class="screenshot-note">Add EPS chart screenshot.</p>
+      </article>
+
+      <article id="dividend-yield" class="guide-card">
+        <header>
+          <h2>Dividend Yield</h2>
+          <p class="guide-tag">Income</p>
+        </header>
+        <p><strong>Where:</strong> DSE quote page “Cash dividend” + current price, or TradingView dividend tab.</p>
+        <p><strong>Calc:</strong> Annual cash dividend ÷ price × 100.</p>
+        <p><strong>Signals:</strong> 3–6% with payout &lt;70% → income-friendly; double digits often unsustainable.</p>
+        <p class="screenshot-note">Add dividend ladder screenshot.</p>
+      </article>
+
+      <article id="beta" class="guide-card">
+        <header>
+          <h2>Beta</h2>
+          <p class="guide-tag">Risk</p>
+        </header>
+        <p><strong>Where:</strong> TradingView “Statistics” pane or StockNow risk tab.</p>
+        <p><strong>Calc:</strong> Covariance(stock, DSEX) ÷ Variance(DSEX) using weekly returns.</p>
+        <p><strong>Signals:</strong> β &lt; 0.9 → defensive; 0.9–1.1 neutral; &gt; 1.2 speculative/cyclical.</p>
+        <p class="screenshot-note">Drop beta screenshot here.</p>
+      </article>
+
+      <article id="de" class="guide-card">
+        <header>
+          <h2>Debt-to-Equity</h2>
+          <p class="guide-tag">Leverage</p>
+        </header>
+        <p><strong>Where:</strong> Balance-sheet panel → “Total debt” and “Shareholder equity”.</p>
+        <p><strong>Calc:</strong> Interest-bearing debt ÷ equity.</p>
+        <p><strong>Signals:</strong> &lt;0.8 comfortable for manufacturers; &gt;1.5 raises caution.</p>
+        <p class="screenshot-note">Add leverage chart screenshot.</p>
+      </article>
+
+      <article id="vwap" class="guide-card">
+        <header>
+          <h2>VWAP</h2>
+          <p class="guide-tag">Trading</p>
+        </header>
+        <p><strong>Where:</strong> Overlay the VWAP indicator on intraday charts.</p>
+        <p><strong>Calc:</strong> (Σ price × volume) ÷ Σ volume for each session.</p>
+        <p><strong>Signals:</strong> Price above VWAP → strong demand/intraday momentum; below → supply heavy (useful for timing adds).</p>
+        <p class="screenshot-note">Add intraday VWAP screenshot.</p>
+      </article>
+
+      <article id="ycp" class="guide-card">
+        <header>
+          <h2>Yesterday’s Closing Price (YCP)</h2>
+          <p class="guide-tag">Basics</p>
+        </header>
+        <p><strong>Where:</strong> DSE quotes display YCP next to current price.</p>
+        <p><strong>Usage:</strong> Benchmark for day’s gain/loss; compare to VWAP to see if institutions are accumulating.</p>
+        <p><strong>Signals:</strong> Current price consistently above YCP with volume → bullish sentiment.</p>
+        <p class="screenshot-note">Add YCP callout screenshot.</p>
+      </article>
+
+      <article id="face-value" class="guide-card">
+        <header>
+          <h2>Face Value</h2>
+          <p class="guide-tag">Corporate basics</p>
+        </header>
+        <p><strong>Where:</strong> DSE company profile, IPO prospectus, or balance-sheet footnotes.</p>
+        <p><strong>Usage:</strong> Needed to interpret rights/bonus announcements and book value per share.</p>
+        <p><strong>Signals:</strong> Tk 10 is standard; Tk 100 often legacy banks/insurers—affects EPS comparability.</p>
+        <p class="screenshot-note">Add face value snippet.</p>
+      </article>
+
+      <article id="rsi" class="guide-card">
+        <header>
+          <h2>Relative Strength Index (RSI)</h2>
+          <p class="guide-tag">Momentum</p>
+        </header>
+        <p><strong>Where:</strong> Technical indicator list → RSI(14).</p>
+        <p><strong>Signals:</strong> &lt;30 oversold (watch defensive entries), 30–70 neutral, &gt;70 overbought (trim growth positions).</p>
+        <p class="screenshot-note">Add RSI screenshot.</p>
+      </article>
+
+      <article id="ma" class="guide-card">
+        <header>
+          <h2>Simple Moving Average (MA)</h2>
+          <p class="guide-tag">Trend</p>
+        </header>
+        <p><strong>Where:</strong> Overlay MA(50) / MA(200) on daily chart.</p>
+        <p><strong>Signals:</strong> Price above MA(200) → long-term uptrend (growth); golden cross (50&gt;200) confirms momentum.</p>
+        <p class="screenshot-note">Add MA crossover visual.</p>
+      </article>
+
+      <article id="ema" class="guide-card">
+        <header>
+          <h2>Exponential Moving Average (EMA)</h2>
+          <p class="guide-tag">Trend</p>
+        </header>
+        <p><strong>Where:</strong> Indicator list → EMA(20/50).</p>
+        <p><strong>Signals:</strong> Price reclaiming EMA(20) after correction hints at institutional buying.</p>
+        <p class="screenshot-note">Add EMA screenshot.</p>
+      </article>
+
+      <article id="reserves" class="guide-card">
+        <header>
+          <h2>Reserves & Surplus</h2>
+          <p class="guide-tag">Balance sheet</p>
+        </header>
+        <p><strong>Where:</strong> Equity section of balance sheet.</p>
+        <p><strong>Usage:</strong> Indicates dividend-paying capacity and buffer for downturns.</p>
+        <p><strong>Signals:</strong> Rising reserves with low leverage → defensive strength; shrinking reserves warn of stress.</p>
+      </article>
+
+      <article id="short-term-loan" class="guide-card">
+        <header>
+          <h2>Short-term Loan</h2>
+          <p class="guide-tag">Leverage</p>
+        </header>
+        <p><strong>Where:</strong> Current liabilities section.</p>
+        <p><strong>Signals:</strong> Spikes without revenue growth → working-cap stress; manageable for exporters with LC cycles.</p>
+      </article>
+
+      <article id="long-term-loan" class="guide-card">
+        <header>
+          <h2>Long-term Loan</h2>
+          <p class="guide-tag">Leverage</p>
+        </header>
+        <p><strong>Where:</strong> Non-current liabilities.</p>
+        <p><strong>Signals:</strong> Fixed-rate infrastructure loans suit long projects; fast buildup may hit dividends.</p>
+      </article>
+
+      <article id="market-depth" class="guide-card">
+        <header>
+          <h2>Market Depth</h2>
+          <p class="guide-tag">Order book</p>
+        </header>
+        <p><strong>Where:</strong> StockNow “Depth” tab or broker terminal Level-2 view.</p>
+        <p><strong>Usage:</strong> Observe bid/ask volume stacks to gauge liquidity.</p>
+        <p><strong>Signals:</strong> Thick bids near VWAP support income/defensive adds; thin depth warns of speculative moves.</p>
+      </article>
+
+      <article id="block-trade" class="guide-card">
+        <header>
+          <h2>Block Trade</h2>
+          <p class="guide-tag">Transactions</p>
+        </header>
+        <p><strong>Where:</strong> DSE block-market summary or broker blotter.</p>
+        <p><strong>Usage:</strong> Tracks large negotiated deals—often sponsor exits or institutions building stakes.</p>
+        <p><strong>Signals:</strong> Block above market → bullish accumulation; below market → potential overhang.</p>
+      </article>
+    </section>
+
+    <section class="guide__note">
+      <p>Want another indicator covered? Open an issue or drop a note in the README TODOs. You can also add your own screenshots directly in this file—look for the “screenshot-note” paragraphs.</p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>Built for long-term Bangladeshi investors. Data is educational only — always research individual companies.</p>
+  </footer>
+</body>
+</html>

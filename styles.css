@@ -28,6 +28,47 @@ body {
   background: radial-gradient(circle at top, #e0f2fe, #eff6ff 50%, #f8fafc);
 }
 
+.hero--sub {
+  padding-bottom: 2.5rem;
+}
+
+.hero--compact {
+  padding-bottom: 2.5rem;
+}
+
+.hero__actions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.65rem 1.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+.btn--solid {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+}
+
 .hero__content {
   max-width: 720px;
   margin: 0 auto;
@@ -56,6 +97,12 @@ h1 {
 .app {
   margin: -1rem auto 0;
   padding: 0 1.5rem 3rem;
+  max-width: 960px;
+}
+
+.analyzer-page main {
+  margin: -1rem auto 0;
+  padding: 0 0.5rem 3rem;
   max-width: 960px;
 }
 
@@ -95,6 +142,18 @@ input[type='search']:focus {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1rem;
   margin-top: 1.5rem;
+}
+
+.chart-link {
+  margin-top: auto;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.chart-link:hover {
+  text-decoration: underline;
 }
 
 .term-card {
@@ -176,6 +235,182 @@ input[type='search']:focus {
   text-align: center;
   font-size: 0.9rem;
   color: var(--muted);
+}
+
+.chart-cta,
+.analyzer,
+.guide__intro,
+.guide__note {
+  margin-top: 2rem;
+  background: var(--card);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.chart-cta h2,
+.analyzer h2 {
+  margin-top: 0;
+}
+
+.analyzer {
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+}
+
+.analyzer-form {
+  margin-top: 1.25rem;
+  /* border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 18px;
+  padding: clamp(1rem, 2vw, 1.5rem);
+  background: rgba(248, 250, 252, 0.6); */
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+}
+
+.form-field span {
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.form-hint {
+  margin: -0.25rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.35;
+}
+
+.form-hint a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.form-hint a:hover {
+  text-decoration: underline;
+}
+
+.form-field input,
+.form-field select {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 0.75rem;
+  font-size: 1rem;
+  background: var(--card);
+  color: var(--text);
+}
+
+.form-field input:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(15, 157, 88, 0.12);
+}
+
+.form-field input::placeholder {
+  color: var(--muted);
+}
+
+.analyzer-form .btn {
+  width: 100%;
+  margin-top: 0.75rem;
+}
+
+.analysis-output {
+  margin-top: 1.5rem;
+}
+
+.analysis-summary {
+  background: rgba(15, 157, 88, 0.08);
+  border-radius: 14px;
+  padding: 1rem;
+  border: 1px solid rgba(15, 157, 88, 0.2);
+  margin-bottom: 1rem;
+}
+
+.muted {
+  color: var(--muted);
+  margin-bottom: 0.4rem;
+}
+
+.analysis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.analysis-card {
+  background: var(--card);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 1rem;
+  box-shadow: var(--shadow);
+}
+
+.analysis-card h4 {
+  margin: 0 0 0.35rem 0;
+}
+
+.analysis-card ul {
+  padding-left: 1.25rem;
+  margin: 0 0 0.5rem 0;
+  color: var(--muted);
+}
+
+.analysis-card .label {
+  margin-top: 0.5rem;
+}
+
+.guide {
+  margin: -1rem auto 0;
+  padding: 0 1.5rem 3rem;
+  max-width: 960px;
+}
+
+.guide-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.guide-card {
+  background: var(--card);
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.guide-card header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.guide-tag {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.screenshot-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  font-style: italic;
 }
 
 .sr-only {

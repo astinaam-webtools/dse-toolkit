@@ -6,6 +6,7 @@ export const terms = [
     description: 'Compares a share price to the earnings per share generated over the last 12 months.',
     whyItMatters: 'Shows how many Bangladeshi taka investors are willing to pay for 1 taka of earnings. Helps compare whether the stock is priced above or below the market average.',
     watchFor: 'For blue-chip DSE names, a trailing P/E below ~15 often signals value if earnings quality is stable. A P/E above ~25 needs strong growth visibility or it can mean the stock is overheated.',
+    chartGuideId: 'pe',
     tags: ['valuation', 'earnings', 'blue-chip']
   },
   {
@@ -15,6 +16,7 @@ export const terms = [
     description: 'Net profit attributable to each ordinary share after tax and preference dividends.',
     whyItMatters: 'Rising EPS is the fuel for dividend growth and capital gains. It signals that a company can reinvest and distribute cash.',
     watchFor: 'Look for a positive multi-year EPS trend and limited volatility. Single-quarter spikes without operational reasons often reverse.',
+    chartGuideId: 'eps',
     tags: ['profitability', 'trend']
   },
   {
@@ -51,6 +53,7 @@ export const terms = [
     description: 'Cash dividend per share divided by current price.',
     whyItMatters: 'Value investors in Bangladesh often target reliable cash flows to hedge inflation.',
     watchFor: 'A 3–6% yield that is covered by earnings and cash flow is healthier than a 10%+ yield funded by reserves.',
+    chartGuideId: 'dividend-yield',
     tags: ['income', 'cash-flow']
   },
   {
@@ -60,6 +63,7 @@ export const terms = [
     description: 'Total interest-bearing debt divided by shareholder equity.',
     whyItMatters: 'Measures balance-sheet risk and sensitivity to interest rate hikes.',
     watchFor: 'Manufacturers with D/E below 0.8 are generally safer. Above 1.5 can stress cash flows when Bangladesh Bank tightens policy.',
+    chartGuideId: 'de',
     tags: ['risk', 'balance-sheet']
   },
   {
@@ -87,6 +91,7 @@ export const terms = [
     description: 'Statistical measure of a stock’s volatility versus the overall market (DSEX).',
     whyItMatters: 'Helps set expectations about price swings and portfolio diversification.',
     watchFor: 'Value investors often prefer beta below 1 to reduce drawdowns. Beta above 1.2 indicates more speculation.',
+    chartGuideId: 'beta',
     tags: ['volatility', 'portfolio']
   },
   {
@@ -114,6 +119,7 @@ export const terms = [
     description: 'Snapshot of buy and sell orders at different price levels.',
     whyItMatters: 'Shows supply-demand balance and helps plan entries without moving the price too much.',
     watchFor: 'Thin depth with a wide spread suggests waiting for volume confirmation before investing larger sums.',
+    chartGuideId: 'market-depth',
     tags: ['liquidity', 'execution']
   },
   {
@@ -187,5 +193,105 @@ export const terms = [
     whyItMatters: 'Ensures commitment from key holders and prevents immediate dumping after listing.',
     watchFor: 'Price may face resistance near lock-in expiry. Monitor sponsor intentions and disclosures.',
     tags: ['governance', 'supply']
+  },
+  {
+    title: 'Volume Weighted Average Price',
+    shortForm: 'VWAP',
+    category: 'Trading',
+    description: 'Intraday average price weighted by traded volume. Shows where the majority of shares exchanged hands.',
+    whyItMatters: 'Institutions benchmark their fills against VWAP. Staying above VWAP confirms demand; dipping below hints at supply pressure.',
+    watchFor: 'For accumulation, wait for price reclaiming VWAP with volume spike; for trimming speculative names, note repeated failures above VWAP.',
+    chartGuideId: 'vwap',
+    tags: ['intraday', 'momentum']
+  },
+  {
+    title: 'Yesterday’s Closing Price',
+    shortForm: 'YCP',
+    category: 'Basics',
+    description: 'Official close from the previous trading day used as the reference for today’s percentage change.',
+    whyItMatters: 'Helps gauge current session strength versus prior day and is used in DSE circuit calculations.',
+    watchFor: 'A series of opens above YCP with higher lows suggests accumulation; drifting below YCP after gap-ups signals weak conviction.',
+    chartGuideId: 'ycp',
+    tags: ['price-action', 'sentiment']
+  },
+  {
+    title: 'Face Value',
+    shortForm: 'FV',
+    category: 'Corporate Basics',
+    description: 'Par value assigned to each share (usually Tk 10) used for dividend, rights, and bonus calculations.',
+    whyItMatters: 'Determines how cash/stock dividends are quoted and affects EPS comparability between Tk 10 and Tk 100 face value stocks.',
+    watchFor: 'If EPS looks tiny, check whether the face value is Tk 100; convert before comparing peers.',
+    chartGuideId: 'face-value',
+    tags: ['par-value', 'dividends']
+  },
+  {
+    title: 'Relative Strength Index',
+    shortForm: 'RSI',
+    category: 'Momentum',
+    description: 'Oscillator that measures the speed of price changes on a 0–100 scale.',
+    whyItMatters: 'Highlights overbought/oversold zones to improve entries and exits, especially for growth or defensive trims.',
+    watchFor: 'RSI below 30 with improving fundamentals can mark long-term accumulation zones; above 70 warns to wait for pullbacks.',
+    chartGuideId: 'rsi',
+    tags: ['technical', 'timing']
+  },
+  {
+    title: 'Simple Moving Average',
+    shortForm: 'MA',
+    category: 'Trend',
+    description: 'Average closing price over a fixed window (e.g., 50 or 200 days).',
+    whyItMatters: 'Shows the prevailing trend and dynamic support/resistance widely watched by institutions.',
+    watchFor: 'Price holding above MA(200) with MA(50) sloping up confirms long-term trend; slices below both signal caution.',
+    chartGuideId: 'ma',
+    tags: ['trend', 'technical']
+  },
+  {
+    title: 'Exponential Moving Average',
+    shortForm: 'EMA',
+    category: 'Trend',
+    description: 'Moving average that weights recent prices more heavily than older ones.',
+    whyItMatters: 'React faster to price changes—useful for spotting rotations earlier than the SMA.',
+    watchFor: 'EMA(20) reclaim on rising volume often precedes breakouts; losing EMA(50) suggests momentum fading.',
+    chartGuideId: 'ema',
+    tags: ['trend', 'momentum']
+  },
+  {
+    title: 'Reserves & Surplus',
+    shortForm: 'Reserves',
+    category: 'Balance Sheet',
+    description: 'Accumulated profits retained in the business (including statutory reserves).',
+    whyItMatters: 'Large reserves provide a cushion for dividends, bonus shares, and crisis absorption.',
+    watchFor: 'Growing reserves alongside low payout ratio signals capacity for both growth and income strategies.',
+    chartGuideId: 'reserves',
+    tags: ['buffer', 'dividend-power']
+  },
+  {
+    title: 'Short-term Loan',
+    shortForm: 'ST Loan',
+    category: 'Leverage',
+    description: 'Working-capital borrowing due within 12 months (bank overdrafts, trust receipts).',
+    whyItMatters: 'Excessive ST loans can choke cash flow and force dilutive rights issues.',
+    watchFor: 'Compare ST loans to inventory/receivables; if they balloon without revenue growth, liquidity risk rises.',
+    chartGuideId: 'short-term-loan',
+    tags: ['liquidity', 'risk']
+  },
+  {
+    title: 'Long-term Loan',
+    shortForm: 'LT Loan',
+    category: 'Leverage',
+    description: 'Debt maturing beyond one year (project finance, term loans).',
+    whyItMatters: 'Supports expansion but adds interest burden that can cap dividends.',
+    watchFor: 'Match LT loans with asset growth; if ROE falls below interest cost, reassess.',
+    chartGuideId: 'long-term-loan',
+    tags: ['capital-structure', 'expansion']
+  },
+  {
+    title: 'Block Trade',
+    shortForm: 'Block',
+    category: 'Trading',
+    description: 'Large negotiated transaction executed outside the regular order book.',
+    whyItMatters: 'Reveals institutional intent—buy blocks can signal smart money accumulation, sell blocks may precede supply.',
+    watchFor: 'Block price premium to market indicates demand; big discount warns of upcoming pressure.',
+    chartGuideId: 'block-trade',
+    tags: ['institutional', 'flow']
   }
 ];
