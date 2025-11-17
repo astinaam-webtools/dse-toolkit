@@ -1,0 +1,13 @@
+{
+  "name": "stock-market",
+  "version": "1.0.0",
+  "description": "A mobile-first glossary for Dhaka Stock Exchange (DSE) investors to learn stock terms.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node scripts/smoke-test.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module"
+}

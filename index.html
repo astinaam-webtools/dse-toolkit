@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bangladesh Stock Glossary</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__content">
+      <p class="eyebrow">DSE investor toolkit</p>
+      <h1>Stock market terms made simple</h1>
+      <p class="lead">A mobile-first glossary tailored for Dhaka Stock Exchange value investors. Learn key ratios, how to read them, and what good looks like over the long run.</p>
+    </div>
+  </header>
+
+  <main class="app">
+    <section class="controls" aria-label="Search glossary">
+      <label for="search" class="sr-only">Search for a term</label>
+      <input id="search" type="search" placeholder="Search P/E, EPS, ROE…" autocomplete="off" />
+      <div id="stats" role="status" aria-live="polite"></div>
+    </section>
+
+    <section id="terms" class="terms" aria-live="polite"></section>
+  </main>
+
+  <footer class="footer">
+    <p>Built for long-term Bangladeshi investors. Data is educational only — always research individual companies.</p>
+  </footer>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
