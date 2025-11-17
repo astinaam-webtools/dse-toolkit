@@ -7,6 +7,7 @@ A mobile-first glossary built for long-term value investors focused on the Dhaka
 - Mobile-first responsive UI
 - Instant search with token matching
 - Highlight matched words in results
+- Installable PWA with offline cache (manifest + service worker)
 - Small, dependency-free static site — ideal for GitHub Pages
 
 ## Local development
@@ -19,6 +20,8 @@ python3 -m http.server 8000
 # or (if you prefer node)
 # npx http-server -p 8000
 ```
+
+While the server is running, open Chrome DevTools → Application → Service Workers to confirm the worker (`sw.js`) registers correctly. Toggle “Offline” to simulate no connectivity; the glossary should still load thanks to the precache.
 
 ## Deploy to GitHub Pages
 
@@ -45,6 +48,13 @@ If you already created a GitHub repository for this project, follow this checkli
 	- Still under Pages settings, add your domain in the *Custom domain* box and follow GitHub’s DNS instructions.
 
 No build step or CI workflow is needed—the site is a static bundle, so GitHub Pages serves it as-is.
+
+## Install as a PWA
+
+1. Visit the GitHub Pages URL on Chrome (desktop or Android).
+2. Open the browser menu and choose **Install app** / **Add to Home screen**.
+3. On mobile, launch it from your home screen for a standalone experience.
+4. When you make code changes, bump the `CACHE_NAME` in `sw.js` to ensure users receive the latest assets.
 
 ## Next steps (ideas)
 
