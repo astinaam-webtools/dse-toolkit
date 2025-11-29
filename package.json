@@ -4,7 +4,8 @@
   "description": "A mobile-first glossary for Dhaka Stock Exchange (DSE) investors to learn stock terms.",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/smoke-test.mjs"
+    "test": "node scripts/smoke-test.mjs",
+    "build:data": "node scripts/build-market-data.mjs"
   },
   "keywords": [],
   "author": "",
