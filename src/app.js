@@ -37,8 +37,8 @@ const renderCards = (dataset, tokens = []) => {
         </div>
         <div class="badges">
           ${(term.tags || [])
-            .map((tag) => `<span class="badge">${tag}</span>`)
-            .join('')}
+        .map((tag) => `<span class="badge">${tag}</span>`)
+        .join('')}
         </div>
         ${term.chartGuideId ? `<a class="chart-link" href="./guides.html#${term.chartGuideId}" target="_blank" rel="noopener">How to locate & read this on charts →</a>` : ''}
       </article>
@@ -63,8 +63,23 @@ const handleInput = (event) => {
   renderCards(filtered, tokens);
 };
 
+
 if (termContainer && searchInput) {
-  renderCards(terms, []);
+  // Check for query parameter on page load
+  const urlParams = new URLSearchParams(window.location.search);
+  const queryParam = urlParams.get('q');
+
+  if (queryParam) {
+    // Set the search input value to the query parameter
+    searchInput.value = queryParam;
+    // Trigger the search
+    const tokens = tokenize(queryParam);
+    const filtered = filterTerms(terms, queryParam);
+    renderCards(filtered, tokens);
+  } else {
+    // Normal initialization
+    renderCards(terms, []);
+  }
 
   // debounce input for better UX on mobile
   searchInput.addEventListener('input', debounce(handleInput, 180));
@@ -101,8 +116,8 @@ const renderAnalysis = (result) => {
     </div>
     <div class="analysis-grid">
       ${result.matches
-        .map(
-          (bucket) => `
+      .map(
+        (bucket) => `
           <article class="analysis-card">
             <h4>${bucket.title}</h4>
             <p>${bucket.summary}</p>
@@ -113,8 +128,8 @@ const renderAnalysis = (result) => {
             <p>${bucket.timing}</p>
           </article>
         `
-        )
-        .join('')}
+      )
+      .join('')}
     </div>
   `;
 };
