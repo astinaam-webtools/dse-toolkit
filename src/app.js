@@ -76,7 +76,7 @@ if (termContainer && searchInput) {
     if (heroActions) {
       const backBtn = document.createElement('a');
       backBtn.className = 'btn btn--solid';
-      backBtn.href = `stock.html?symbol=${symbolParam}`;
+      backBtn.href = `stock.html?symbol=${encodeURIComponent(symbolParam)}`;
       backBtn.textContent = `← Back to ${symbolParam}`;
       backBtn.style.backgroundColor = '#333'; // Distinct color
       backBtn.style.borderColor = '#333';
@@ -95,6 +95,11 @@ if (termContainer && searchInput) {
     const tokens = tokenize(queryParam);
     const filtered = filterTerms(terms, queryParam);
     renderCards(filtered, tokens);
+
+    // Scroll to results for better visibility
+    setTimeout(() => {
+      termContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   } else {
     // Normal initialization
     renderCards(terms, []);

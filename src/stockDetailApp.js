@@ -129,6 +129,7 @@ const renderStock = (stock) => {
     }
     
     const termQuery = keyToTerm[key] || formatKey(key);
+    // Manually construct query to ensure %20 encoding for spaces (cleaner URL)
     const link = `index.html?q=${encodeURIComponent(termQuery)}&ref=stock&symbol=${stock.symbol}`;
 
     return `
