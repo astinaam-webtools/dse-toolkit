@@ -9,6 +9,7 @@
   --accent: #0f9d58;
   --danger: #dc2626;
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+  --controls-bg-end: rgba(248, 250, 252, 0.9);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -19,6 +20,7 @@
     --muted: #94a3b8;
     --border: rgba(255, 255, 255, 0.1);
     --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    --controls-bg-end: rgba(15, 23, 42, 0.9);
   }
 
   .hero {
@@ -134,7 +136,7 @@ h1 {
   position: sticky;
   top: 0;
   padding: 0.5rem 0 1.5rem;
-  background: linear-gradient(var(--bg), rgba(248, 250, 252, 0.9));
+  background: linear-gradient(var(--bg), var(--controls-bg-end));
   backdrop-filter: blur(10px);
   z-index: 2;
 }
@@ -147,6 +149,8 @@ input[type='search'] {
   font-size: 1rem;
   box-shadow: var(--shadow);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background: var(--card);
+  color: var(--text);
 }
 
 input[type='search']:focus {
