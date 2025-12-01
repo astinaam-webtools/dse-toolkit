@@ -63,6 +63,29 @@ const getFileByOffset = (files, currentIndex, offsetDays) => {
   return targetIndex >= 0 ? files[targetIndex] : null;
 };
 
+// Find file closest to target date based on actual date parsing
+const getFileByDate = (files, latestDate, daysAgo) => {
+  const targetDate = new Date(latestDate);
+  targetDate.setDate(targetDate.getDate() - daysAgo);
+  
+  // Find the closest file to the target date (on or before)
+  let closestFile = null;
+  let closestDiff = Infinity;
+  
+  for (const file of files) {
+    const fileDate = new Date(file.replace('.csv', ''));
+    const diff = targetDate - fileDate;
+    
+    // Only consider files on or before target date
+    if (diff >= 0 && diff < closestDiff) {
+      closestDiff = diff;
+      closestFile = file;
+    }
+  }
+  
+  return closestFile;
+};
+
 const calculateDelta = (current, previous) => {
   if (!current || !previous) return null;
   if (current === 0 && previous === 0) return 0;
@@ -90,21 +113,47 @@ const buildMarketData = async () => {
     // 2. Parse files
     const currentData = await parseCSV(path.join(DATA_DIR, latestFile));
     
-    // Load historical data for deltas
-    // We need T-1 (1 day ago), T-7 (1 week), T-30 (1 month)
-    // Since we might not have files for every single day (weekends/holidays),
-    // we'll try to find the file at index -1, -5 (approx week), -20 (approx month)
-    // This is an approximation.
+    // Define time periods for delta calculations
+    // Days approximation: 1d=1, 1w=7, 1m=30, 6m=180, 1y=365, etc.
+    const timePeriods = {
+      '1d': 1,
+      '1w': 7,
+      '1m': 30,
+      '6m': 180,
+      '1y': 365,
+      '2y': 730,
+      '3y': 1095,
+      '4y': 1460,
+      '5y': 1825,
+      '6y': 2190,
+      '7y': 2555,
+      '8y': 2920,
+      '9y': 3285,
+      '10y': 3650,
+      '11y': 4015,
+      '12y': 4380,
+      '13y': 4745,
+      '14y': 5110,
+      '15y': 5475
+    };
     
-    const prev1File = getFileByOffset(files, files.length - 1, 1);
-    const prev7File = getFileByOffset(files, files.length - 1, 5); 
+    // Load historical data for each time period
+    const historicalData = {};
+    const historicalMaps = {};
     
-    const prev1Data = prev1File ? await parseCSV(path.join(DATA_DIR, prev1File)) : [];
-    const prev7Data = prev7File ? await parseCSV(path.join(DATA_DIR, prev7File)) : [];
-
-    // Create lookup maps for history
-    const prev1Map = new Map(prev1Data.map(d => [d.Symbol, d]));
-    const prev7Map = new Map(prev7Data.map(d => [d.Symbol, d]));
+    console.log('Loading historical data for delta calculations...');
+    
+    for (const [period, days] of Object.entries(timePeriods)) {
+      const histFile = getFileByDate(files, latestDate, days);
+      if (histFile) {
+        console.log(`  ${period}: Using ${histFile}`);
+        historicalData[period] = await parseCSV(path.join(DATA_DIR, histFile));
+        historicalMaps[period] = new Map(historicalData[period].map(d => [d.Symbol, d]));
+      } else {
+        console.log(`  ${period}: No data available`);
+        historicalMaps[period] = new Map();
+      }
+    }
 
     // 3. Build Sparklines (Last 30 files)
     // We need to read the last 30 files to get the closing price history
@@ -127,11 +176,19 @@ const buildMarketData = async () => {
     // 4. Transform to final JSON schema
     const stocks = currentData.map(row => {
       const symbol = row.Symbol;
-      const prev1 = prev1Map.get(symbol);
-      const prev7 = prev7Map.get(symbol);
       
       // Helper to safely get number or null
       const getNum = (val) => (val !== null && val !== undefined && val !== '' && val !== '-') ? Number(val) : null;
+
+      // Build deltas for all time periods
+      const deltas = {};
+      
+      // Add price and volume deltas for all time periods
+      for (const period of Object.keys(timePeriods)) {
+        const histStock = historicalMaps[period].get(symbol);
+        deltas[`price_${period}`] = calculateDelta(row.Close, histStock?.Close);
+        deltas[`vol_${period}`] = calculateDelta(row['Volume(Qty)'], histStock?.['Volume(Qty)']);
+      }
 
       return {
         symbol: row.Symbol,
@@ -185,11 +242,7 @@ const buildMarketData = async () => {
           paidUpCapital: getNum(row['PaidUp Capital']),
           totalShares: getNum(row['Total Shares'])
         },
-        deltas: {
-          price_1d: calculateDelta(row.Close, prev1?.Close),
-          price_1w: calculateDelta(row.Close, prev7?.Close),
-          vol_1d: calculateDelta(row['Volume(Qty)'], prev1?.['Volume(Qty)'])
-        },
+        deltas,
         sparkline: sparklineHistory[symbol] || []
       };
     });

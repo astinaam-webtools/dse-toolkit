@@ -369,9 +369,28 @@ Analyze ${stock.name} (${stock.symbol}).
 ## Price Data
 - Last Traded Price (LTP): ${m.ltp}
 - Close: ${m.close}
-- 1-Day Price Change: ${d.price_1d != null ? d.price_1d.toFixed(2) + '%' : 'N/A'}
-- 1-Week Price Change: ${d.price_1w != null ? d.price_1w.toFixed(2) + '%' : 'N/A'}
 - Market Cap: ${m.mktCap} Mn
+
+## Historical Price Performance
+${d.price_1d != null ? '- 1-Day Change: ' + d.price_1d.toFixed(2) + '%' : ''}
+${d.price_1w != null ? '- 1-Week Change: ' + d.price_1w.toFixed(2) + '%' : ''}
+${d.price_1m != null ? '- 1-Month Change: ' + d.price_1m.toFixed(2) + '%' : ''}
+${d.price_6m != null ? '- 6-Month Change: ' + d.price_6m.toFixed(2) + '%' : ''}
+${d.price_1y != null ? '- 1-Year Change: ' + d.price_1y.toFixed(2) + '%' : ''}
+${d.price_2y != null ? '- 2-Year Change: ' + d.price_2y.toFixed(2) + '%' : ''}
+${d.price_3y != null ? '- 3-Year Change: ' + d.price_3y.toFixed(2) + '%' : ''}
+${d.price_4y != null ? '- 4-Year Change: ' + d.price_4y.toFixed(2) + '%' : ''}
+${d.price_5y != null ? '- 5-Year Change: ' + d.price_5y.toFixed(2) + '%' : ''}
+${d.price_6y != null ? '- 6-Year Change: ' + d.price_6y.toFixed(2) + '%' : ''}
+${d.price_7y != null ? '- 7-Year Change: ' + d.price_7y.toFixed(2) + '%' : ''}
+${d.price_8y != null ? '- 8-Year Change: ' + d.price_8y.toFixed(2) + '%' : ''}
+${d.price_9y != null ? '- 9-Year Change: ' + d.price_9y.toFixed(2) + '%' : ''}
+${d.price_10y != null ? '- 10-Year Change: ' + d.price_10y.toFixed(2) + '%' : ''}
+${d.price_11y != null ? '- 11-Year Change: ' + d.price_11y.toFixed(2) + '%' : ''}
+${d.price_12y != null ? '- 12-Year Change: ' + d.price_12y.toFixed(2) + '%' : ''}
+${d.price_13y != null ? '- 13-Year Change: ' + d.price_13y.toFixed(2) + '%' : ''}
+${d.price_14y != null ? '- 14-Year Change: ' + d.price_14y.toFixed(2) + '%' : ''}
+${d.price_15y != null ? '- 15-Year Change: ' + d.price_15y.toFixed(2) + '%' : ''}
 
 ## Technical Indicators
 - RSI (14): ${m.rsi != null ? m.rsi.toFixed(2) : 'N/A'}
@@ -407,7 +426,15 @@ Analyze ${stock.name} (${stock.symbol}).
 ## Volume & Liquidity
 - Volume: ${m.volume != null ? m.volume.toLocaleString() : 'N/A'}
 - Value (Cr): ${m.value != null ? m.value.toFixed(3) : 'N/A'}
-- 1-Day Volume Change: ${d.vol_1d != null ? d.vol_1d.toFixed(2) + '%' : 'N/A'}
+${d.vol_1d != null ? '- 1-Day Volume Change: ' + d.vol_1d.toFixed(2) + '%' : ''}
+${d.vol_1w != null ? '- 1-Week Volume Change: ' + d.vol_1w.toFixed(2) + '%' : ''}
+${d.vol_1m != null ? '- 1-Month Volume Change: ' + d.vol_1m.toFixed(2) + '%' : ''}
+${d.vol_6m != null ? '- 6-Month Volume Change: ' + d.vol_6m.toFixed(2) + '%' : ''}
+${d.vol_1y != null ? '- 1-Year Volume Change: ' + d.vol_1y.toFixed(2) + '%' : ''}
+${d.vol_2y != null ? '- 2-Year Volume Change: ' + d.vol_2y.toFixed(2) + '%' : ''}
+${d.vol_3y != null ? '- 3-Year Volume Change: ' + d.vol_3y.toFixed(2) + '%' : ''}
+${d.vol_4y != null ? '- 4-Year Volume Change: ' + d.vol_4y.toFixed(2) + '%' : ''}
+${d.vol_5y != null ? '- 5-Year Volume Change: ' + d.vol_5y.toFixed(2) + '%' : ''}
 - Trade Value (TV): ${m.tv != null ? m.tv.toFixed(2) : 'N/A'}
 - Chaikin Oscillator (CO): ${m.co != null ? m.co.toFixed(4) : 'N/A'}
 
