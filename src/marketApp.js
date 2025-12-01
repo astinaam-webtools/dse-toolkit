@@ -348,7 +348,18 @@ window.analyzeStock = async (symbol) => {
   const d = stock.deltas || {};
   
   const prompt = `
-Act as a financial analyst for the Dhaka Stock Exchange.
+You are an expert financial analyst specializing in the Dhaka Stock Exchange (DSE), the main stock exchange of Bangladesh. 
+
+## Context about DSE
+- DSE is one of two stock exchanges in Bangladesh (the other being CSE - Chittagong Stock Exchange)
+- Currency: Bangladeshi Taka (BDT/৳)
+- Trading hours: Sunday to Thursday, 10:00 AM to 2:30 PM (Bangladesh Standard Time, UTC+6)
+- Bangladesh is an emerging market economy with key sectors including: Textiles/RMG, Pharmaceuticals, Banking, Telecommunications, Cement, and Ceramics
+- The market has circuit breaker limits and trading halts
+- Key indices: DSEX (broad market), DS30 (blue chips), DSES (Shariah-compliant)
+- Retail investor dominated market with high volatility
+- Consider Bangladesh-specific factors: political stability, remittance flows, export earnings, foreign exchange reserves
+
 Analyze ${stock.name} (${stock.symbol}).
 
 ## Basic Info
