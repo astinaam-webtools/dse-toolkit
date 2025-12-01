@@ -1,19 +1,25 @@
-const CACHE_NAME = 'stock-glossary-v3';
+const CACHE_NAME = 'stock-glossary-v4';
 const RUNTIME_CACHE = 'runtime-stock-glossary';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './analyzer.html',
   './guides.html',
+  './market.html',
+  './stock.html',
   './styles.css',
   './manifest.webmanifest',
   './favicon.ico',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './src/app.js',
+  './src/marketApp.js',
+  './src/stockDetailApp.js',
   './src/data/terms.js',
+  './src/data/dse-market.json',
   './src/lib/behaviorProfiler.js',
-  './src/lib/filterTerms.js'
+  './src/lib/filterTerms.js',
+  './src/lib/marketLogic.js'
 ];
 
 self.addEventListener('install', (event) => {

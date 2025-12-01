@@ -89,6 +89,8 @@ if (termContainer && searchInput) {
   if (queryParam) {
     // Set the search input value to the query parameter
     searchInput.value = queryParam;
+    searchInput.setAttribute('value', queryParam); // Ensure attribute is set for some browsers
+    
     // Trigger the search
     const tokens = tokenize(queryParam);
     const filtered = filterTerms(terms, queryParam);
