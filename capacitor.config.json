@@ -1,6 +1,6 @@
 {
   "appId": "com.astinaam.stockglossary",
-  "appName": "BD Stock Glossary",
+  "appName": "DSE Toolkit",
   "webDir": "dist",
   "plugins": {
     "App": {

@@ -1,6 +1,6 @@
 {
-  "name": "Bangladesh Stock Glossary",
-  "short_name": "BDSE Glossary",
+  "name": "DSE Toolkit",
+  "short_name": "DSE Toolkit",
   "description": "Mobile-first Dhaka Stock Exchange glossary for long-term value investors.",
   "start_url": "./",
   "display": "standalone",
