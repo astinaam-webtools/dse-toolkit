@@ -11,6 +11,30 @@
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --border: rgba(255, 255, 255, 0.1);
+    --shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  }
+
+  .hero {
+    background: radial-gradient(circle at top, #1e293b, #0f172a 80%);
+  }
+  
+  .btn {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  mark.hl {
+    background: rgba(253, 224, 71, 0.3);
+    color: #fff;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

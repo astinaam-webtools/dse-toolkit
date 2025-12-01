@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node scripts/smoke-test.mjs",
     "build": "node scripts/build.mjs",
-    "build:data": "node scripts/build-market-data.mjs"
+    "build:data": "node scripts/build-market-data.mjs",
+    "android:sync": "node scripts/sync-android.mjs"
   },
   "keywords": [],
   "author": "",
