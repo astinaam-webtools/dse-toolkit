@@ -115,10 +115,15 @@ const renderStock = (stock) => {
   
   const change = stock.deltas.price_1d;
   els.change.textContent = change ? (change > 0 ? '+' : '') + change.toFixed(2) + '%' : '-';
-  els.change.style.color = change >= 0 ? 'var(--color-up)' : 'var(--color-down)';
+  els.change.style.color = change >= 0 ? '#10b981' : '#ef4444';
   
-  // Render Chart
-  renderChart(stock.sparkline, change >= 0);
+  // Render Chart after layout is fully calculated
+  // Use double requestAnimationFrame to ensure layout is complete
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      renderChart(stock.sparkline, change >= 0);
+    });
+  });
 
   // Metrics Grid
   // We'll iterate over all metrics and display them
@@ -158,15 +163,20 @@ const renderStock = (stock) => {
 const renderChart = (data, isUp) => {
   const container = document.getElementById('chart-container');
   if (!data || data.length < 2) {
-    container.innerHTML = '<p style="color:#666">No chart data available</p>';
+    container.innerHTML = '<p style="color: var(--muted);">No chart data available</p>';
     return;
   }
 
-  const width = container.clientWidth - 40;
+  // Use clientWidth with fallback, accounting for padding
+  const containerWidth = container.clientWidth || container.offsetWidth || 300;
+  const width = Math.max(containerWidth - 40, 100);
   const height = 160;
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
+  
+  // Hardcoded colors for SVG (CSS vars don't always work in inline SVG)
+  const strokeColor = isUp ? '#10b981' : '#ef4444';
   
   const points = data.map((val, i) => {
     const x = (i / (data.length - 1)) * width;
@@ -176,7 +186,7 @@ const renderChart = (data, isUp) => {
 
   container.innerHTML = `
     <svg width="${width}" height="${height}" style="overflow: visible;">
-      <polyline points="${points}" fill="none" stroke="${isUp ? 'var(--color-up)' : 'var(--color-down)'}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+      <polyline points="${points}" fill="none" stroke="${strokeColor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   `;
 };

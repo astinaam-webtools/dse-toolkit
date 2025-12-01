@@ -285,7 +285,7 @@ window.openStock = (symbol) => {
       </div>
       <div style="text-align:right;">
         <div style="font-size:1.5rem; font-weight:700; color:var(--text);">${m.ltp}</div>
-        <div style="color:${stock.deltas.price_1d >= 0 ? 'var(--color-up)' : 'var(--color-down)'}">
+        <div style="color:${stock.deltas.price_1d >= 0 ? '#10b981' : '#ef4444'}">
           ${stock.deltas.price_1d ? stock.deltas.price_1d.toFixed(2) + '%' : ''}
         </div>
       </div>

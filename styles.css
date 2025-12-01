@@ -10,6 +10,9 @@
   --danger: #dc2626;
   --shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
   --controls-bg-end: rgba(248, 250, 252, 0.9);
+  --color-up: #10b981;
+  --color-down: #ef4444;
+  --color-neutral: #6b7280;
 }
 
 
@@ -764,6 +767,8 @@ mark.hl {
   justify-content: center;
   border: 1px solid var(--border);
   color: var(--muted);
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
 @media (prefers-color-scheme: dark) {
