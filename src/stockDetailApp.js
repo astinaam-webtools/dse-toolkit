@@ -15,6 +15,52 @@ const els = {
   aiOutput: document.getElementById('ai-output-page')
 };
 
+const keyToTerm = {
+  pe: 'Price-to-Earnings Ratio',
+  eps: 'Earnings Per Share',
+  nav: 'Net Asset Value Per Share',
+  pb: 'Price-to-Book Ratio',
+  roe: 'Return on Equity',
+  dividendYield: 'Dividend Yield',
+  debtToEquity: 'Debt-to-Equity Ratio',
+  beta: 'Beta',
+  rsi: 'Relative Strength Index',
+  macd: 'Moving Average Convergence Divergence',
+  macdSignal: 'MACD Signal Line',
+  volume: 'Volume',
+  value: 'Value',
+  mktCap: 'Market Capitalization',
+  paidUpCapital: 'Paid-Up Capital',
+  totalShares: 'Total Shares Outstanding',
+  currentRatio: 'Current Ratio',
+  quickRatio: 'Quick Ratio',
+  ebitdaMargin: 'EBITDA Margin',
+  operatingMargin: 'Operating Profit Margin',
+  netMargin: 'Net Profit Margin',
+  grossMargin: 'Gross Profit Margin',
+  roa: 'Return on Assets',
+  roea: 'Return on Earnings Assets',
+  roi: 'Return on Investment',
+  auditedPe: 'Audited Price-to-Earnings',
+  forwardPe: 'Forward Price-to-Earnings',
+  ltp: 'Last Traded Price',
+  close: 'Close',
+  sma20: 'Simple Moving Average',
+  sma50: 'Simple Moving Average',
+  sma200: 'Simple Moving Average',
+  ema9: 'Exponential Moving Average',
+  ema12: 'Exponential Moving Average',
+  ema26: 'Exponential Moving Average',
+  wma9: 'Weighted Moving Average',
+  wma12: 'Weighted Moving Average',
+  wma20: 'Weighted Moving Average',
+  bbUpper: 'Bollinger Band Upper',
+  bbLower: 'Bollinger Band Lower',
+  tv: 'Trade Volume Index',
+  co: 'Chaikin Oscillator',
+  williamsR: 'Williams Percent Range'
+};
+
 const init = async () => {
   try {
     // Get symbol from URL
@@ -82,9 +128,16 @@ const renderStock = (stock) => {
       displayValue = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
     }
     
+    const termQuery = keyToTerm[key] || formatKey(key);
+    const link = `index.html?q=${encodeURIComponent(termQuery)}&ref=stock&symbol=${stock.symbol}`;
+
     return `
       <div class="metric-card">
-        <div class="metric-label">${formatKey(key)}</div>
+        <div class="metric-label">
+          <a href="${link}" style="text-decoration: none; color: inherit; border-bottom: 1px dotted #999;">
+            ${formatKey(key)}
+          </a>
+        </div>
         <div class="metric-value">${displayValue}</div>
       </div>
     `;

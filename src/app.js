@@ -68,6 +68,23 @@ if (termContainer && searchInput) {
   // Check for query parameter on page load
   const urlParams = new URLSearchParams(window.location.search);
   const queryParam = urlParams.get('q');
+  const refParam = urlParams.get('ref');
+  const symbolParam = urlParams.get('symbol');
+
+  if (refParam === 'stock' && symbolParam) {
+    const heroActions = document.querySelector('.hero__actions');
+    if (heroActions) {
+      const backBtn = document.createElement('a');
+      backBtn.className = 'btn btn--solid';
+      backBtn.href = `stock.html?symbol=${symbolParam}`;
+      backBtn.textContent = `← Back to ${symbolParam}`;
+      backBtn.style.backgroundColor = '#333'; // Distinct color
+      backBtn.style.borderColor = '#333';
+      
+      // Insert as first child
+      heroActions.insertBefore(backBtn, heroActions.firstChild);
+    }
+  }
 
   if (queryParam) {
     // Set the search input value to the query parameter
