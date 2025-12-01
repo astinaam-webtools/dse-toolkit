@@ -8,112 +8,6 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    .detail-header {
-      background: white;
-      padding: 1.5rem;
-      border-bottom: 1px solid var(--border-color);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-    .detail-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-      gap: 1rem;
-      padding: 1.5rem;
-    }
-    .metric-card {
-      background: white;
-      padding: 1rem;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-    }
-    .metric-label {
-      font-size: 0.8rem;
-      color: #666;
-      margin-bottom: 0.25rem;
-    }
-    .metric-value {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-    .back-nav {
-      padding: 1rem 1.5rem;
-      background: #f8f9fa;
-      border-bottom: 1px solid var(--border-color);
-    }
-    .back-nav a {
-      text-decoration: none;
-      color: var(--primary-color);
-      font-weight: 500;
-    }
-    /* Modal styles */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-    .modal-content {
-      background: white;
-      width: 90%;
-      max-width: 600px;
-      height: 80vh;
-      border-radius: 16px;
-      display: flex;
-      flex-direction: column;
-      padding: 1.5rem;
-      padding-top: 3rem;
-      position: relative;
-    }
-    .close-modal {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: #f3f4f6;
-      border: none;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      cursor: pointer;
-      z-index: 10;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #666;
-      font-size: 1.2rem;
-    }
-    .close-modal:hover { background: #e5e7eb; }
-    #ai-chat-container {
-      flex: 1;
-      overflow-y: auto;
-      padding: 1rem;
-      background: #f9fafb;
-      border-radius: 8px;
-      margin-bottom: 1rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-    }
-    #ai-input {
-      flex: 1;
-      padding: 0.75rem;
-      border: 1px solid #ddd;
-      border-radius: 8px;
-    }
-    #ai-send-btn {
-      width: auto;
-      margin: 0;
-      padding: 0 1.5rem;
-    }
-  </style>
 </head>
 <body>
   <div class="back-nav">
@@ -128,8 +22,8 @@
         <div style="display: flex; justify-content: space-between; align-items: flex-start;">
           <div>
             <h1 id="stock-symbol" style="margin: 0; font-size: 2rem;"></h1>
-            <p id="stock-name" style="margin: 0.5rem 0 0; color: #666;"></p>
-            <span id="stock-sector" style="display: inline-block; background: #eee; padding: 4px 8px; border-radius: 4px; font-size: 0.8rem; margin-top: 0.5rem;"></span>
+            <p id="stock-name" style="margin: 0.5rem 0 0; color: var(--muted);"></p>
+            <span id="stock-sector"></span>
           </div>
           <div style="text-align: right;">
             <div id="stock-price" style="font-size: 2rem; font-weight: 700;"></div>
@@ -140,7 +34,7 @@
 
       <main>
         <div style="padding: 1.5rem 1.5rem 0;">
-          <div id="chart-container" style="height: 200px; background: #f9fafb; border-radius: 12px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color);">
+          <div id="chart-container">
             <!-- Chart will be injected here -->
           </div>
         </div>
@@ -151,7 +45,7 @@
         
         <div style="padding: 1.5rem;">
            <h3>AI Analysis</h3>
-           <button class="btn-ai" id="btn-analyze-page" style="width: 100%; padding: 1rem; font-size: 1.1rem;">
+           <button class="btn-ai" id="btn-analyze-page">
             ✨ Start AI Chat Analysis
           </button>
         </div>
@@ -160,20 +54,21 @@
   </div>
 
   <!-- AI Analysis Modal (Shared Structure) -->
-  <div class="modal-overlay" id="ai-modal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-    <div class="modal-content" style="background: white; width: 90%; max-width: 600px; height: 80vh; border-radius: 16px; display: flex; flex-direction: column; padding: 1.5rem; padding-top: 3rem; position: relative;">
+  <div class="modal-overlay" id="ai-modal">
+    <div class="modal-content">
       <button class="close-modal" onclick="document.getElementById('ai-modal').style.display='none'">&times;</button>
       <h3 style="margin-top: 0;">AI Analyst</h3>
-      <div id="ai-chat-container" style="flex: 1; overflow-y: auto; padding: 1rem; background: #f9fafb; border-radius: 8px; margin-bottom: 1rem; display: flex; flex-direction: column; gap: 1rem;">
+      <div id="ai-chat-container">
         <!-- Chat messages -->
       </div>
       <div style="display: flex; gap: 0.5rem;">
-        <input type="text" id="ai-input" placeholder="Ask a follow-up question..." style="flex: 1; padding: 0.75rem; border: 1px solid #ddd; border-radius: 8px;">
-        <button id="ai-send-btn" class="btn-ai" style="width: auto; margin: 0; padding: 0 1.5rem;">Send</button>
+        <input type="text" id="ai-input" placeholder="Ask a follow-up question...">
+        <button id="ai-send-btn" class="btn-ai">Send</button>
       </div>
     </div>
   </div>
 
   <script type="module" src="./src/stockDetailApp.js"></script>
+  <script type="module" src="./src/mobile-nav.js"></script>
 </body>
 </html>

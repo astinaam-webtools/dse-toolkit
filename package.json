@@ -15,8 +15,10 @@
   "type": "module",
   "dependencies": {
     "@capacitor/android": "^7.4.4",
+    "@capacitor/app": "^7.1.0",
     "@capacitor/cli": "^7.4.4",
-    "@capacitor/core": "^7.4.4"
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/dialog": "^7.0.2"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5"
