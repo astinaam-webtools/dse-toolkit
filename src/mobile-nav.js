@@ -1,30 +1,43 @@
 import { App } from '@capacitor/app';
 import { Dialog } from '@capacitor/dialog';
+import { Capacitor } from '@capacitor/core';
 
-App.addListener('backButton', async ({ canGoBack }) => {
-  // Check if we are on the home page (root or index.html)
-  const isHome = window.location.pathname === '/' || window.location.pathname.endsWith('index.html');
+// Only run on native platforms
+if (Capacitor.isNativePlatform()) {
+  console.log('Mobile nav: Running on native platform');
 
-  if (canGoBack && !isHome) {
-    window.history.back();
-  } else {
-    let shouldExit = false;
-    try {
-      const { value } = await Dialog.confirm({
-        title: 'Exit App',
-        message: 'Are you sure you want to exit?',
-        okButtonTitle: 'Exit',
-        cancelButtonTitle: 'Cancel',
-      });
-      shouldExit = value;
-    } catch (error) {
-      console.error('Dialog error:', error);
-      // Fallback to native window confirm if Dialog plugin fails
-      shouldExit = window.confirm('Are you sure you want to exit?');
+  // Register the back button listener
+  App.addListener('backButton', async ({ canGoBack }) => {
+    console.log('Back button pressed. canGoBack:', canGoBack, 'Path:', window.location.pathname);
+    
+    const path = window.location.pathname;
+    // Robust check for home page
+    const isHome = path === '/' || path.endsWith('index.html') || path.endsWith('/public/index.html');
+
+    if (canGoBack && !isHome) {
+      window.history.back();
+    } else {
+      // Show exit confirmation
+      try {
+        const result = await Dialog.confirm({
+          title: 'Exit App',
+          message: 'Are you sure you want to exit?',
+          okButtonTitle: 'Exit',
+          cancelButtonTitle: 'Cancel',
+        });
+        
+        if (result.value) {
+          App.exitApp();
+        }
+      } catch (error) {
+        console.error('Dialog error:', error);
+        // Fallback
+        if (window.confirm('Are you sure you want to exit?')) {
+          App.exitApp();
+        }
+      }
     }
-
-    if (shouldExit) {
-      App.exitApp();
-    }
-  }
-});
+  });
+} else {
+  console.log('Mobile nav: Not on native platform, skipping back button handler');
+}

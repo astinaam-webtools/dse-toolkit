@@ -1,5 +1,15 @@
 {
   "appId": "com.astinaam.stockglossary",
   "appName": "BD Stock Glossary",
-  "webDir": "dist"
+  "webDir": "dist",
+  "plugins": {
+    "App": {
+      "handleNavigationBarColor": false
+    }
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": true
+  }
 }
