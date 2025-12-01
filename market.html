@@ -232,7 +232,8 @@
     .modal-overlay.open { display: flex; }
 
     .modal-content {
-      background: white;
+      background: var(--card);
+      color: var(--text);
       width: 100%;
       max-height: 90vh;
       overflow-y: auto;
@@ -270,6 +271,21 @@
       z-index: 10; /* Ensure it's above content */
     }
     .close-modal:hover { background: var(--border); }
+
+    /* Modal metric cards */
+    .modal-metric-card {
+      background: var(--bg);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .modal-metric-card {
+        background: rgba(255,255,255,0.05);
+        border-color: rgba(255,255,255,0.1);
+      }
+    }
 
     /* AI Button */
     .btn-ai {
@@ -420,8 +436,8 @@
       </div>
       <div style="margin-bottom: 1rem;">
         <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">Preferred Model (Optional)</label>
-        <input type="text" id="model-input" placeholder="e.g. meta-llama/llama-3-8b-instruct:free" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        <p style="font-size:0.75rem; color:#666; margin-top:4px;">Leave empty to use default (Llama 3 8B Free).</p>
+        <input type="text" id="model-input" placeholder="e.g. openai/gpt-oss-20b:free" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
+        <p style="font-size:0.75rem; color:#666; margin-top:4px;">Leave empty to use default (GPT-OSS 20B Free).</p>
       </div>
       <button class="btn-ai" onclick="saveSettings()">Save Settings</button>
     </div>

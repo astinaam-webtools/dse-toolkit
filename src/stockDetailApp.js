@@ -183,7 +183,7 @@ const renderChart = (data, isUp) => {
 
 const analyzeStock = async (stock) => {
   const apiKey = localStorage.getItem('openrouter_key');
-  const preferredModel = localStorage.getItem('openrouter_model') || "meta-llama/llama-3-8b-instruct:free";
+  const preferredModel = localStorage.getItem('openrouter_model') || "openai/gpt-oss-20b:free";
   
   if (!apiKey) {
     alert('Please set your OpenRouter API Key in the main Settings first.');
@@ -289,32 +289,17 @@ const addChatMessage = (role, text) => {
   const container = document.getElementById('ai-chat-container');
   const div = document.createElement('div');
   
-  div.style.padding = '1rem';
-  div.style.borderRadius = '8px';
-  div.style.maxWidth = '90%';
-  div.style.lineHeight = '1.5';
-  div.style.fontSize = '0.9rem';
-  
   if (role === 'user') {
-    div.style.background = '#e0f2fe';
-    div.style.alignSelf = 'flex-end';
-    div.style.color = '#0c4a6e';
+    div.className = 'chat-msg chat-msg--user';
     div.textContent = text;
   } else if (role === 'ai') {
-    div.style.background = 'white';
-    div.style.alignSelf = 'flex-start';
-    div.style.border = '1px solid #e5e7eb';
+    div.className = 'chat-msg chat-msg--ai';
     div.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
   } else if (role === 'system') {
-    div.style.background = 'transparent';
-    div.style.color = '#666';
-    div.style.textAlign = 'center';
-    div.style.alignSelf = 'center';
-    div.style.fontStyle = 'italic';
+    div.className = 'chat-msg chat-msg--system';
     div.textContent = text;
   } else if (role === 'error') {
-    div.style.background = '#fee2e2';
-    div.style.color = '#991b1b';
+    div.className = 'chat-msg chat-msg--error';
     div.textContent = text;
   }
   

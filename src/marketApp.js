@@ -279,12 +279,12 @@ window.openStock = (symbol) => {
   els.modalBody.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;">
       <div>
-        <h2 style="margin:0;">${stock.symbol}</h2>
-        <p style="margin:0; color:#666; font-size:0.9rem;">${stock.name}</p>
-        <span style="background:#eee; padding:2px 6px; border-radius:4px; font-size:0.75rem;">${stock.sector}</span>
+        <h2 style="margin:0; color:var(--text);">${stock.symbol}</h2>
+        <p style="margin:0; color:var(--muted); font-size:0.9rem;">${stock.name}</p>
+        <span style="background:rgba(148,163,184,0.2); padding:2px 6px; border-radius:4px; font-size:0.75rem; color:var(--text);">${stock.sector}</span>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:1.5rem; font-weight:700;">${m.ltp}</div>
+        <div style="font-size:1.5rem; font-weight:700; color:var(--text);">${m.ltp}</div>
         <div style="color:${stock.deltas.price_1d >= 0 ? 'var(--color-up)' : 'var(--color-down)'}">
           ${stock.deltas.price_1d ? stock.deltas.price_1d.toFixed(2) + '%' : ''}
         </div>
@@ -292,21 +292,21 @@ window.openStock = (symbol) => {
     </div>
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
-      <div style="background:#f9fafb; padding:10px; border-radius:8px;">
-        <div style="font-size:0.75rem; color:#666;">PE Ratio</div>
-        <div style="font-weight:600;">${m.pe || '-'}</div>
+      <div class="modal-metric-card">
+        <div style="font-size:0.75rem; color:var(--muted);">PE Ratio</div>
+        <div style="font-weight:600; color:var(--text);">${m.pe || '-'}</div>
       </div>
-      <div style="background:#f9fafb; padding:10px; border-radius:8px;">
-        <div style="font-size:0.75rem; color:#666;">RSI (14)</div>
-        <div style="font-weight:600;">${m.rsi ? m.rsi.toFixed(1) : '-'}</div>
+      <div class="modal-metric-card">
+        <div style="font-size:0.75rem; color:var(--muted);">RSI (14)</div>
+        <div style="font-weight:600; color:var(--text);">${m.rsi ? m.rsi.toFixed(1) : '-'}</div>
       </div>
-      <div style="background:#f9fafb; padding:10px; border-radius:8px;">
-        <div style="font-size:0.75rem; color:#666;">NAV</div>
-        <div style="font-weight:600;">${m.nav || '-'}</div>
+      <div class="modal-metric-card">
+        <div style="font-size:0.75rem; color:var(--muted);">NAV</div>
+        <div style="font-weight:600; color:var(--text);">${m.nav || '-'}</div>
       </div>
-      <div style="background:#f9fafb; padding:10px; border-radius:8px;">
-        <div style="font-size:0.75rem; color:#666;">Dividend Yield</div>
-        <div style="font-weight:600;">${m.dividendYield ? m.dividendYield + '%' : '-'}</div>
+      <div class="modal-metric-card">
+        <div style="font-size:0.75rem; color:var(--muted);">Dividend Yield</div>
+        <div style="font-weight:600; color:var(--text);">${m.dividendYield ? m.dividendYield + '%' : '-'}</div>
       </div>
     </div>
     
@@ -325,7 +325,7 @@ window.openStock = (symbol) => {
 
 window.analyzeStock = async (symbol) => {
   const apiKey = localStorage.getItem('openrouter_key');
-  const preferredModel = localStorage.getItem('openrouter_model') || "meta-llama/llama-3-8b-instruct:free";
+  const preferredModel = localStorage.getItem('openrouter_model') || "openai/gpt-oss-20b:free";
   
   if (!apiKey) {
     alert('Please set your OpenRouter API Key in Settings first.');
