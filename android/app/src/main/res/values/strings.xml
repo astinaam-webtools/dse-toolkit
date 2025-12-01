@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BD Stock Glossary</string>
+    <string name="title_activity_main">BD Stock Glossary</string>
+    <string name="package_name">com.astinaam.stockglossary</string>
+    <string name="custom_url_scheme">com.astinaam.stockglossary</string>
+</resources>

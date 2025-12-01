@@ -21,7 +21,16 @@ const els = {
 
 const init = async () => {
   try {
-    const res = await fetch('./src/data/dse-market.json');
+    // Network-first strategy: Try live data, fallback to local
+    let res;
+    try {
+      res = await fetch('https://astinaam-webtools.github.io/dse-toolkit/src/data/dse-market.json');
+      if (!res.ok) throw new Error('Network fetch failed');
+    } catch (e) {
+      console.warn('Fetching live data failed, falling back to local:', e);
+      res = await fetch('./src/data/dse-market.json');
+    }
+
     if (!res.ok) throw new Error('Failed to load data');
     marketData = await res.json();
     
