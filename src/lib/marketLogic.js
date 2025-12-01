@@ -82,3 +82,47 @@ export const getStockBuckets = (stocks) => {
     matches: stocks.filter(bucket.filter)
   })).filter(b => b.matches.length > 0); // Only return buckets with matches
 };
+
+/**
+ * Aggregate stocks by sector for heatmap visualization
+ * @param {Array} stocks - Array of stock objects
+ * @returns {Array} Array of sector objects with aggregated metrics
+ */
+export const getSectorHeatmap = (stocks) => {
+  const sectors = {};
+  
+  // Group stocks by sector
+  stocks.forEach(stock => {
+    const sectorName = stock.sector || 'Other';
+    
+    if (!sectors[sectorName]) {
+      sectors[sectorName] = {
+        name: sectorName,
+        stocks: [],
+        totalMktCap: 0,
+        totalVolume: 0,
+        avgChange: 0,
+        positiveCount: 0,
+        negativeCount: 0
+      };
+    }
+    
+    sectors[sectorName].stocks.push(stock);
+    sectors[sectorName].totalMktCap += stock.metrics.mktCap || 0;
+    sectors[sectorName].totalVolume += stock.metrics.volume || 0;
+    
+    const change = stock.deltas.price_1d || 0;
+    if (change > 0) sectors[sectorName].positiveCount++;
+    if (change < 0) sectors[sectorName].negativeCount++;
+  });
+  
+  // Calculate average change for each sector
+  Object.values(sectors).forEach(sector => {
+    const changes = sector.stocks.map(s => s.deltas.price_1d || 0);
+    sector.avgChange = changes.reduce((a, b) => a + b, 0) / changes.length;
+    sector.stockCount = sector.stocks.length;
+  });
+  
+  // Convert to array and sort by market cap (descending)
+  return Object.values(sectors).sort((a, b) => b.totalMktCap - a.totalMktCap);
+};

@@ -1,8 +1,10 @@
-import { getStockBuckets, filterStocks } from './lib/marketLogic.js';
+import { getStockBuckets, filterStocks, getSectorHeatmap } from './lib/marketLogic.js';
 
 // State
 let marketData = null;
 let currentView = 'buckets';
+let activeSectorFilter = null; // Track active sector filter
+let activeBucketFilter = null; // Track active bucket filter
 
 // DOM Elements
 const els = {
@@ -39,6 +41,13 @@ const init = async () => {
     
     // Event Listeners
     els.search.addEventListener('input', (e) => {
+      // Clear filters if user types (and removes the prefix)
+      if (activeSectorFilter && !e.target.value.startsWith('Sector:')) {
+        activeSectorFilter = null;
+      }
+      if (activeBucketFilter && !e.target.value.startsWith('Bucket:')) {
+        activeBucketFilter = null;
+      }
       renderView(e.target.value);
     });
 
@@ -52,6 +61,13 @@ const init = async () => {
         currentView = btn.dataset.view;
         els.views.forEach(v => v.classList.remove('active'));
         document.getElementById(`view-${currentView}`).classList.add('active');
+        
+        // Clear filters when switching away from screener
+        if (currentView !== 'screener' && (activeSectorFilter || activeBucketFilter)) {
+          activeSectorFilter = null;
+          activeBucketFilter = null;
+          els.search.value = '';
+        }
         
         renderView(els.search.value);
       });
@@ -80,7 +96,30 @@ const renderHeader = () => {
 const renderView = (query = '') => {
   if (!marketData) return;
   
-  const stocks = filterStocks(marketData.stocks, query);
+  // Determine which stocks to display based on active filters
+  let stocks;
+  
+  if (currentView === 'screener') {
+    // Priority: bucket filter > sector filter > search query
+    if (activeBucketFilter) {
+      const bucket = getStockBuckets(marketData.stocks).find(b => b.id === activeBucketFilter);
+      stocks = bucket ? bucket.matches : [];
+      // Also apply search query if present and not the filter label
+      if (query && !query.startsWith('Bucket:') && !query.startsWith('Sector:')) {
+        stocks = filterStocks(stocks, query);
+      }
+    } else if (activeSectorFilter) {
+      stocks = marketData.stocks.filter(s => s.sector === activeSectorFilter);
+      // Also apply search query if present and not the filter label
+      if (query && !query.startsWith('Bucket:') && !query.startsWith('Sector:')) {
+        stocks = filterStocks(stocks, query);
+      }
+    } else {
+      stocks = filterStocks(marketData.stocks, query);
+    }
+  } else {
+    stocks = filterStocks(marketData.stocks, query);
+  }
 
   if (currentView === 'buckets') {
     renderBuckets(stocks);
@@ -121,25 +160,22 @@ const renderBuckets = (stocks) => {
 };
 
 window.filterScreenerByBucket = (bucketId) => {
+  // Set the active bucket filter
+  activeBucketFilter = bucketId;
+  activeSectorFilter = null; // Clear sector filter
+  
   // Switch to screener tab
   const screenerTab = document.querySelector('.tab-btn[data-view="screener"]');
   if (screenerTab) screenerTab.click();
   
-  // We need to filter the screener view. 
-  // Since the current architecture filters by search query, we might need a way to filter by bucket ID.
-  // For now, let's just alert as a placeholder or implement a simple filter override.
-  // Ideally, we update the state to filter by bucket.
-  
-  // Hacky way: Set search input to a special prefix or handle state better.
-  // Better way: Add a filter state.
-  
-  // Let's just filter by the bucket logic directly and render.
+  // Update search box to show what's happening (cosmetic)
   const bucket = getStockBuckets(marketData.stocks).find(b => b.id === bucketId);
   if (bucket) {
-    renderScreener(bucket.matches);
-    // Update search box to show what's happening
     els.search.value = `Bucket: ${bucket.title}`;
   }
+  
+  // Render will use the activeBucketFilter state
+  renderView();
 };
 
 const renderScreener = (stocks) => {
@@ -171,50 +207,71 @@ const renderHeatmap = (stocks) => {
   const container = document.getElementById('heatmap-container');
   if (!container) return;
 
-  // Group by sector
-  const sectors = {};
-  stocks.forEach(s => {
-    if (!sectors[s.sector]) sectors[s.sector] = [];
-    sectors[s.sector].push(s);
-  });
-
-  // Sort sectors by number of stocks (desc)
-  const sortedSectors = Object.entries(sectors).sort((a, b) => b[1].length - a[1].length);
-
-  container.innerHTML = sortedSectors.map(([sectorName, sectorStocks]) => `
-    <div class="heatmap-sector">
-      <h3 style="grid-column: 1/-1; margin: 1rem 0 0.5rem; font-size: 0.9rem; color: #666;">${sectorName}</h3>
-      ${sectorStocks.map(s => {
-        const change = s.deltas.price_1d || 0;
-        let color = '#eee';
-        if (change > 0) {
-          // Green scale
-          const intensity = Math.min(change / 5, 1); // Cap at 5%
-          color = `rgba(34, 197, 94, ${0.2 + intensity * 0.8})`;
-        } else if (change < 0) {
-          // Red scale
-          const intensity = Math.min(Math.abs(change) / 5, 1);
-          color = `rgba(239, 68, 68, ${0.2 + intensity * 0.8})`;
-        }
-        
-        return `
-          <div class="heatmap-tile" 
-               style="background-color: ${color}; padding: 0.5rem; border-radius: 4px; cursor: pointer; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; min-height: 60px;"
-               onclick="window.openStock('${s.symbol}')"
-               title="${s.name} (${change.toFixed(2)}%)">
-            <div style="font-weight: 600; font-size: 0.8rem;">${s.symbol}</div>
-            <div style="font-size: 0.7rem;">${change > 0 ? '+' : ''}${change.toFixed(1)}%</div>
-          </div>
-        `;
-      }).join('')}
-    </div>
-  `).join('');
+  // Use the new aggregation function
+  const sectors = getSectorHeatmap(stocks);
   
-  // Update grid style dynamically if needed, but CSS grid auto-fill handles it well.
-  // We might want to ensure the container has the right grid style.
-  container.style.display = 'grid';
-  container.style.gridTemplateColumns = 'repeat(auto-fill, minmax(80px, 1fr))';
-  container.style.gap = '0.5rem';
+  if (sectors.length === 0) {
+    container.innerHTML = `<p class="muted" style="grid-column: 1/-1; text-align: center; padding: 2rem;">No sectors to display.</p>`;
+    return;
+  }
+
+  container.innerHTML = sectors.map(sector => {
+    const changeClass = sector.avgChange > 0 ? 'positive' : sector.avgChange < 0 ? 'negative' : 'neutral';
+    const changeArrow = sector.avgChange > 0 ? '↑' : sector.avgChange < 0 ? '↓' : '→';
+    const changeStyle = sector.avgChange > 0 ? 'up' : sector.avgChange < 0 ? 'down' : 'neutral';
+    
+    // Calculate size based on market cap (larger tiles for bigger sectors)
+    // We'll use grid-column-end to make bigger sectors span more columns
+    const sizeClass = sector.totalMktCap > 50000 ? 'large' : sector.totalMktCap > 10000 ? 'medium' : 'small';
+    
+    return `
+      <div class="sector-tile ${changeClass}" 
+           data-sector="${sector.name}"
+           onclick="window.filterBySector('${sector.name}')">
+        <div class="sector-name">${sector.name}</div>
+        <div class="sector-change ${changeStyle}">
+          ${changeArrow} ${sector.avgChange > 0 ? '+' : ''}${sector.avgChange.toFixed(2)}%
+        </div>
+        <div class="sector-stats">
+          <div class="sector-stat">
+            <span>Stocks</span>
+            <strong>${sector.stockCount}</strong>
+          </div>
+          <div class="sector-stat">
+            <span>Mkt Cap</span>
+            <strong>${formatMarketCap(sector.totalMktCap)}</strong>
+          </div>
+          <div class="sector-stat">
+            <span style="color: var(--color-up)">↑${sector.positiveCount}</span>
+            <span style="color: var(--color-down)">↓${sector.negativeCount}</span>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+};
+
+// Helper function to format market cap
+const formatMarketCap = (cap) => {
+  if (cap >= 1000) return `${(cap / 1000).toFixed(1)}B`;
+  return `${cap.toFixed(0)}M`;
+};
+
+// Global function to filter screener by sector
+window.filterBySector = (sectorName) => {
+  // Set the active sector filter
+  activeSectorFilter = sectorName;
+  activeBucketFilter = null; // Clear bucket filter
+  
+  // Switch to screener tab
+  const screenerTab = document.querySelector('.tab-btn[data-view="screener"]');
+  if (screenerTab) screenerTab.click();
+  
+  // Update search box to show what's happening (cosmetic)
+  els.search.value = `Sector: ${sectorName}`;
+  
+  // Render will use the activeSectorFilter state
+  renderView();
 };
 
 const renderStockRow = (stock) => `

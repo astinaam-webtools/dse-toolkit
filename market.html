@@ -335,9 +335,106 @@
       margin-top: 1rem;
     }
     .btn-more:hover { background: var(--border); }
+
+    /* Heatmap Styles */
+    .heatmap-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+    }
+
+    /* Responsive grid adjustments */
+    @media (min-width: 640px) {
+      .heatmap-grid {
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      }
+    }
+
+    @media (min-width: 1024px) {
+      .heatmap-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1.25rem;
+      }
+    }
+
+    .sector-tile {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 1rem;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      border: 2px solid transparent;
+      min-height: 120px;
+    }
+
+    .sector-tile:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .sector-tile.positive {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+      border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .sector-tile.negative {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .sector-tile.neutral {
+      background: var(--card);
+      border-color: var(--border);
+    }
+
+    .sector-name {
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text);
+      margin-bottom: 0.25rem;
+    }
+
+    .sector-change {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin: 0.25rem 0;
+    }
+
+    .sector-change.up { color: var(--color-up); }
+    .sector-change.down { color: var(--color-down); }
+    .sector-change.neutral { color: var(--color-neutral); }
+
+    .sector-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .sector-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .heatmap-info {
+      padding: 1rem;
+      margin: 1rem;
+      background: var(--bg);
+      border-radius: 8px;
+      font-size: 0.875rem;
+      color: var(--muted);
+      border-left: 3px solid var(--color-up);
+    }
   </style>
 </head>
 <body>
+  <div class="safe-top-spacer"></div>
 
   <header class="lens-header">
     <div class="header-top">
@@ -392,8 +489,11 @@
 
     <!-- View: Heatmap -->
     <section id="view-heatmap" class="view-section">
-      <div style="text-align: center; padding: 2rem; color: #666;">
-        <p>Sector Heatmap coming soon...</p>
+      <div class="heatmap-info">
+        <strong>💡 Sector Heatmap:</strong> Each tile represents a sector. Color indicates average price change (green = up, red = down). Size reflects market cap weight. Tap to see stocks.
+      </div>
+      <div id="heatmap-container" class="heatmap-grid">
+        <!-- Sector tiles injected here -->
       </div>
     </section>
   </main>

@@ -29,6 +29,11 @@ body {
   line-height: 1.6;
 }
 
+/* Safe-area spacer for pages that sit close to mobile status bars */
+.safe-top-spacer {
+  height: calc(env(safe-area-inset-top, 0px) + 12px);
+}
+
 .hero {
   padding: 2.5rem 1.5rem 1.5rem;
   background: radial-gradient(circle at top, #e0f2fe, #eff6ff 50%, #f8fafc);

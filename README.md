@@ -11,10 +11,10 @@ A comprehensive, mobile-first toolkit for Dhaka Stock Exchange (DSE) investors. 
 - **Chart Playbook**: Dedicated guide (`guides.html`) on how to read technical indicators on charts.
 
 ### 🔍 Market Lens Dashboard (`market.html`)
-- **Smart Buckets**: Automatically categorizes stocks into "Value", "Growth", "Dividend", and "Turnaround" plays.
-- **Screener**: Filter stocks by sector, price, and change.
-- **Heatmap**: Visual representation of sector performance (Coming Soon).
-- **Market Status**: Real-time (simulated) market status indicator.
+- **Smart Buckets**: Automatically categorizes stocks into "Value", "Momentum", "Safe Havens", and more.
+- **Screener**: Sortable table with sparklines showing price trends.
+- **Sector Heatmap**: Interactive visualization showing sector performance with color-coded tiles (green = gains, red = losses). Click any sector to drill down into individual stocks.
+- **Market Status**: Real-time market data snapshot with date indicator.
 
 ### 📈 Stock Details & AI Analyst (`stock.html`)
 - **Deep Dive**: Detailed view of individual stocks with sparkline charts and key metrics.

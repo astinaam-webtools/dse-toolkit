@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-glossary-v9';
+const CACHE_NAME = 'stock-glossary-v10';
 const RUNTIME_CACHE = 'runtime-stock-glossary';
 const PRECACHE_URLS = [
   './',
@@ -15,6 +15,7 @@ const PRECACHE_URLS = [
   './src/app.js',
   './src/marketApp.js',
   './src/stockDetailApp.js',
+  './src/mobile-nav.js',
   './src/data/terms.js',
   './src/data/dse-market.json',
   './src/lib/behaviorProfiler.js',

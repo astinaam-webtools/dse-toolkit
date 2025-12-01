@@ -12,6 +12,7 @@
 	- `src/marketApp.js`: Bootstraps market dashboard UI.
 	- `src/stockDetailApp.js`: Bootstraps stock details view UI.
 	- `src/lib/behaviorProfiler.js`: Pure logic that maps input metrics to behaviour buckets.
+	- `src/lib/marketLogic.js`: Market analysis logic including bucket definitions, stock filtering, and sector heatmap aggregation.
 	- `src/data/terms.js`: Array of term objects (title, shortForm, category, description, whyItMatters, watchFor, tags).
 	- `src/lib/filterTerms.js`: `filterTerms`, `tokenize`, `highlightText`, helper utilities (`escapeRegExp`, `escapeHtml`). Category included in search haystack.
 	- `guides.html`: Advanced chart reading playbook with anchors for each metric and screenshot placeholders.
@@ -34,6 +35,8 @@
 - Analyzer form (now on `analyzer.html`) collects key metrics and calls `analyzeStock` to output behaviour buckets with timing guidance.
 
 - Market pages (`market.html`, `stock.html`) render using `marketApp.js`/`stockDetailApp.js` and data from `src/data/dse-market.json`.
+- Market dashboard has three views: Lens (smart buckets), Screener (sortable table), and Heatmap (sector visualization).
+- Sector heatmap aggregates stocks by sector, calculates avg price change, total market cap, and displays color-coded tiles (green = positive, red = negative). Clicking a sector tile filters the screener to that sector.
 - PWA icons now use transparent backgrounds; Android icons use solid `#0f172a` background (adaptive icon foreground is generated via Capacitor).
 
 ## Branding
