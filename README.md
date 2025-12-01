@@ -2,6 +2,14 @@
 
 A comprehensive, mobile-first toolkit for Dhaka Stock Exchange (DSE) investors. It combines an educational glossary with a powerful market dashboard ("Market Lens") and AI-powered stock analysis.
 
+## Links
+
+- **GitHub Pages (Web App)**: `https://astinaam-webtools.github.io/dse-toolkit/`
+- **Android App (Local Build)**: Generated via Capacitor; open with `npx cap open android`.
+- **Play Store**: Coming soon — placeholder link: `https://play.google.com/store/apps/details?id=com.astinaamwebtools.dsetoolkit`
+- **QR Code**: Placeholder — will point to the Play Store page once published.
+
+
 ## Features
 
 ### 📚 Investor Glossary
