@@ -1,90 +1,108 @@
-# Bangladesh Stock Glossary
+# DSE Toolkit & Glossary
 
-A mobile-first glossary built for long-term value investors focused on the Dhaka Stock Exchange (DSE). It explains common terms and short forms (P/E, EPS, ROE, NAV, etc.) and makes them searchable.
+A comprehensive, mobile-first toolkit for Dhaka Stock Exchange (DSE) investors. It combines an educational glossary with a powerful market dashboard ("Market Lens") and AI-powered stock analysis.
 
 ## Features
 
-- Mobile-first responsive UI
-- Instant search with token matching
-- Highlight matched words in results
-- Installable PWA with offline cache (manifest + service worker)
-- Dedicated chart-reading playbook (`guides.html`) with anchor links from every relevant term
-- Dedicated behaviour analyzer page (`analyzer.html`) that classifies a stock as value/growth/income/defensive/cyclical based on your inputs
-- Small, dependency-free static site — ideal for GitHub Pages
+### 📚 Investor Glossary
+- **Mobile-first UI**: Responsive design for on-the-go learning.
+- **Instant Search**: Token-based search for terms like P/E, EPS, ROE, NAV.
+- **Contextual Learning**: "Why it matters" and "What to watch for" sections for every term.
+- **Chart Playbook**: Dedicated guide (`guides.html`) on how to read technical indicators on charts.
 
-## Local development
+### 🔍 Market Lens Dashboard (`market.html`)
+- **Smart Buckets**: Automatically categorizes stocks into "Value", "Growth", "Dividend", and "Turnaround" plays.
+- **Screener**: Filter stocks by sector, price, and change.
+- **Heatmap**: Visual representation of sector performance (Coming Soon).
+- **Market Status**: Real-time (simulated) market status indicator.
 
-Serve the project locally and open http://localhost:8000
+### 📈 Stock Details & AI Analyst (`stock.html`)
+- **Deep Dive**: Detailed view of individual stocks with sparkline charts and key metrics.
+- **AI Analysis**: Integrated AI chat (via OpenRouter) to generate Bull/Bear cases and investment verdicts.
+- **Smart Linking**: Click on any metric (e.g., "P/E Ratio") to instantly jump to its definition in the glossary.
 
-```bash
-# from repo root
-python3 -m http.server 8000
-# or (if you prefer node)
-# npx http-server -p 8000
+### 🛠 Technicals
+- **PWA Ready**: Installable with offline cache (manifest + service worker).
+- **Zero Dependencies**: Built with Vanilla JS and CSS variables. No heavy frameworks.
+- **Static Hosting**: Deploys easily to GitHub Pages.
+
+## Project Structure
+
+```
+├── data/
+│   └── dse/              # Raw CSV market data files
+├── scripts/
+│   └── build-market-data.mjs # Node script to process CSVs into JSON
+├── src/
+│   ├── app.js            # Glossary logic
+│   ├── marketApp.js      # Market Lens dashboard logic
+│   ├── stockDetailApp.js # Stock details & AI logic
+│   ├── data/
+│   │   ├── terms.js      # Glossary definitions
+│   │   └── dse-market.json # Processed market data
+│   └── lib/              # Shared utilities (profiler, filters)
+├── index.html            # Glossary Entry Point
+├── market.html           # Market Lens Dashboard
+├── stock.html            # Stock Details Page
+└── sw.js                 # Service Worker
 ```
 
-While the server is running, open Chrome DevTools → Application → Service Workers to confirm the worker (`sw.js`) registers correctly. Toggle “Offline” to simulate no connectivity; the glossary should still load thanks to the precache.
+## Data Pipeline
 
-### Chart guide & analyzer
+The project uses a static data generation approach:
 
-- Visit `/guides.html` to read how to pull metrics such as VWAP, RSI, YCP, reserves, loans, etc. directly from StockNow/TradingView charts. Each glossary card links to its anchor.
-- Open `/analyzer.html`, enter the metrics you copied, and review the suggested investing buckets plus “when to invest” tips. Adjust the heuristics by tweaking `src/lib/behaviorProfiler.js` if your strategy differs.
+1.  **Raw Data**: Daily market data is dropped into `data/dse/` as CSV files (e.g., `2025-12-01.csv`).
+2.  **Processing**: Run `npm run build:data` to process these CSVs.
+    -   Parses the latest CSV.
+    -   Calculates price/volume deltas (1-day, 1-week).
+    -   Generates sparkline history from the last 30 files.
+    -   Outputs `src/data/dse-market.json`.
+3.  **Frontend**: The app fetches this JSON file to render the dashboard and stock pages.
 
-### Analysis templates (CSV & JSON)
+## Local Development
 
-**CSV snapshot**
+1.  **Install Dependencies** (for scripts):
+    ```bash
+    npm install
+    ```
 
-- Use `data/analysis-template.csv` when you want to capture headline metrics for multiple companies quickly. The header already includes valuation (P/E, Forward P/E, P/B, EV/EBITDA), profitability (5Y revenue/EPS CAGR, ROE, ROA, margins, free-cash-flow), capital structure (debt-to-equity, net-debt/EBITDA, interest coverage, loan growth), liquidity (current/quick), technicals (price vs. 52w high, VWAP premium, RSI, MA50 vs MA200, EMA20 trend), ownership, and qualitative note columns (governance, risks, price action, guide anchors).
-- Tie each numeric field back to the chart playbook: e.g., `PE`, `PB`, `DividendYieldPct` map to the P/E and dividend cards; `DebtToEquity` and loan growth columns map to the leverage cards; `BetaVsDSEX`, `RSI14`, and moving-average signals map to their respective technical guides.
-- Add one row per company. Keep the `ChartGuideAnchors` column for quick links like `#pe,#de,#beta` so you can jump into `guides.html` while reviewing.
+2.  **Build Data**:
+    ```bash
+    npm run build:data
+    ```
 
-**JSON deep dive**
+3.  **Serve Locally**:
+    ```bash
+    # Python
+    python3 -m http.server 3030
+    # Or Node
+    # npx http-server -p 3030
+    ```
 
-- Use `data/analysis-template.json` when you need a richer research notebook that stores multi-year figures alongside the exact filing/source. The template starts with an empty company object containing:
-	- `filings` and `sources` lists so you can paste report URLs, periods, and notes.
-	- A structured `history` section for five-year series (revenue, EPS, dividends, FCF, ROE/ROA, margins, leverage, loan balances, beta) with `{ year, value, source }` entries.
-	- Buckets for `valuation`, `profitability`, `incomeDistributions`, `cashFlow`, `leverage`, `liquidity`, and `priceSnapshot` so derived ratios live next to the raw data you used.
-	- `ownership`, `governance`, `watchForRisks`, and `chartGuideAnchors` arrays for qualitative insights and quick jumps into `guides.html` (e.g., `[#pe, #de, #beta]`).
-- Duplicate the sample object for each company, keep nulls until you have the numbers, and update `source` fields with references like "FY2024 annual report pg. 34".
+4.  **Visit**:
+    -   Glossary: `http://localhost:3030/`
+    -   Market Lens: `http://localhost:3030/market.html`
 
-## Deploy to GitHub Pages
+## AI Configuration
 
-If you already created a GitHub repository for this project, follow this checklist to publish it on GitHub Pages:
+To use the AI Analyst feature:
+1.  Go to **Market Lens** (`market.html`).
+2.  Click the **Settings (⚙️)** icon.
+3.  Enter your **OpenRouter API Key**.
+4.  (Optional) Specify a preferred model (default: `meta-llama/llama-3-8b-instruct:free`).
+5.  Keys are stored locally in your browser (`localStorage`).
 
-1. **Commit & push the site**
-	```bash
-	git add .
-	git commit -m "Deploy glossary to GitHub Pages"
-	git push origin main   # replace with your default branch name
-	```
-2. **Enable Pages**
-	- Navigate to your repository on github.com.
-	- Open **Settings → Pages** (or **Settings → Code & Automation → Pages**).
-	- Under *Build and deployment*, set **Source** to `Deploy from a branch`.
-	- Pick the branch you pushed (usually `main`) and select the **`/ (root)`** folder since `index.html` lives at the repo root.
-	- Click **Save**. GitHub will kick off a deployment workflow automatically.
-3. **Wait for the green check**
-	- A Pages status badge appears near the top of the Pages settings page. Wait until it says *Your site is live* (typically under a minute).
-4. **Visit your site**
-	- The live URL is `https://<your-username>.github.io/<repository-name>/`.
-	- Because all assets are referenced with relative paths (e.g., `./src/app.js`), the site loads correctly even from a subdirectory.
-5. **(Optional) Add a custom domain**
-	- Still under Pages settings, add your domain in the *Custom domain* box and follow GitHub’s DNS instructions.
+## Deployment
 
-No build step or CI workflow is needed—the site is a static bundle, so GitHub Pages serves it as-is.
+1.  **Build Data**: Ensure `src/data/dse-market.json` is up to date.
+2.  **Push to GitHub**:
+    ```bash
+    git add .
+    git commit -m "Update market data"
+    git push origin main
+    ```
+3.  **GitHub Pages**: Configure Pages to serve from the `/ (root)` directory.
 
-## Install as a PWA
+## License
 
-1. Visit the GitHub Pages URL on Chrome (desktop or Android).
-2. Open the browser menu and choose **Install app** / **Add to Home screen**.
-3. On mobile, launch it from your home screen for a standalone experience.
-4. When you make code changes, bump the `CACHE_NAME` in `sw.js` to ensure users receive the latest assets.
-
-## Next steps (ideas)
-
-- Add categories/tags filters and sorting
-- Add examples & company-specific notes for popular blue-chip names
-- Add a small admin UI to suggest new terms or edits
-- Add unit tests for search logic (Jest) and automated accessibility checks
-
-If you want, I can implement any of the next steps above — tell me which one to pick first.
+ISC
