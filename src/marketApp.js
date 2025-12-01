@@ -343,21 +343,88 @@ window.analyzeStock = async (symbol) => {
   modal.classList.add('open');
   chatContainer.innerHTML = ''; // Clear previous chat
   
-  // Initial Prompt
+  // Build comprehensive data for AI
+  const m = stock.metrics;
+  const d = stock.deltas || {};
+  
   const prompt = `
-    Act as a financial analyst for the Dhaka Stock Exchange.
-    Analyze ${stock.name} (${stock.symbol}).
-    Sector: ${stock.sector}
-    Price: ${stock.metrics.ltp}
-    PE: ${stock.metrics.pe}
-    RSI: ${stock.metrics.rsi}
-    NAV: ${stock.metrics.nav}
-    Dividend Yield: ${stock.metrics.dividendYield}%
-    
-    Provide a concise analysis in Markdown:
-    1. **Bull Case**: Why buy?
-    2. **Bear Case**: Why sell/avoid?
-    3. **Verdict**: Buy / Hold / Sell (Short term vs Long term)
+Act as a financial analyst for the Dhaka Stock Exchange.
+Analyze ${stock.name} (${stock.symbol}).
+
+## Basic Info
+- Sector: ${stock.sector}
+- Category: ${stock.category || 'N/A'}
+
+## Price Data
+- Last Traded Price (LTP): ${m.ltp}
+- Close: ${m.close}
+- 1-Day Price Change: ${d.price_1d != null ? d.price_1d.toFixed(2) + '%' : 'N/A'}
+- 1-Week Price Change: ${d.price_1w != null ? d.price_1w.toFixed(2) + '%' : 'N/A'}
+- Market Cap: ${m.mktCap} Mn
+
+## Technical Indicators
+- RSI (14): ${m.rsi != null ? m.rsi.toFixed(2) : 'N/A'}
+- MACD: ${m.macd != null ? m.macd.toFixed(4) : 'N/A'}
+- MACD Signal: ${m.macdSignal != null ? m.macdSignal.toFixed(4) : 'N/A'}
+- Williams %R: ${m.williamsR != null ? m.williamsR.toFixed(2) : 'N/A'}
+- Beta: ${m.beta != null ? m.beta.toFixed(4) : 'N/A'}
+
+## Moving Averages
+- SMA 20: ${m.sma20 != null ? m.sma20.toFixed(2) : 'N/A'}
+- SMA 50: ${m.sma50 != null ? m.sma50.toFixed(2) : 'N/A'}
+- SMA 200: ${m.sma200 != null ? m.sma200.toFixed(2) : 'N/A'}
+- EMA 9: ${m.ema9 != null ? m.ema9.toFixed(4) : 'N/A'}
+- EMA 12: ${m.ema12 != null ? m.ema12.toFixed(4) : 'N/A'}
+- EMA 26: ${m.ema26 != null ? m.ema26.toFixed(4) : 'N/A'}
+- WMA 9: ${m.wma9 != null ? m.wma9.toFixed(4) : 'N/A'}
+- WMA 12: ${m.wma12 != null ? m.wma12.toFixed(4) : 'N/A'}
+- WMA 20: ${m.wma20 != null ? m.wma20.toFixed(4) : 'N/A'}
+
+## Bollinger Bands
+- Upper: ${m.bbUpper != null ? m.bbUpper.toFixed(4) : 'N/A'}
+- Lower: ${m.bbLower != null ? m.bbLower.toFixed(4) : 'N/A'}
+
+## Valuation Metrics
+- P/E Ratio: ${m.pe != null ? m.pe.toFixed(2) : 'N/A'}
+- P/B Ratio: ${m.pb != null ? m.pb.toFixed(2) : 'N/A'}
+- NAV: ${m.nav != null ? m.nav.toFixed(2) : 'N/A'}
+- EPS: ${m.eps != null ? m.eps.toFixed(2) : 'N/A'}
+- Audited P/E: ${m.auditedPe != null ? m.auditedPe.toFixed(2) : 'N/A'}
+- Forward P/E: ${m.forwardPe != null ? m.forwardPe.toFixed(2) : 'N/A'}
+- Dividend Yield: ${m.dividendYield != null ? m.dividendYield.toFixed(2) + '%' : 'N/A'}
+
+## Volume & Liquidity
+- Volume: ${m.volume != null ? m.volume.toLocaleString() : 'N/A'}
+- Value (Cr): ${m.value != null ? m.value.toFixed(3) : 'N/A'}
+- 1-Day Volume Change: ${d.vol_1d != null ? d.vol_1d.toFixed(2) + '%' : 'N/A'}
+- Trade Value (TV): ${m.tv != null ? m.tv.toFixed(2) : 'N/A'}
+- Chaikin Oscillator (CO): ${m.co != null ? m.co.toFixed(4) : 'N/A'}
+
+## Financial Health (if available)
+- Current Ratio: ${m.currentRatio != null ? m.currentRatio.toFixed(2) : 'N/A'}
+- Quick Ratio: ${m.quickRatio != null ? m.quickRatio.toFixed(2) : 'N/A'}
+- Debt to Equity: ${m.debtToEquity != null ? m.debtToEquity.toFixed(2) : 'N/A'}
+
+## Profitability Margins (if available)
+- Gross Margin: ${m.grossMargin != null ? (m.grossMargin * 100).toFixed(2) + '%' : 'N/A'}
+- Operating Margin: ${m.operatingMargin != null ? (m.operatingMargin * 100).toFixed(2) + '%' : 'N/A'}
+- Net Margin: ${m.netMargin != null ? (m.netMargin * 100).toFixed(2) + '%' : 'N/A'}
+- EBITDA Margin: ${m.ebitdaMargin != null ? (m.ebitdaMargin * 100).toFixed(2) + '%' : 'N/A'}
+
+## Returns (if available)
+- ROA: ${m.roa != null ? (m.roa * 100).toFixed(2) + '%' : 'N/A'}
+- ROE: ${m.roe != null ? (m.roe * 100).toFixed(2) + '%' : 'N/A'}
+- ROI: ${m.roi != null ? (m.roi * 100).toFixed(2) + '%' : 'N/A'}
+
+## Share Info
+- Paid Up Capital: ${m.paidUpCapital != null ? m.paidUpCapital.toLocaleString() : 'N/A'}
+- Total Shares: ${m.totalShares != null ? m.totalShares.toLocaleString() : 'N/A'}
+
+Provide a concise analysis in Markdown format:
+1. **Bull Case**: Why buy?
+2. **Bear Case**: Why sell/avoid?
+3. **Technical Outlook**: Based on RSI, MACD, moving averages
+4. **Verdict**: Buy / Hold / Sell (Short term vs Long term)
   `;
 
   // Add user message (hidden or shown as system init)
@@ -397,6 +464,9 @@ window.analyzeStock = async (symbol) => {
     addChatMessage('user', text);
     input.value = '';
     
+    // Show thinking indicator
+    const thinkingId = addChatMessage('thinking', 'AI is thinking...');
+    
     try {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -415,10 +485,14 @@ window.analyzeStock = async (symbol) => {
 
       if (!response.ok) throw new Error('AI Request failed');
       
+      // Remove thinking indicator
+      removeChatMessage(thinkingId);
+      
       const data = await response.json();
       addChatMessage('ai', data.choices[0].message.content);
 
     } catch (err) {
+      removeChatMessage(thinkingId);
       addChatMessage('error', 'Error: ' + err.message);
     }
   };
@@ -429,41 +503,72 @@ window.analyzeStock = async (symbol) => {
   };
 };
 
+let messageIdCounter = 0;
+
+const parseMarkdown = (text) => {
+  // Simple markdown parser
+  return text
+    // Headers
+    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+    // Bold and Italic
+    .replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    // Code blocks
+    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    // Blockquotes
+    .replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>')
+    // Horizontal rules
+    .replace(/^---$/gim, '<hr>')
+    // Unordered lists
+    .replace(/^\s*[-*+] (.*$)/gim, '<li>$1</li>')
+    // Ordered lists
+    .replace(/^\s*\d+\. (.*$)/gim, '<li>$1</li>')
+    // Line breaks (but not inside code blocks)
+    .replace(/\n/g, '<br>')
+    // Clean up multiple <br> tags
+    .replace(/(<br>){3,}/g, '<br><br>')
+    // Wrap consecutive <li> in <ul>
+    .replace(/(<li>.*?<\/li>)(?=<br><li>|<li>)/g, '$1')
+    .replace(/(<li>.*?<\/li>(<br>)?)+/g, '<ul>$&</ul>')
+    .replace(/<ul><br>/g, '<ul>')
+    .replace(/<br><\/ul>/g, '</ul>');
+};
+
 const addChatMessage = (role, text) => {
   const container = document.getElementById('ai-chat-container');
   const div = document.createElement('div');
-  
-  div.style.padding = '1rem';
-  div.style.borderRadius = '8px';
-  div.style.maxWidth = '90%';
-  div.style.lineHeight = '1.5';
-  div.style.fontSize = '0.9rem';
+  const msgId = `chat-msg-${++messageIdCounter}`;
+  div.id = msgId;
   
   if (role === 'user') {
-    div.style.background = '#e0f2fe';
-    div.style.alignSelf = 'flex-end';
-    div.style.color = '#0c4a6e';
+    div.className = 'chat-msg chat-msg--user';
     div.textContent = text;
   } else if (role === 'ai') {
-    div.style.background = 'white';
-    div.style.alignSelf = 'flex-start';
-    div.style.border = '1px solid #e5e7eb';
-    div.innerHTML = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    div.className = 'chat-msg chat-msg--ai';
+    div.innerHTML = parseMarkdown(text);
   } else if (role === 'system') {
-    div.style.background = 'transparent';
-    div.style.color = '#666';
-    div.style.textAlign = 'center';
-    div.style.alignSelf = 'center';
-    div.style.fontStyle = 'italic';
+    div.className = 'chat-msg chat-msg--system';
+    div.textContent = text;
+  } else if (role === 'thinking') {
+    div.className = 'chat-msg chat-msg--thinking';
     div.textContent = text;
   } else if (role === 'error') {
-    div.style.background = '#fee2e2';
-    div.style.color = '#991b1b';
+    div.className = 'chat-msg chat-msg--error';
     div.textContent = text;
   }
   
   container.appendChild(div);
   container.scrollTop = container.scrollHeight;
+  return msgId;
+};
+
+const removeChatMessage = (msgId) => {
+  const msg = document.getElementById(msgId);
+  if (msg) msg.remove();
 };
 
 // Start
