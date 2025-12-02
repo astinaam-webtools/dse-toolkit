@@ -17,7 +17,6 @@ const PRECACHE_URLS = [
   './src/stockDetailApp.js',
   './src/mobile-nav.js',
   './src/data/terms.js',
-  './src/data/dse-market.json',
   './src/lib/behaviorProfiler.js',
   './src/lib/filterTerms.js',
   './src/lib/marketLogic.js'
@@ -44,6 +43,23 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Network-first for dynamic market data to avoid stale caches
+  if (url.pathname.endsWith('/src/data/dse-market.json')) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+          return response;
+        })
+        .catch(async () => {
+          const cached = await caches.match(request);
+          return cached || new Response(JSON.stringify({ error: 'offline' }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+        })
+    );
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith(
