@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSE Toolkit | My Portfolio</title>
+  <meta name="description" content="Track your DSE stock holdings, monitor performance, and manage your investments." />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <style>
+    :root {
+      --color-up: #10b981;
+      --color-down: #ef4444;
+      --color-neutral: #6b7280;
+    }
+
+    body {
+      padding-bottom: 100px;
+    }
+
+    .portfolio-header {
+      background: var(--card);
+      padding: 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .home-link {
+      text-decoration: none;
+      font-weight: 600;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Summary Card */
+    .summary-card {
+      background: var(--card);
+      margin: 1rem;
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .summary-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .summary-value {
+      font-size: 1.25rem;
+      font-weight: 700;
+    }
+
+    .summary-value.up { color: var(--color-up); }
+    .summary-value.down { color: var(--color-down); }
+
+    /* Holdings List */
+    .holdings-container {
+      padding: 0 1rem;
+    }
+
+    .holding-card {
+      background: var(--card);
+      margin-bottom: 1rem;
+      padding: 1rem;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .holding-info h3 {
+      margin: 0;
+      font-size: 1.1rem;
+    }
+
+    .holding-info p {
+      margin: 0;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .holding-stats {
+      text-align: right;
+    }
+
+    .holding-price {
+      font-weight: 700;
+      font-size: 1.1rem;
+    }
+
+    .holding-pl {
+      font-size: 0.875rem;
+      font-weight: 600;
+    }
+
+    .holding-pl.up { color: var(--color-up); }
+    .holding-pl.down { color: var(--color-down); }
+
+    /* Actions */
+    .portfolio-actions {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 0.75rem;
+      z-index: 100;
+    }
+
+    .fab {
+      width: 56px;
+      height: 56px;
+      border-radius: 28px;
+      background: var(--accent);
+      color: white;
+      border: none;
+      box-shadow: 0 4px 12px rgba(15, 157, 88, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      cursor: pointer;
+    }
+
+    .btn-secondary {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 0.6rem 1.2rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--card);
+      width: 100%;
+      max-width: 400px;
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+      color: var(--muted);
+    }
+
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+
+    .modal-actions .btn {
+      flex: 1;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="safe-top-spacer"></div>
+  <header class="portfolio-header">
+    <div class="header-top">
+      <a href="./index.html" class="home-link">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        Portfolio
+      </a>
+      <div class="header-actions">
+        <button id="manage-portfolios-btn" class="btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+          Manage
+        </button>
+        <button id="export-btn" class="btn-secondary">Export</button>
+        <button id="import-btn" class="btn-secondary">Import</button>
+      </div>
+    </div>
+    <div class="portfolio-selector-container" style="margin-top: 1rem;">
+      <label for="portfolio-selector" class="eyebrow" style="display: block; margin-bottom: 0.5rem; margin-left: 0.25rem;">Select Portfolio</label>
+      <select id="portfolio-selector" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-weight: 600; font-size: 1rem; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;">
+        <!-- Portfolios will be injected here -->
+      </select>
+    </div>
+  </header>
+
+  <main>
+    <section class="summary-card">
+      <div class="summary-label">Total Portfolio Value</div>
+      <div id="total-value" class="summary-value">৳ 0.00</div>
+      
+      <div class="summary-grid">
+        <div class="summary-item">
+          <span class="summary-label">Total Investment</span>
+          <span id="total-investment" class="summary-value">৳ 0.00</span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Total P/L</span>
+          <span id="total-pl" class="summary-value">৳ 0.00 (0%)</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="holdings-container">
+      <h2 class="eyebrow" style="margin-left: 0.5rem;">Your Holdings</h2>
+      <div id="holdings-list">
+        <!-- Holdings will be injected here -->
+        <div class="empty-state">
+          <p>No stocks in your portfolio yet.</p>
+          <p>Tap the + button to add your first position.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="portfolio-actions">
+    <button id="add-stock-btn" class="fab">+</button>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div id="stock-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modal-title">Add Stock</h2>
+        <button id="close-modal" style="background:none; border:none; font-size:1.5rem; color:var(--muted); cursor:pointer;">&times;</button>
+      </div>
+      <form id="stock-form">
+        <input type="hidden" id="edit-index" value="-1">
+        <div class="form-group">
+          <label for="symbol">Symbol</label>
+          <input type="text" id="symbol" placeholder="e.g. GP" required list="symbol-list">
+          <datalist id="symbol-list"></datalist>
+        </div>
+        <div class="form-group">
+          <label for="quantity">Quantity</label>
+          <input type="number" id="quantity" step="1" min="1" required>
+        </div>
+        <div class="form-group">
+          <label for="avg-cost">Average Cost (৳)</label>
+          <input type="number" id="avg-cost" step="0.01" min="0.01" required>
+        </div>
+        <div class="form-group">
+          <label for="comm-rate">Commission Rate (%)</label>
+          <input type="number" id="comm-rate" step="0.001" min="0" value="0.4">
+        </div>
+        <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+          <input type="checkbox" id="comm-included" style="width: auto;">
+          <label for="comm-included" style="margin-bottom: 0;">Commission already included in cost</label>
+        </div>
+        <div class="modal-actions">
+          <button type="button" id="delete-btn" class="btn" style="background: var(--danger); color: white; display: none;">Delete</button>
+          <button type="submit" class="btn btn--solid">Save Position</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Manage Portfolios Modal -->
+  <div id="manage-portfolios-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Manage Portfolios</h2>
+        <button id="close-manage-modal" style="background:none; border:none; font-size:1.5rem; color:var(--muted); cursor:pointer;">&times;</button>
+      </div>
+      <div id="portfolios-list-manage" style="margin-bottom: 1.5rem; max-height: 300px; overflow-y: auto;">
+        <!-- List of portfolios with rename/delete buttons -->
+      </div>
+      <button id="create-portfolio-btn" class="btn btn--solid" style="width: 100%;">+ Create New Portfolio</button>
+    </div>
+  </div>
+
+  <input type="file" id="import-file" style="display: none;" accept=".csv,.json">
+
+  <script type="module" src="./src/portfolioApp.js"></script>
+  <script src="./src/mobile-nav.js"></script>
+</body>
+</html>

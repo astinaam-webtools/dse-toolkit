@@ -29,7 +29,13 @@ A comprehensive, mobile-first toolkit for Dhaka Stock Exchange (DSE) investors. 
 - **AI Analysis**: Integrated AI chat (via OpenRouter) to generate Bull/Bear cases and investment verdicts.
 - **Smart Linking**: Click on any metric (e.g., "P/E Ratio") to instantly jump to its definition in the glossary.
 
-### 🛠 Technicals
+### � Portfolio Tracker (`portfolio.html`)
+- **Multi-Portfolio Support**: Create and manage multiple portfolios (e.g., "Long Term", "Trading").
+- **Real-time Valuation**: Automatically calculates current value and P/L based on the latest market data.
+- **Import/Export**: Backup your data or migrate between devices using CSV or JSON files.
+- **Privacy First**: All data is stored locally in your browser's `localStorage`. No data ever leaves your device.
+
+### �🛠 Technicals
 - **PWA Ready**: Installable with offline cache (manifest + service worker).
 - **Zero Dependencies**: Built with Vanilla JS and CSS variables. No heavy frameworks.
 - **Static Hosting**: Deploys easily to GitHub Pages.
@@ -45,13 +51,15 @@ A comprehensive, mobile-first toolkit for Dhaka Stock Exchange (DSE) investors. 
 │   ├── app.js            # Glossary logic
 │   ├── marketApp.js      # Market Lens dashboard logic
 │   ├── stockDetailApp.js # Stock details & AI logic
+│   ├── portfolioApp.js   # Portfolio tracker logic
 │   ├── data/
 │   │   ├── terms.js      # Glossary definitions
 │   │   └── dse-market.json # Processed market data
-│   └── lib/              # Shared utilities (profiler, filters)
+│   └── lib/              # Shared utilities (profiler, filters, portfolio)
 ├── index.html            # Glossary Entry Point
 ├── market.html           # Market Lens Dashboard
 ├── stock.html            # Stock Details Page
+├── portfolio.html        # Portfolio Tracker
 └── sw.js                 # Service Worker
 ```
 

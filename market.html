@@ -441,9 +441,15 @@
       <a href="./index.html" class="home-link">
         <span>← Home</span>
       </a>
-      <div class="market-status">
-        <span class="status-dot closed" id="market-status-dot"></span>
-        <span id="market-date">Loading...</span>
+      <div style="display: flex; gap: 0.5rem; align-items: center;">
+        <a href="./portfolio.html" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; gap: 0.4rem; padding: 4px 10px; font-size: 0.8rem;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+          Portfolio
+        </a>
+        <div class="market-status">
+          <span class="status-dot closed" id="market-status-dot"></span>
+          <span id="market-date">Loading...</span>
+        </div>
       </div>
       <button class="settings-btn" id="open-settings" title="Settings">⚙️</button>
     </div>
@@ -607,6 +613,7 @@
         <ul>
           <li><a href="./index.html">📖 Glossary</a></li>
           <li><a href="./market.html">📊 Market Dashboard</a></li>
+          <li><a href="./portfolio.html">💼 My Portfolio</a></li>
           <li><a href="./analyzer.html">🔬 Stock Analyzer</a></li>
           <li><a href="./guides.html">📈 Chart Playbook</a></li>
           <li><a href="./privacy.html">🛡️ Privacy Policy</a></li>

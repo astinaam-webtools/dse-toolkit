@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-glossary-v12';
+const CACHE_NAME = 'stock-glossary-v13';
 const RUNTIME_CACHE = 'runtime-stock-glossary';
 const PRECACHE_URLS = [
   './',
@@ -7,6 +7,7 @@ const PRECACHE_URLS = [
   './guides.html',
   './market.html',
   './stock.html',
+  './portfolio.html',
   './styles.css',
   './manifest.webmanifest',
   './favicon.ico',
@@ -15,11 +16,13 @@ const PRECACHE_URLS = [
   './src/app.js',
   './src/marketApp.js',
   './src/stockDetailApp.js',
+  './src/portfolioApp.js',
   './src/mobile-nav.js',
   './src/data/terms.js',
   './src/lib/behaviorProfiler.js',
   './src/lib/filterTerms.js',
-  './src/lib/marketLogic.js'
+  './src/lib/marketLogic.js',
+  './src/lib/portfolioLogic.js'
 ];
 
 self.addEventListener('install', (event) => {

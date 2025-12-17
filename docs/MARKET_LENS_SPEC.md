@@ -146,6 +146,11 @@ Logic defined in `src/lib/marketLogic.js`.
 2.  [ ] Build `src/lib/aiAnalyst.js` and Settings UI.
 3.  [ ] Add PWA caching for the new JSON file.
 
+### Phase 4: Portfolio Management
+1.  [ ] Implement `src/lib/portfolioLogic.js` for local storage and calculations.
+2.  [ ] Create `portfolio.html` and integrate with `market.html`.
+3.  [ ] Add Import/Export (JSON/CSV) functionality.
+
 ## 6. Future Multi-Market Support
 *   The build script will accept a `--market` flag (e.g., `npm run build:data -- --market=cse`).
 *   Frontend will accept a query param `?market=cse` to load `cse-market.json`.
