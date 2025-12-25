@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSE Toolkit | Mutual Funds</title>
+  <meta name="description" content="Track your Mutual Fund investments, SIPs, and performance." />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <style>
+    :root {
+      --color-up: #10b981;
+      --color-down: #ef4444;
+      --color-neutral: #6b7280;
+    }
+
+    body {
+      padding-bottom: 100px;
+      background-color: var(--bg);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .header-top h1 {
+      margin: 0;
+      font-size: 1.75rem;
+      color: var(--text);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .view-section {
+      display: none;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    .view-section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Summary Card */
+    .summary-card {
+      background: linear-gradient(135deg, var(--card), var(--bg));
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .summary-label {
+      font-size: 0.85rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+
+    .summary-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .summary-value.up { color: var(--color-up); }
+    .summary-value.down { color: var(--color-down); }
+
+    /* List & Cards */
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      color: var(--text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .fund-card {
+      background: var(--card);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .fund-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      border-color: var(--accent);
+    }
+    
+    .fund-card:active {
+      transform: scale(0.99);
+    }
+
+    .fund-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .fund-name {
+      font-weight: 700;
+      font-size: 1.1rem;
+      color: var(--text);
+    }
+
+    .fund-amc {
+      font-size: 0.85rem;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+    }
+
+    .fund-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      font-size: 0.95rem;
+    }
+
+    .stat-row {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.1rem;
+    }
+
+    .stat-val {
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .gain-loss {
+      font-weight: 700;
+    }
+    .gain-loss.up { color: var(--color-up); }
+    .gain-loss.down { color: var(--color-down); }
+
+    /* FAB */
+    .fab {
+      position: fixed;
+      bottom: 2rem;
+      right: 1.5rem;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      border: none;
+      cursor: pointer;
+      z-index: 1000;
+      transition: transform 0.2s;
+    }
+
+    .fab:hover {
+      transform: scale(1.1);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    
+    .modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--card);
+      width: 90%;
+      max-width: 450px;
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      transform: scale(0.95);
+      transition: transform 0.2s;
+    }
+
+    .modal-overlay.open .modal {
+      transform: scale(1);
+    }
+
+    .modal h3 { 
+      margin-top: 0; 
+      margin-bottom: 1.5rem;
+      font-size: 1.5rem;
+      color: var(--text);
+    }
+
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+    
+    .form-group input, .form-group select {
+      width: 100%;
+      padding: 0.875rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus, .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      transition: opacity 0.2s;
+    }
+    
+    .btn:hover { opacity: 0.9; }
+    
+    .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-danger { background: #fee2e2; color: var(--danger); }
+    .btn-icon { padding: 0.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+
+    /* Detail View Specifics */
+    .chart-container {
+      height: 300px;
+      margin: 2rem 0;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 1rem;
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .tx-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      background: var(--card);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .tx-item {
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tx-item:last-child { border-bottom: none; }
+    
+    .tx-info div:first-child { font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
+    .tx-info div:last-child { font-size: 0.85rem; color: var(--muted); }
+    .tx-amount { font-weight: 600; text-align: right; }
+    .tx-amount div:last-child { font-weight: 400; }
+
+    .nav-input-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+      flex-wrap: wrap;
+    }
+    
+    .nav-input-group input[type="number"] {
+      flex: 2;
+      min-width: 120px;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1.1rem;
+      font-weight: 600;
+    }
+
+    .nav-input-group input[type="date"] {
+      flex: 1;
+      min-width: 120px;
+      padding: 0.75rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      margin-right: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      transition: background 0.2s;
+    }
+
+    .back-btn:hover {
+      background: var(--border);
+    }
+
+    /* Checkbox for selection */
+    .pf-select-checkbox {
+      width: 20px;
+      height: 20px;
+      margin-right: 1rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav-bar">
+    <div class="nav-container">
+      <a href="./index.html" class="nav-logo">DSE Toolkit</a>
+      <div class="nav-links">
+        <a href="./market.html">Market</a>
+        <a href="./portfolio.html">Stocks</a>
+        <a href="./funds.html" class="active">Funds</a>
+        <a href="./analyzer.html">Analyzer</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- View: Portfolio List -->
+  <div id="view-portfolio-list" class="view-section active">
+    <div class="container">
+      <div class="header-top">
+        <h1>Mutual Funds</h1>
+        <div class="header-actions">
+          <button id="btn-import" class="btn btn-secondary">Import</button>
+          <button id="btn-export" class="btn btn-secondary">Export</button>
+        </div>
+      </div>
+      
+      <!-- Executive Summary Card -->
+      <div class="summary-card" id="executive-summary-card">
+        <div class="section-title" style="margin-bottom: 0.5rem;">
+          <span>Executive Summary</span>
+          <span style="font-size: 0.8rem; font-weight: 400; color: var(--muted);" id="summary-selection-text">All Portfolios</span>
+        </div>
+        <div class="summary-grid" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
+          <div class="summary-item">
+            <div class="summary-label">Total Invested</div>
+            <div class="summary-value" id="exec-invested">0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Current Value</div>
+            <div class="summary-value" id="exec-value">0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Total Gain/Loss</div>
+            <div class="summary-value" id="exec-gain">0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title">
+        <span>Portfolios</span>
+        <label style="font-size: 0.9rem; font-weight: 400; display: flex; align-items: center; cursor: pointer;">
+          <input type="checkbox" id="chk-select-all" checked style="margin-right: 0.5rem;"> Select All
+        </label>
+      </div>
+
+      <div id="portfolio-list-container">
+        <!-- Portfolios injected here -->
+      </div>
+    </div>
+    <button id="fab-add-portfolio" class="fab" title="Add Portfolio">+</button>
+  </div>
+
+  <!-- View: Portfolio Detail -->
+  <div id="view-portfolio-detail" class="view-section">
+    <div class="container">
+      <div class="header-top">
+        <div style="display:flex; align-items:center;">
+          <button class="back-btn" onclick="app.showPortfolioList()">←</button>
+          <h1 id="detail-portfolio-name" style="margin:0; font-size: 1.5rem;">My Portfolio</h1>
+          <button id="btn-rename-portfolio" class="btn-icon" style="margin-left: 0.5rem; background: none; border: none; cursor: pointer;" title="Rename">✏️</button>
+        </div>
+        <button id="btn-delete-portfolio" class="btn btn-danger" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Delete</button>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-label">Total Value</div>
+        <div class="summary-value" id="pf-total-value">0.00</div>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-label">Invested</div>
+            <div class="summary-value" id="pf-invested">0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Gain/Loss</div>
+            <div class="summary-value" id="pf-gain">0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <h3 class="section-title">Funds</h3>
+      <div id="fund-list-container">
+        <!-- Funds injected here -->
+      </div>
+    </div>
+    <button id="fab-add-fund" class="fab" title="Add Fund">+</button>
+  </div>
+
+  <!-- View: Fund Detail -->
+  <div id="view-fund-detail" class="view-section">
+    <div class="container">
+      <div class="header-top">
+        <div style="display:flex; align-items:center;">
+          <button class="back-btn" id="btn-back-to-pf">←</button>
+          <div>
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <h1 id="detail-fund-name" style="font-size: 1.25rem; margin:0;">Fund Name</h1>
+              <button id="btn-rename-fund" class="btn-icon" style="background: none; border: none; cursor: pointer; font-size: 0.9rem;" title="Rename">✏️</button>
+            </div>
+            <span id="detail-fund-amc" style="font-size: 0.9rem; color: var(--muted);">AMC</span>
+          </div>
+        </div>
+        <button id="btn-delete-fund" class="btn btn-danger" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Delete Fund</button>
+      </div>
+
+      <div class="summary-card">
+        <div class="summary-label">Current NAV</div>
+        <div class="nav-input-group">
+          <input type="date" id="input-nav-date" title="NAV Date">
+          <input type="number" id="input-current-nav" step="0.01" placeholder="Enter NAV">
+          <button id="btn-update-nav" class="btn btn-primary">Update</button>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--muted); margin-top: 0.5rem;" id="nav-last-updated"></div>
+
+        <div class="summary-grid">
+          <div class="summary-item">
+            <div class="summary-label">Invested</div>
+            <div class="summary-value" id="fd-invested">0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Units</div>
+            <div class="summary-value" id="fd-units">0</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Current Value</div>
+            <div class="summary-value" id="fd-value">0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Avg Cost</div>
+            <div class="summary-value" id="fd-avg-cost">0.00</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Gain/Loss</div>
+            <div class="summary-value" id="fd-gain">0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Simple Chart Placeholder -->
+      <div class="chart-container">
+        <canvas id="navChart"></canvas>
+      </div>
+
+      <div>
+        <h3 class="section-title">Transactions</h3>
+        <ul id="tx-list" class="tx-list">
+          <!-- Transactions -->
+        </ul>
+      </div>
+    </div>
+    <button id="fab-add-tx" class="fab" title="Add Transaction">+</button>
+  </div>
+
+  <!-- Modals -->
+  <div id="modal-portfolio" class="modal-overlay">
+    <div class="modal">
+      <h3>New Portfolio</h3>
+      <div class="form-group">
+        <label>Portfolio Name</label>
+        <input type="text" id="inp-pf-name" placeholder="e.g. Retirement">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="app.closeModals()">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-pf">Create</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-fund" class="modal-overlay">
+    <div class="modal">
+      <h3>Add Fund</h3>
+      <div class="form-group">
+        <label>Fund Name</label>
+        <input type="text" id="inp-fund-name" placeholder="e.g. 1st Mutual Fund">
+      </div>
+      <div class="form-group">
+        <label>Symbol (Optional)</label>
+        <input type="text" id="inp-fund-symbol" placeholder="e.g. 1STMF">
+        <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem;">Used to group funds across portfolios.</p>
+      </div>
+      <div class="form-group">
+        <label>Manager / AMC</label>
+        <input type="text" id="inp-fund-amc" placeholder="e.g. ICB">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="app.closeModals()">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-fund">Add</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-rename" class="modal-overlay">
+    <div class="modal">
+      <h3 id="rename-modal-title">Rename</h3>
+      <div class="form-group">
+        <label>Name</label>
+        <input type="text" id="inp-rename-name">
+      </div>
+      <div class="form-group" id="grp-rename-symbol" style="display:none;">
+        <label>Symbol</label>
+        <input type="text" id="inp-rename-symbol">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" onclick="app.closeModals()">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-rename">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="modal-tx" class="modal-overlay">
+    <div class="modal">
+      <h3 id="tx-modal-title">Add Transaction</h3>
+      <input type="hidden" id="inp-tx-id">
+      <div class="form-group">
+        <label>Type</label>
+        <select id="inp-tx-type">
+          <option value="BUY">Buy / SIP</option>
+          <option value="SELL">Sell / Redeem</option>
+          <option value="DIVIDEND_REINVEST">Dividend Reinvest</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="inp-tx-date">
+      </div>
+      <div class="form-group">
+        <label>Units</label>
+        <input type="number" id="inp-tx-units" step="1">
+      </div>
+      <div class="form-group">
+        <label>Price / NAV per Unit</label>
+        <input type="number" id="inp-tx-price" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>Total Cost</label>
+        <input type="number" id="inp-tx-total" step="0.01">
+      </div>
+      <div class="modal-actions" style="justify-content: space-between;">
+        <button class="btn btn-danger" id="btn-delete-tx" style="display:none;">Delete</button>
+        <div style="display:flex; gap:1rem; margin-left: auto;">
+          <button class="btn btn-secondary" onclick="app.closeModals()">Cancel</button>
+          <button class="btn btn-primary" id="btn-save-tx">Save</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <input type="file" id="file-import" style="display: none;" accept=".json">
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- Using CDN for Chart.js as requested for graphs -->
+  <script type="module" src="./src/fundsApp.js"></script>
+</body>
+</html>

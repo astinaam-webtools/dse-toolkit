@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-glossary-v13';
+const CACHE_NAME = 'stock-glossary-v14';
 const RUNTIME_CACHE = 'runtime-stock-glossary';
 const PRECACHE_URLS = [
   './',
@@ -8,6 +8,7 @@ const PRECACHE_URLS = [
   './market.html',
   './stock.html',
   './portfolio.html',
+  './funds.html',
   './styles.css',
   './manifest.webmanifest',
   './favicon.ico',
@@ -17,12 +18,15 @@ const PRECACHE_URLS = [
   './src/marketApp.js',
   './src/stockDetailApp.js',
   './src/portfolioApp.js',
+  './src/fundsApp.js',
   './src/mobile-nav.js',
   './src/data/terms.js',
   './src/lib/behaviorProfiler.js',
   './src/lib/filterTerms.js',
   './src/lib/marketLogic.js',
-  './src/lib/portfolioLogic.js'
+  './src/lib/portfolioLogic.js',
+  './src/lib/fundsLogic.js',
+  'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
 self.addEventListener('install', (event) => {
