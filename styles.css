@@ -1009,3 +1009,82 @@ mark.hl {
     font-size: 0.8rem;
   }
 }
+
+/* Market Glance Component */
+.market-glance {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin: 1.5rem 0;
+  padding: 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+  max-width: fit-content;
+}
+
+.market-glance.hidden {
+  display: none;
+}
+
+.market-glance__item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.market-glance__item .label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.market-glance__item .value {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+  font-feature-settings: "tnum";
+}
+
+.market-glance__item .value.up { color: var(--color-up); }
+.market-glance__item .value.down { color: var(--color-down); }
+
+.skeleton {
+  color: transparent;
+  background: rgba(0,0,0,0.1);
+  border-radius: 4px;
+}
+
+/* Featured Term Card */
+.term-card.featured {
+  border: 2px solid var(--accent);
+  background: linear-gradient(to bottom right, var(--card), #f0fdf4);
+}
+
+/* Dark Mode Overrides for New Components */
+@media (prefers-color-scheme: dark) {
+  .market-glance {
+    background: rgba(30, 41, 59, 0.6); /* Darker background for glass effect */
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .market-glance__item .label {
+    color: #94a3b8; /* Ensure muted text is visible */
+  }
+  
+  .market-glance__item .value {
+    color: #f1f5f9; /* Ensure value text is visible */
+  }
+
+  .term-card.featured {
+    background: linear-gradient(to bottom right, var(--card), rgba(16, 185, 129, 0.1));
+    border-color: var(--accent);
+  }
+  
+  .skeleton {
+    background: rgba(255, 255, 255, 0.1);
+  }
+}

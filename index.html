@@ -19,8 +19,26 @@
       <p class="eyebrow">DSE investor toolkit</p>
       <h1>Stock market terms made simple</h1>
       <p class="lead">A mobile-first glossary tailored for Dhaka Stock Exchange value investors. Learn key ratios, how to read them, and what good looks like over the long run.</p>
+      
+      <div id="market-glance" class="market-glance hidden">
+        <!-- Populated by JS -->
+        <div class="market-glance__item">
+          <span class="label">Market Status</span>
+          <span class="value skeleton">Loading...</span>
+        </div>
+        <div class="market-glance__item">
+          <span class="label">Trade Value</span>
+          <span class="value skeleton">--</span>
+        </div>
+        <div class="market-glance__item">
+          <span class="label">Up/Down</span>
+          <span class="value skeleton">--/--</span>
+        </div>
+      </div>
+
       <div class="hero__actions">
         <a class="btn btn--solid" href="#terms">Browse glossary</a>
+        <a class="btn" href="./guides.html">Chart Guide →</a>
         <a class="btn" href="./market.html">Market Lens (New) →</a>
         <a class="btn" href="./portfolio.html">My Portfolio →</a>
         <a class="btn" href="./funds.html">Mutual Funds →</a>
@@ -36,13 +54,11 @@
       <div id="stats" role="status" aria-live="polite"></div>
     </section>
 
-    <section class="chart-cta">
-      <h2>Need help reading advanced charts?</h2>
-      <p>Jump to the <a href="./guides.html">chart playbook</a> for VWAP, RSI, YCP, depth, and more. Each glossary card links to the matching section.</p>
-      <a class="btn" href="./guides.html">Open chart guide →</a>
-    </section>
-
     <section id="terms" class="terms" aria-live="polite"></section>
+
+    <div style="text-align: center; margin: 3rem 0 1rem;">
+      <a class="btn" href="./guides.html">View Chart Playbook →</a>
+    </div>
   </main>
 
   <footer class="footer">

@@ -7,6 +7,7 @@ const searchInput = document.getElementById('search');
 const stats = document.getElementById('stats');
 const analyzerForm = document.getElementById('behavior-form');
 const analysisOutput = document.getElementById('analysis-output');
+const marketGlance = document.getElementById('market-glance');
 
 const renderCards = (dataset, tokens = []) => {
   if (!termContainer || !stats) return;
@@ -48,6 +49,90 @@ const renderCards = (dataset, tokens = []) => {
   stats.textContent = `${dataset.length} ${dataset.length === 1 ? 'term' : 'terms'} displayed`;
 };
 
+const renderFeaturedTerm = () => {
+  if (!termContainer || !terms.length) return;
+  const randomTerm = terms[Math.floor(Math.random() * terms.length)];
+  
+  termContainer.innerHTML = `
+    <div class="featured-header" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+      <span style="font-size: 1.2rem;">💡</span>
+      <h3 style="margin: 0;">Term of the Day</h3>
+    </div>
+    <article class="term-card featured">
+      <div class="meta">
+        <span class="short">${randomTerm.shortForm}</span>
+        <span>·</span>
+        <span class="category">${randomTerm.category || 'General'}</span>
+      </div>
+      <h2>${randomTerm.title}</h2>
+      <p class="description">${randomTerm.description}</p>
+      <div>
+        <p class="label">Why it matters</p>
+        <p class="description">${randomTerm.whyItMatters}</p>
+      </div>
+      <div class="badges">
+        ${(randomTerm.tags || [])
+          .map((tag) => `<span class="badge">${tag}</span>`)
+          .join('')}
+      </div>
+      <div style="margin-top: 1.5rem; text-align: center;">
+        <button class="btn" id="show-all-terms">Browse all ${terms.length} terms</button>
+      </div>
+    </article>
+  `;
+  
+  document.getElementById('show-all-terms')?.addEventListener('click', () => {
+    renderCards(terms, []);
+  });
+  
+  stats.textContent = 'Featured term';
+};
+
+const initMarketGlance = async () => {
+  if (!marketGlance) return;
+  
+  try {
+    const res = await fetch('./src/data/dse-market.json');
+    if (!res.ok) throw new Error('Failed to load market data');
+    const data = await res.json();
+    
+    const stocks = data.stocks || [];
+    const up = stocks.filter(s => s.deltas && s.deltas.price_1d > 0).length;
+    const down = stocks.filter(s => s.deltas && s.deltas.price_1d < 0).length;
+    const totalValue = stocks.reduce((acc, s) => acc + (s.metrics.value || 0), 0);
+    
+    // Determine status
+    let status = 'Neutral';
+    let statusClass = 'neutral';
+    if (up > down * 1.1) { status = 'Bullish'; statusClass = 'up'; }
+    else if (down > up * 1.1) { status = 'Bearish'; statusClass = 'down'; }
+    
+    marketGlance.innerHTML = `
+      <div class="market-glance__item">
+        <span class="label">Market Status</span>
+        <span class="value ${statusClass}">${status}</span>
+      </div>
+      <div class="market-glance__item">
+        <span class="label">Trade Value</span>
+        <span class="value">${totalValue.toFixed(1)}mn</span>
+      </div>
+      <div class="market-glance__item">
+        <span class="label">Up / Down</span>
+        <span class="value">
+          <span style="color: var(--color-up)">${up}</span> / 
+          <span style="color: var(--color-down)">${down}</span>
+        </span>
+      </div>
+    `;
+    marketGlance.classList.remove('hidden');
+    
+  } catch (e) {
+    console.error(e);
+    marketGlance.innerHTML = '<p class="muted" style="font-size: 0.8rem;">Market data unavailable</p>';
+    marketGlance.classList.remove('hidden');
+  }
+};
+
 const debounce = (fn, wait = 200) => {
   let t = null;
   return (...args) => {
@@ -58,6 +143,12 @@ const debounce = (fn, wait = 200) => {
 
 const handleInput = (event) => {
   const query = event.target.value;
+  
+  if (!query.trim()) {
+    renderFeaturedTerm();
+    return;
+  }
+
   const tokens = tokenize(query);
   const filtered = filterTerms(terms, query);
   renderCards(filtered, tokens);
@@ -102,8 +193,11 @@ if (termContainer && searchInput) {
     }, 100);
   } else {
     // Normal initialization
-    renderCards(terms, []);
+    renderFeaturedTerm();
   }
+  
+  // Always show market glance
+  initMarketGlance();
 
   // debounce input for better UX on mobile
   searchInput.addEventListener('input', debounce(handleInput, 180));
@@ -112,7 +206,7 @@ if (termContainer && searchInput) {
   searchInput.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape') {
       searchInput.value = '';
-      renderCards(terms, []);
+      renderFeaturedTerm();
     }
   });
 }
