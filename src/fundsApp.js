@@ -1,13 +1,17 @@
 import * as Logic from './lib/fundsLogic.js';
+import { loadFundsDataDocument, saveFundsDataDocument } from './lib/fundsStore.js';
+import { AuthRequiredError, ConnectionUnavailableError } from './lib/serverClient.js';
 
-// State
+let fundsData = Logic.createEmptyFundsData();
 let currentPortfolioId = null;
 let currentFundId = null;
 let navChart = null;
-let selectedPortfolios = new Set(); // Track selected IDs for summary
-let renameTarget = null; // { type: 'portfolio'|'fund', id: '...' }
+let selectedPortfolios = new Set();
+let renameTarget = null;
+let pageState = 'loading';
+let pageMessage = '';
+let busy = false;
 
-// DOM Elements
 const views = {
   list: document.getElementById('view-portfolio-list'),
   detail: document.getElementById('view-portfolio-detail'),
@@ -21,97 +25,83 @@ const modals = {
   rename: document.getElementById('modal-rename')
 };
 
-// --- Initialization ---
+const elements = {
+  importBtn: document.getElementById('btn-import'),
+  exportBtn: document.getElementById('btn-export'),
+  addPortfolioBtn: document.getElementById('fab-add-portfolio'),
+  addFundBtn: document.getElementById('fab-add-fund'),
+  addTxBtn: document.getElementById('fab-add-tx'),
+  savePortfolioBtn: document.getElementById('btn-save-pf'),
+  saveFundBtn: document.getElementById('btn-save-fund'),
+  saveTxBtn: document.getElementById('btn-save-tx'),
+  updateNavBtn: document.getElementById('btn-update-nav'),
+  deletePortfolioBtn: document.getElementById('btn-delete-portfolio'),
+  deleteFundBtn: document.getElementById('btn-delete-fund'),
+  saveRenameBtn: document.getElementById('btn-save-rename'),
+  deleteTxBtn: document.getElementById('btn-delete-tx'),
+  fileImport: document.getElementById('file-import'),
+  selectAll: document.getElementById('chk-select-all'),
+  portfolioList: document.getElementById('portfolio-list-container'),
+  fundList: document.getElementById('fund-list-container'),
+  txList: document.getElementById('tx-list')
+};
 
-function init() {
-  // Select all by default
-  const data = Logic.getFundsData();
-  data.portfolios.forEach(p => selectedPortfolios.add(p.id));
-  
-  renderPortfolioList();
-  setupEventListeners();
-  
-  // Expose app to window for HTML onclick handlers
-  window.app = {
-    showPortfolioList,
-    closeModals,
-    openPortfolio,
-    openFund
-  };
-}
+const formatMoney = (amount) =>
+  '৳' +
+  Number.parseFloat(amount || 0).toLocaleString('en-BD', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
 
-function setupEventListeners() {
-  // FABs
-  document.getElementById('fab-add-portfolio').onclick = () => openModal('portfolio');
-  document.getElementById('fab-add-fund').onclick = () => openModal('fund');
-  document.getElementById('fab-add-tx').onclick = () => {
-    // Reset modal for adding
-    document.getElementById('tx-modal-title').textContent = 'Add Transaction';
-    document.getElementById('inp-tx-id').value = '';
-    document.getElementById('inp-tx-type').value = 'BUY';
-    document.getElementById('inp-tx-date').value = new Date().toISOString().split('T')[0];
-    document.getElementById('inp-tx-units').value = '';
-    document.getElementById('inp-tx-price').value = '';
-    document.getElementById('inp-tx-total').value = '';
-    document.getElementById('btn-delete-tx').style.display = 'none';
-    openModal('tx');
-  };
+const setBusy = (nextBusy) => {
+  busy = nextBusy;
 
-  // Save Buttons
-  document.getElementById('btn-save-pf').onclick = handleCreatePortfolio;
-  document.getElementById('btn-save-fund').onclick = handleAddFund;
-  document.getElementById('btn-save-tx').onclick = handleAddTransaction;
-  document.getElementById('btn-update-nav').onclick = handleUpdateNav;
-  document.getElementById('btn-delete-portfolio').onclick = handleDeletePortfolio;
-  document.getElementById('btn-delete-fund').onclick = handleDeleteFund;
-  document.getElementById('btn-save-rename').onclick = handleSaveRename;
-  document.getElementById('btn-delete-tx').onclick = handleDeleteTransaction;
+  [
+    elements.importBtn,
+    elements.exportBtn,
+    elements.addPortfolioBtn,
+    elements.addFundBtn,
+    elements.addTxBtn,
+    elements.savePortfolioBtn,
+    elements.saveFundBtn,
+    elements.saveTxBtn,
+    elements.updateNavBtn,
+    elements.deletePortfolioBtn,
+    elements.deleteFundBtn,
+    elements.saveRenameBtn,
+    elements.deleteTxBtn,
+    elements.selectAll
+  ].forEach((element) => {
+    if (element) {
+      element.disabled = nextBusy || pageState !== 'ready';
+    }
+  });
+};
 
-  // Rename Buttons (Detail Views)
-  document.getElementById('btn-rename-portfolio').onclick = () => openRenameModal('portfolio');
-  document.getElementById('btn-rename-fund').onclick = () => openRenameModal('fund');
+const setPageState = (nextState, message = '') => {
+  pageState = nextState;
+  pageMessage = message;
+  if (pageState !== 'ready') {
+    closeModals();
+    switchView('list');
+  }
+  setBusy(busy);
+};
 
-  // Import/Export
-  document.getElementById('btn-export').onclick = Logic.exportFundsData;
-  document.getElementById('btn-import').onclick = () => document.getElementById('file-import').click();
-  document.getElementById('file-import').onchange = handleImport;
+const syncSelectedPortfolios = () => {
+  const validIds = new Set(fundsData.portfolios.map((portfolio) => portfolio.id));
+  selectedPortfolios = new Set([...selectedPortfolios].filter((id) => validIds.has(id)));
 
-  // Back Buttons
-  document.getElementById('btn-back-to-pf').onclick = () => openPortfolio(currentPortfolioId);
+  if (selectedPortfolios.size === 0) {
+    fundsData.portfolios.forEach((portfolio) => selectedPortfolios.add(portfolio.id));
+  }
+};
 
-  // Select All Checkbox
-  document.getElementById('chk-select-all').onchange = (e) => {
-    const checkboxes = document.querySelectorAll('.pf-select-checkbox');
-    checkboxes.forEach(cb => {
-      cb.checked = e.target.checked;
-      const id = cb.dataset.id;
-      if (e.target.checked) selectedPortfolios.add(id);
-      else selectedPortfolios.delete(id);
-    });
-    updateExecutiveSummary();
-  };
-
-  // Auto-calc total cost in TX modal
-  const inpUnits = document.getElementById('inp-tx-units');
-  const inpPrice = document.getElementById('inp-tx-price');
-  const inpTotal = document.getElementById('inp-tx-total');
-
-  const autoCalc = () => {
-    const u = parseFloat(inpUnits.value) || 0;
-    const p = parseFloat(inpPrice.value) || 0;
-    if (u && p) inpTotal.value = (u * p).toFixed(2);
-  };
-  inpUnits.oninput = autoCalc;
-  inpPrice.oninput = autoCalc;
-}
-
-// --- Navigation & Rendering ---
-
-function switchView(viewName) {
-  Object.values(views).forEach(el => el.classList.remove('active'));
+const switchView = (viewName) => {
+  Object.values(views).forEach((element) => element.classList.remove('active'));
   views[viewName].classList.add('active');
   window.scrollTo(0, 0);
-}
+};
 
 function showPortfolioList() {
   currentPortfolioId = null;
@@ -121,6 +111,11 @@ function showPortfolioList() {
 }
 
 function openPortfolio(id) {
+  if (pageState !== 'ready') {
+    showPortfolioList();
+    return;
+  }
+
   currentPortfolioId = id;
   currentFundId = null;
   renderPortfolioDetail();
@@ -128,46 +123,115 @@ function openPortfolio(id) {
 }
 
 function openFund(fundId) {
+  if (pageState !== 'ready') {
+    return;
+  }
+
   currentFundId = fundId;
   renderFundDetail();
   switchView('fund');
 }
 
-// --- Renderers ---
+const renderLockedState = () => {
+  const title =
+    pageState === 'auth-required'
+      ? 'Server login required'
+      : pageState === 'server-unavailable'
+        ? 'Server unavailable'
+        : pageState === 'loading'
+          ? 'Loading mutual funds...'
+          : 'Unable to load mutual funds';
 
-function renderPortfolioList() {
-  const data = Logic.getFundsData();
-  const container = document.getElementById('portfolio-list-container');
-  container.innerHTML = '';
+  const body =
+    pageMessage ||
+    (pageState === 'auth-required'
+      ? 'A server is configured for portfolios. Log in from Settings before using the mutual funds page.'
+      : pageState === 'server-unavailable'
+        ? 'The configured server could not be reached. Update the server URL or try again later.'
+        : 'Please wait while the portfolio source is being prepared.');
 
-  // Update Executive Summary
-  updateExecutiveSummary();
+  const showSettingsCta = pageState !== 'loading';
 
-  if (data.portfolios.length === 0) {
-    container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--muted);">No portfolios yet. Create one to get started.</div>`;
+  elements.portfolioList.innerHTML = `
+    <div style="text-align:center; padding:2rem; color:var(--muted);">
+      <p style="font-weight:700; color:var(--text); margin-bottom:0.5rem;">${title}</p>
+      <p style="margin-top:0;">${body}</p>
+      ${
+        showSettingsCta
+          ? '<div style="margin-top:1.5rem;"><a href="./settings.html" class="btn btn--solid">Open Settings</a></div>'
+          : ''
+      }
+    </div>
+  `;
+
+  document.getElementById('exec-invested').textContent = formatMoney(0);
+  document.getElementById('exec-value').textContent = formatMoney(0);
+  const gainEl = document.getElementById('exec-gain');
+  gainEl.textContent = `${formatMoney(0)} (0.00%)`;
+  gainEl.className = 'summary-value';
+  document.getElementById('summary-selection-text').textContent = 'Unavailable';
+};
+
+function updateExecutiveSummary() {
+  if (pageState !== 'ready') {
+    renderLockedState();
     return;
   }
 
-  data.portfolios.forEach(pf => {
-    const stats = Logic.calculatePortfolioStats(pf);
+  const selected = fundsData.portfolios.filter((portfolio) => selectedPortfolios.has(portfolio.id));
+  const stats = Logic.calculateAggregateStats(selected);
+
+  document.getElementById('exec-invested').textContent = formatMoney(stats.totalInvested);
+  document.getElementById('exec-value').textContent = formatMoney(stats.currentValue);
+
+  const gainEl = document.getElementById('exec-gain');
+  const gainSign = stats.gainLoss >= 0 ? '+' : '';
+  gainEl.textContent = `${gainSign}${formatMoney(stats.gainLoss)} (${gainSign}${stats.gainLossPercent.toFixed(2)}%)`;
+  gainEl.className = `summary-value ${stats.gainLoss >= 0 ? 'up' : 'down'}`;
+
+  const count = selected.length;
+  const total = fundsData.portfolios.length;
+  document.getElementById('summary-selection-text').textContent =
+    count === total ? 'All Portfolios' : `${count} of ${total} Selected`;
+}
+
+function renderPortfolioList() {
+  setBusy(busy);
+
+  if (pageState !== 'ready') {
+    renderLockedState();
+    return;
+  }
+
+  syncSelectedPortfolios();
+  const container = elements.portfolioList;
+  container.innerHTML = '';
+  updateExecutiveSummary();
+
+  if (fundsData.portfolios.length === 0) {
+    container.innerHTML =
+      '<div style="text-align:center; padding:2rem; color:var(--muted);">No portfolios yet. Create one to get started.</div>';
+    return;
+  }
+
+  fundsData.portfolios.forEach((portfolio) => {
+    const stats = Logic.calculatePortfolioStats(portfolio);
     const card = document.createElement('div');
     card.className = 'fund-card';
-    
-    // Checkbox logic
-    const isSelected = selectedPortfolios.has(pf.id);
-    
+
+    const isSelected = selectedPortfolios.has(portfolio.id);
     const gainClass = stats.gainLoss >= 0 ? 'up' : 'down';
     const gainSign = stats.gainLoss >= 0 ? '+' : '';
 
     card.innerHTML = `
       <div class="fund-header">
         <div style="display:flex; align-items:center;">
-          <input type="checkbox" class="pf-select-checkbox" data-id="${pf.id}" ${isSelected ? 'checked' : ''}>
-          <div class="fund-name">${pf.name}</div>
+          <input type="checkbox" class="pf-select-checkbox" data-id="${portfolio.id}" ${isSelected ? 'checked' : ''}>
+          <div class="fund-name">${portfolio.name}</div>
         </div>
         <div class="fund-amc">${stats.fundCount} Funds</div>
       </div>
-      <div class="fund-stats" onclick="app.openPortfolio('${pf.id}')">
+      <div class="fund-stats" onclick="app.openPortfolio('${portfolio.id}')">
         <div class="stat-row">
           <span class="stat-label">Invested</span>
           <span class="stat-val">${formatMoney(stats.totalInvested)}</span>
@@ -184,75 +248,64 @@ function renderPortfolioList() {
         </div>
       </div>
     `;
-    
-    // Attach checkbox listener
+
     const checkbox = card.querySelector('.pf-select-checkbox');
-    checkbox.onclick = (e) => {
-      e.stopPropagation(); // Prevent card click
-      if (e.target.checked) selectedPortfolios.add(pf.id);
-      else selectedPortfolios.delete(pf.id);
+    checkbox.onclick = (event) => {
+      event.stopPropagation();
+      if (event.target.checked) {
+        selectedPortfolios.add(portfolio.id);
+      } else {
+        selectedPortfolios.delete(portfolio.id);
+      }
+
       updateExecutiveSummary();
-      
-      // Update "Select All" state
-      const allChecked = data.portfolios.every(p => selectedPortfolios.has(p.id));
-      document.getElementById('chk-select-all').checked = allChecked;
+      elements.selectAll.checked = fundsData.portfolios.every((entry) => selectedPortfolios.has(entry.id));
     };
 
     container.appendChild(card);
   });
-}
 
-function updateExecutiveSummary() {
-  const data = Logic.getFundsData();
-  const selected = data.portfolios.filter(p => selectedPortfolios.has(p.id));
-  const stats = Logic.calculateAggregateStats(selected);
-
-  document.getElementById('exec-invested').textContent = formatMoney(stats.totalInvested);
-  document.getElementById('exec-value').textContent = formatMoney(stats.currentValue);
-  
-  const gainEl = document.getElementById('exec-gain');
-  const gainSign = stats.gainLoss >= 0 ? '+' : '';
-  gainEl.textContent = `${gainSign}${formatMoney(stats.gainLoss)} (${gainSign}${stats.gainLossPercent.toFixed(2)}%)`;
-  gainEl.className = `summary-value ${stats.gainLoss >= 0 ? 'up' : 'down'}`;
-
-  const count = selected.length;
-  const total = data.portfolios.length;
-  document.getElementById('summary-selection-text').textContent = 
-    count === total ? 'All Portfolios' : `${count} of ${total} Selected`;
+  elements.selectAll.checked = fundsData.portfolios.every((portfolio) => selectedPortfolios.has(portfolio.id));
 }
 
 function renderPortfolioDetail() {
-  const data = Logic.getFundsData();
-  const pf = data.portfolios.find(p => p.id === currentPortfolioId);
-  if (!pf) return showPortfolioList();
+  if (pageState !== 'ready') {
+    showPortfolioList();
+    return;
+  }
 
-  document.getElementById('detail-portfolio-name').textContent = pf.name;
+  const portfolio = fundsData.portfolios.find((entry) => entry.id === currentPortfolioId);
+  if (!portfolio) {
+    showPortfolioList();
+    return;
+  }
 
-  const stats = Logic.calculatePortfolioStats(pf);
+  document.getElementById('detail-portfolio-name').textContent = portfolio.name;
+
+  const stats = Logic.calculatePortfolioStats(portfolio);
   document.getElementById('pf-total-value').textContent = formatMoney(stats.currentValue);
   document.getElementById('pf-invested').textContent = formatMoney(stats.totalInvested);
-  
+
   const gainEl = document.getElementById('pf-gain');
   const gainSign = stats.gainLoss >= 0 ? '+' : '';
   gainEl.textContent = `${gainSign}${formatMoney(stats.gainLoss)} (${gainSign}${stats.gainLossPercent.toFixed(2)}%)`;
   gainEl.className = `summary-value ${stats.gainLoss >= 0 ? 'up' : 'down'}`;
 
-  const container = document.getElementById('fund-list-container');
-  container.innerHTML = '';
-
-  if (pf.funds.length === 0) {
-    container.innerHTML = `<div style="text-align:center; padding:2rem; color:var(--muted);">No funds added yet.</div>`;
+  elements.fundList.innerHTML = '';
+  if (portfolio.funds.length === 0) {
+    elements.fundList.innerHTML =
+      '<div style="text-align:center; padding:2rem; color:var(--muted);">No funds added yet.</div>';
     return;
   }
 
-  pf.funds.forEach(fund => {
-    const fStats = Logic.calculateFundStats(fund);
+  portfolio.funds.forEach((fund) => {
+    const fundStats = Logic.calculateFundStats(fund);
     const card = document.createElement('div');
     card.className = 'fund-card';
     card.onclick = () => openFund(fund.id);
 
-    const fGainClass = fStats.gainLoss >= 0 ? 'up' : 'down';
-    const fGainSign = fStats.gainLoss >= 0 ? '+' : '';
+    const gainClass = fundStats.gainLoss >= 0 ? 'up' : 'down';
+    const gainSign = fundStats.gainLoss >= 0 ? '+' : '';
 
     card.innerHTML = `
       <div class="fund-header">
@@ -262,15 +315,15 @@ function renderPortfolioDetail() {
       <div class="fund-stats">
         <div class="stat-row">
           <span class="stat-label">Invested</span>
-          <span class="stat-val">${formatMoney(fStats.totalCost)}</span>
+          <span class="stat-val">${formatMoney(fundStats.totalCost)}</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Value</span>
-          <span class="stat-val">${formatMoney(fStats.currentValue)}</span>
+          <span class="stat-val">${formatMoney(fundStats.currentValue)}</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">Units</span>
-          <span class="stat-val">${fStats.totalUnits.toFixed(2)}</span>
+          <span class="stat-val">${fundStats.totalUnits.toFixed(2)}</span>
         </div>
         <div class="stat-row">
           <span class="stat-label">NAV</span>
@@ -278,27 +331,35 @@ function renderPortfolioDetail() {
         </div>
         <div class="stat-row" style="grid-column: span 2;">
           <span class="stat-label">Gain/Loss</span>
-          <span class="stat-val gain-loss ${fGainClass}">
-            ${fGainSign}${formatMoney(fStats.gainLoss)} (${fGainSign}${fStats.gainLossPercent.toFixed(2)}%)
+          <span class="stat-val gain-loss ${gainClass}">
+            ${gainSign}${formatMoney(fundStats.gainLoss)} (${gainSign}${fundStats.gainLossPercent.toFixed(2)}%)
           </span>
         </div>
       </div>
     `;
-    container.appendChild(card);
+
+    elements.fundList.appendChild(card);
   });
 }
 
 function renderFundDetail() {
-  const data = Logic.getFundsData();
-  const pf = data.portfolios.find(p => p.id === currentPortfolioId);
-  const fund = pf ? pf.funds.find(f => f.id === currentFundId) : null;
-  if (!fund) return openPortfolio(currentPortfolioId);
+  if (pageState !== 'ready') {
+    showPortfolioList();
+    return;
+  }
+
+  const portfolio = fundsData.portfolios.find((entry) => entry.id === currentPortfolioId);
+  const fund = portfolio ? portfolio.funds.find((entry) => entry.id === currentFundId) : null;
+  if (!fund) {
+    openPortfolio(currentPortfolioId);
+    return;
+  }
 
   document.getElementById('detail-fund-name').textContent = fund.name;
   document.getElementById('detail-fund-amc').textContent = fund.amc || '';
   document.getElementById('input-current-nav').value = fund.current_nav || '';
   document.getElementById('input-nav-date').value = new Date().toISOString().split('T')[0];
-  
+
   const lastUpdate = fund.last_updated ? new Date(fund.last_updated).toLocaleDateString() : 'Never';
   document.getElementById('nav-last-updated').textContent = `Last updated: ${lastUpdate}`;
 
@@ -307,81 +368,66 @@ function renderFundDetail() {
   document.getElementById('fd-units').textContent = stats.totalUnits.toFixed(2);
   document.getElementById('fd-value').textContent = formatMoney(stats.currentValue);
   document.getElementById('fd-avg-cost').textContent = formatMoney(stats.avgCost);
-  
+
   const gainEl = document.getElementById('fd-gain');
   const gainSign = stats.gainLoss >= 0 ? '+' : '';
   gainEl.textContent = `${gainSign}${formatMoney(stats.gainLoss)} (${gainSign}${stats.gainLossPercent.toFixed(2)}%)`;
   gainEl.className = `summary-value ${stats.gainLoss >= 0 ? 'up' : 'down'}`;
 
-  // Transactions
-  const txList = document.getElementById('tx-list');
-  txList.innerHTML = '';
-  // Reverse copy for display
-  [...fund.transactions].reverse().forEach(tx => {
-    const li = document.createElement('li');
-    li.className = 'tx-item';
-    li.style.cursor = 'pointer';
-    li.onclick = () => openTransactionModal(tx);
-    li.innerHTML = `
+  elements.txList.innerHTML = '';
+  [...fund.transactions].reverse().forEach((transaction) => {
+    const listItem = document.createElement('li');
+    listItem.className = 'tx-item';
+    listItem.style.cursor = 'pointer';
+    listItem.onclick = () => openTransactionModal(transaction);
+    listItem.innerHTML = `
       <div class="tx-info">
-        <div>${tx.type.replace('_', ' ')}</div>
-        <div>${new Date(tx.date).toLocaleDateString()} @ ${tx.price_per_unit}</div>
+        <div>${transaction.type.replace('_', ' ')}</div>
+        <div>${new Date(transaction.date).toLocaleDateString()} @ ${transaction.price_per_unit}</div>
       </div>
       <div class="tx-amount">
-        <div>${tx.units} units</div>
-        <div style="font-size:0.8rem; color:var(--muted);">${formatMoney(tx.total_cost)}</div>
+        <div>${transaction.units} units</div>
+        <div style="font-size:0.8rem; color:var(--muted);">${formatMoney(transaction.total_cost)}</div>
       </div>
     `;
-    txList.appendChild(li);
+    elements.txList.appendChild(listItem);
   });
 
   renderChart(fund);
 }
 
-function openTransactionModal(tx) {
-  document.getElementById('tx-modal-title').textContent = 'Edit Transaction';
-  document.getElementById('inp-tx-id').value = tx.id;
-  document.getElementById('inp-tx-type').value = tx.type;
-  document.getElementById('inp-tx-date').value = tx.date;
-  document.getElementById('inp-tx-units').value = tx.units;
-  document.getElementById('inp-tx-price').value = tx.price_per_unit;
-  document.getElementById('inp-tx-total').value = tx.total_cost;
-  document.getElementById('btn-delete-tx').style.display = 'block';
-  openModal('tx');
-}
-
 function renderChart(fund) {
-  const ctx = document.getElementById('navChart').getContext('2d');
-  
+  const context = document.getElementById('navChart').getContext('2d');
+
   if (navChart) {
     navChart.destroy();
   }
 
-  // Prepare data
-  // If no history, use current NAV as a point
   let labels = [];
   let dataPoints = [];
 
   if (fund.nav_history && fund.nav_history.length > 0) {
-    labels = fund.nav_history.map(h => new Date(h.date).toLocaleDateString());
-    dataPoints = fund.nav_history.map(h => h.nav);
+    labels = fund.nav_history.map((entry) => new Date(entry.date).toLocaleDateString());
+    dataPoints = fund.nav_history.map((entry) => entry.nav);
   } else if (fund.current_nav) {
     labels = ['Today'];
     dataPoints = [fund.current_nav];
   }
 
-  navChart = new Chart(ctx, {
+  navChart = new Chart(context, {
     type: 'line',
     data: {
-      labels: labels,
-      datasets: [{
-        label: 'NAV History',
-        data: dataPoints,
-        borderColor: '#10b981',
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
-        tension: 0.1,
-        fill: true
-      }]
+      labels,
+      datasets: [
+        {
+          label: 'NAV History',
+          data: dataPoints,
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          tension: 0.1,
+          fill: true
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -398,32 +444,97 @@ function renderChart(fund) {
   });
 }
 
-// --- Handlers ---
+function openTransactionModal(transaction) {
+  document.getElementById('tx-modal-title').textContent = 'Edit Transaction';
+  document.getElementById('inp-tx-id').value = transaction.id;
+  document.getElementById('inp-tx-type').value = transaction.type;
+  document.getElementById('inp-tx-date').value = transaction.date;
+  document.getElementById('inp-tx-units').value = transaction.units;
+  document.getElementById('inp-tx-price').value = transaction.price_per_unit;
+  document.getElementById('inp-tx-total').value = transaction.total_cost;
+  elements.deleteTxBtn.style.display = 'block';
+  openModal('tx');
+}
+
+const persistFundsData = async (nextData, afterSave) => {
+  setBusy(true);
+
+  try {
+    fundsData = await saveFundsDataDocument(nextData);
+    syncSelectedPortfolios();
+    setPageState('ready');
+    if (typeof afterSave === 'function') {
+      afterSave();
+    }
+    return true;
+  } catch (error) {
+    if (error instanceof AuthRequiredError) {
+      setPageState('auth-required', error.message);
+    } else if (error instanceof ConnectionUnavailableError) {
+      setPageState('server-unavailable', error.message);
+    } else {
+      setPageState('error', error.message || 'Unable to save mutual fund data.');
+    }
+
+    renderPortfolioList();
+    alert(pageMessage || 'Unable to save mutual fund data.');
+    return false;
+  } finally {
+    setBusy(false);
+  }
+};
+
+function openModal(name) {
+  if (pageState !== 'ready') {
+    return;
+  }
+  modals[name].classList.add('open');
+}
+
+function closeModals() {
+  Object.values(modals).forEach((modal) => modal.classList.remove('open'));
+}
 
 function handleCreatePortfolio() {
   const name = document.getElementById('inp-pf-name').value.trim();
-  if (!name) return alert('Name required');
-  Logic.createPortfolio(name);
-  closeModals();
-  renderPortfolioList();
+  if (!name) {
+    alert('Name required');
+    return;
+  }
+
+  persistFundsData(Logic.createPortfolio(fundsData, name), () => {
+    document.getElementById('inp-pf-name').value = '';
+    closeModals();
+    renderPortfolioList();
+  });
 }
 
 function handleDeletePortfolio() {
-  if (confirm('Are you sure you want to delete this portfolio?')) {
-    Logic.deletePortfolio(currentPortfolioId);
-    showPortfolioList();
+  if (!confirm('Are you sure you want to delete this portfolio?')) {
+    return;
   }
+
+  persistFundsData(Logic.deletePortfolio(fundsData, currentPortfolioId), () => {
+    showPortfolioList();
+  });
 }
 
 function handleAddFund() {
   const name = document.getElementById('inp-fund-name').value.trim();
   const symbol = document.getElementById('inp-fund-symbol').value.trim();
   const amc = document.getElementById('inp-fund-amc').value.trim();
-  if (!name) return alert('Name required');
-  
-  Logic.addFund(currentPortfolioId, name, amc, symbol);
-  closeModals();
-  renderPortfolioDetail();
+  if (!name) {
+    alert('Name required');
+    return;
+  }
+
+  persistFundsData(Logic.addFund(fundsData, currentPortfolioId, name, amc, symbol), () => {
+    document.getElementById('inp-fund-name').value = '';
+    document.getElementById('inp-fund-symbol').value = '';
+    document.getElementById('inp-fund-amc').value = '';
+    closeModals();
+    renderPortfolioDetail();
+  });
 }
 
 function handleAddTransaction() {
@@ -434,114 +545,240 @@ function handleAddTransaction() {
   const price = document.getElementById('inp-tx-price').value;
   const total = document.getElementById('inp-tx-total').value;
 
-  if (!date || !units || !price || !total) return alert('All fields required');
-
-  const txData = { type, date, units, price_per_unit: price, total_cost: total };
-
-  if (id) {
-    Logic.editTransaction(currentPortfolioId, currentFundId, id, txData);
-  } else {
-    Logic.addTransaction(currentPortfolioId, currentFundId, txData);
+  if (!date || !units || !price || !total) {
+    alert('All fields required');
+    return;
   }
-  
-  closeModals();
-  renderFundDetail();
+
+  const transactionData = { type, date, units, price_per_unit: price, total_cost: total };
+  const nextData = id
+    ? Logic.editTransaction(fundsData, currentPortfolioId, currentFundId, id, transactionData)
+    : Logic.addTransaction(fundsData, currentPortfolioId, currentFundId, transactionData);
+
+  persistFundsData(nextData, () => {
+    closeModals();
+    renderFundDetail();
+  });
 }
 
 function handleDeleteTransaction() {
   const id = document.getElementById('inp-tx-id').value;
-  if (!id) return;
-  
-  if (confirm('Are you sure you want to delete this transaction?')) {
-    Logic.deleteTransaction(currentPortfolioId, currentFundId, id);
+  if (!id || !confirm('Are you sure you want to delete this transaction?')) {
+    return;
+  }
+
+  persistFundsData(Logic.deleteTransaction(fundsData, currentPortfolioId, currentFundId, id), () => {
     closeModals();
     renderFundDetail();
-  }
+  });
 }
 
 function handleUpdateNav() {
   const nav = document.getElementById('input-current-nav').value;
   const date = document.getElementById('input-nav-date').value;
-  
-  if (!nav) return alert('Please enter NAV');
-  
-  Logic.updateNav(currentPortfolioId, currentFundId, nav, date);
-  renderFundDetail();
+  if (!nav) {
+    alert('Please enter NAV');
+    return;
+  }
+
+  persistFundsData(Logic.updateNav(fundsData, currentPortfolioId, currentFundId, nav, date), () => {
+    renderFundDetail();
+  });
 }
 
 function handleDeleteFund() {
-  if (confirm('Are you sure you want to delete this fund and all its transactions?')) {
-    Logic.deleteFund(currentPortfolioId, currentFundId);
-    openPortfolio(currentPortfolioId);
+  if (!confirm('Are you sure you want to delete this fund and all its transactions?')) {
+    return;
   }
+
+  persistFundsData(Logic.deleteFund(fundsData, currentPortfolioId, currentFundId), () => {
+    openPortfolio(currentPortfolioId);
+  });
 }
 
 function openRenameModal(type) {
-  const data = Logic.getFundsData();
+  const portfolio = fundsData.portfolios.find((entry) => entry.id === currentPortfolioId);
   renameTarget = { type };
-  
+
   if (type === 'portfolio') {
-    const pf = data.portfolios.find(p => p.id === currentPortfolioId);
     renameTarget.id = currentPortfolioId;
     document.getElementById('rename-modal-title').textContent = 'Rename Portfolio';
-    document.getElementById('inp-rename-name').value = pf.name;
+    document.getElementById('inp-rename-name').value = portfolio?.name || '';
     document.getElementById('grp-rename-symbol').style.display = 'none';
   } else {
-    const pf = data.portfolios.find(p => p.id === currentPortfolioId);
-    const fund = pf.funds.find(f => f.id === currentFundId);
+    const fund = portfolio?.funds.find((entry) => entry.id === currentFundId);
     renameTarget.id = currentFundId;
     document.getElementById('rename-modal-title').textContent = 'Rename Fund';
-    document.getElementById('inp-rename-name').value = fund.name;
-    document.getElementById('inp-rename-symbol').value = fund.symbol || '';
+    document.getElementById('inp-rename-name').value = fund?.name || '';
+    document.getElementById('inp-rename-symbol').value = fund?.symbol || '';
     document.getElementById('grp-rename-symbol').style.display = 'block';
   }
-  
+
   openModal('rename');
 }
 
 function handleSaveRename() {
   const name = document.getElementById('inp-rename-name').value.trim();
-  if (!name) return alert('Name required');
-  
+  if (!name) {
+    alert('Name required');
+    return;
+  }
+
   if (renameTarget.type === 'portfolio') {
-    Logic.renamePortfolio(renameTarget.id, name);
-    renderPortfolioDetail();
-  } else {
-    const symbol = document.getElementById('inp-rename-symbol').value.trim();
-    Logic.renameFund(currentPortfolioId, renameTarget.id, name, symbol);
+    persistFundsData(Logic.renamePortfolio(fundsData, renameTarget.id, name), () => {
+      closeModals();
+      renderPortfolioDetail();
+      renderPortfolioList();
+    });
+    return;
+  }
+
+  const symbol = document.getElementById('inp-rename-symbol').value.trim();
+  persistFundsData(Logic.renameFund(fundsData, currentPortfolioId, renameTarget.id, name, symbol), () => {
+    closeModals();
     renderFundDetail();
-  }
-  closeModals();
+    renderPortfolioDetail();
+  });
 }
 
-async function handleImport(e) {
-  const file = e.target.files[0];
-  if (!file) return;
+function handleExport() {
+  if (pageState !== 'ready') {
+    return;
+  }
+
+  const blob = new Blob([Logic.serializeFundsData(fundsData)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `dse-mutual-funds-${new Date().toISOString().split('T')[0]}.json`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+}
+
+function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file || pageState !== 'ready') {
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (loadEvent) => {
+    try {
+      const nextData = Logic.parseImportedFundsData(loadEvent.target.result);
+      const saved = await persistFundsData(nextData, () => {
+        renderPortfolioList();
+      });
+      if (saved) {
+        alert('Import successful!');
+      }
+    } catch (error) {
+      alert(`Import failed: ${error.message}`);
+    } finally {
+      event.target.value = '';
+    }
+  };
+
+  reader.readAsText(file);
+}
+
+function setupEventListeners() {
+  elements.addPortfolioBtn.onclick = () => openModal('portfolio');
+  elements.addFundBtn.onclick = () => openModal('fund');
+  elements.addTxBtn.onclick = () => {
+    document.getElementById('tx-modal-title').textContent = 'Add Transaction';
+    document.getElementById('inp-tx-id').value = '';
+    document.getElementById('inp-tx-type').value = 'BUY';
+    document.getElementById('inp-tx-date').value = new Date().toISOString().split('T')[0];
+    document.getElementById('inp-tx-units').value = '';
+    document.getElementById('inp-tx-price').value = '';
+    document.getElementById('inp-tx-total').value = '';
+    elements.deleteTxBtn.style.display = 'none';
+    openModal('tx');
+  };
+
+  elements.savePortfolioBtn.onclick = handleCreatePortfolio;
+  elements.saveFundBtn.onclick = handleAddFund;
+  elements.saveTxBtn.onclick = handleAddTransaction;
+  elements.updateNavBtn.onclick = handleUpdateNav;
+  elements.deletePortfolioBtn.onclick = handleDeletePortfolio;
+  elements.deleteFundBtn.onclick = handleDeleteFund;
+  elements.saveRenameBtn.onclick = handleSaveRename;
+  elements.deleteTxBtn.onclick = handleDeleteTransaction;
+
+  document.getElementById('btn-rename-portfolio').onclick = () => openRenameModal('portfolio');
+  document.getElementById('btn-rename-fund').onclick = () => openRenameModal('fund');
+
+  elements.exportBtn.onclick = handleExport;
+  elements.importBtn.onclick = () => elements.fileImport.click();
+  elements.fileImport.onchange = handleImport;
+
+  document.getElementById('btn-back-to-pf').onclick = () => openPortfolio(currentPortfolioId);
+
+  elements.selectAll.onchange = (event) => {
+    const checkboxes = document.querySelectorAll('.pf-select-checkbox');
+    checkboxes.forEach((checkbox) => {
+      checkbox.checked = event.target.checked;
+      const id = checkbox.dataset.id;
+      if (event.target.checked) {
+        selectedPortfolios.add(id);
+      } else {
+        selectedPortfolios.delete(id);
+      }
+    });
+    updateExecutiveSummary();
+  };
+
+  const unitsInput = document.getElementById('inp-tx-units');
+  const priceInput = document.getElementById('inp-tx-price');
+  const totalInput = document.getElementById('inp-tx-total');
+
+  const autoCalc = () => {
+    const units = Number.parseFloat(unitsInput.value) || 0;
+    const price = Number.parseFloat(priceInput.value) || 0;
+    if (units && price) {
+      totalInput.value = (units * price).toFixed(2);
+    }
+  };
+
+  unitsInput.oninput = autoCalc;
+  priceInput.oninput = autoCalc;
+}
+
+const loadFundsDocument = async () => {
+  setPageState('loading');
+  renderPortfolioList();
+
   try {
-    await Logic.importFundsData(file);
-    alert('Import successful!');
-    renderPortfolioList();
-  } catch (err) {
-    alert('Import failed: ' + err.message);
+    fundsData = await loadFundsDataDocument();
+    if (!currentPortfolioId) {
+      currentPortfolioId = fundsData.activePortfolioId;
+    }
+    syncSelectedPortfolios();
+    setPageState('ready');
+  } catch (error) {
+    if (error instanceof AuthRequiredError) {
+      setPageState('auth-required', error.message);
+    } else if (error instanceof ConnectionUnavailableError) {
+      setPageState('server-unavailable', error.message);
+    } else {
+      setPageState('error', error.message || 'Unable to load mutual fund data.');
+    }
   }
-  e.target.value = ''; // Reset
+
+  renderPortfolioList();
+};
+
+function init() {
+  setupEventListeners();
+  window.app = {
+    showPortfolioList,
+    closeModals,
+    openPortfolio,
+    openFund
+  };
+  loadFundsDocument();
 }
 
-// --- Utilities ---
-
-function openModal(name) {
-  modals[name].classList.add('open');
-}
-
-function closeModals() {
-  Object.values(modals).forEach(m => m.classList.remove('open'));
-  // Clear inputs
-  document.querySelectorAll('.modal input').forEach(i => i.value = '');
-}
-
-function formatMoney(amount) {
-  return '৳' + parseFloat(amount).toLocaleString('en-BD', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// Start
 init();

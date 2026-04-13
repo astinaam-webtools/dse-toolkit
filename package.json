@@ -7,7 +7,9 @@
     "test": "node scripts/smoke-test.mjs",
     "build": "node scripts/build.mjs",
     "build:data": "node scripts/build-market-data.mjs",
-    "android:sync": "node scripts/sync-android.mjs"
+    "android:sync": "node scripts/sync-android.mjs",
+    "server:start": "npm --prefix server start",
+    "server:dev": "npm --prefix server run dev"
   },
   "keywords": [],
   "author": "",

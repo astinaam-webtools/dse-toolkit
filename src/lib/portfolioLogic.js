@@ -1,186 +1,201 @@
-/**
- * Portfolio Logic for DSE Toolkit
- * Handles localStorage persistence, calculations, and data portability for multiple portfolios.
- */
-
 const OLD_STORAGE_KEY = 'dse_toolkit_portfolio';
 const STORAGE_KEY = 'dse_toolkit_portfolios';
 
-/**
- * Migration logic from single portfolio to multi-portfolio
- */
-const migrate = () => {
+const clone = (value) => JSON.parse(JSON.stringify(value));
+
+export const createPortfolioId = () =>
+  `p_${Date.now().toString()}_${Math.random().toString(36).slice(2, 11)}`;
+
+export const createDefaultPortfolioState = () => {
+  const id = createPortfolioId();
+  return {
+    activePortfolioId: id,
+    portfolios: [
+      {
+        id,
+        name: 'Main Portfolio',
+        items: []
+      }
+    ]
+  };
+};
+
+const normalizeItem = (item) => ({
+  symbol: String(item?.symbol || '').toUpperCase(),
+  quantity: Number.parseFloat(item?.quantity ?? 0) || 0,
+  average_cost: Number.parseFloat(item?.average_cost ?? 0) || 0,
+  commission_rate: Number.parseFloat(item?.commission_rate ?? 0) || 0,
+  commission_included: Boolean(item?.commission_included),
+  added_at: item?.added_at || new Date().toISOString()
+});
+
+export const normalizePortfolioState = (value) => {
+  if (!value || typeof value !== 'object' || !Array.isArray(value.portfolios)) {
+    return createDefaultPortfolioState();
+  }
+
+  const portfolios = value.portfolios
+    .filter((portfolio) => portfolio && typeof portfolio === 'object')
+    .map((portfolio) => ({
+      id: String(portfolio.id || createPortfolioId()),
+      name: String(portfolio.name || 'Untitled Portfolio'),
+      items: Array.isArray(portfolio.items) ? portfolio.items.map(normalizeItem) : []
+    }));
+
+  if (portfolios.length === 0) {
+    return createDefaultPortfolioState();
+  }
+
+  const activePortfolioId = portfolios.some((portfolio) => portfolio.id === value.activePortfolioId)
+    ? String(value.activePortfolioId)
+    : portfolios[0].id;
+
+  return {
+    activePortfolioId,
+    portfolios
+  };
+};
+
+const migrateLegacyPortfolioState = () => {
   const oldData = localStorage.getItem(OLD_STORAGE_KEY);
-  if (oldData) {
-    try {
-      const items = JSON.parse(oldData);
-      const id = 'p_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-      const newData = {
-        activePortfolioId: id,
-        portfolios: [
-          {
-            id,
-            name: 'Main Portfolio',
-            items
-          }
-        ]
-      };
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
-      localStorage.removeItem(OLD_STORAGE_KEY);
-    } catch (e) {
-      console.error('Migration failed', e);
+  if (!oldData) {
+    return null;
+  }
+
+  try {
+    const items = JSON.parse(oldData);
+    if (!Array.isArray(items)) {
+      return null;
     }
+
+    const nextState = createDefaultPortfolioState();
+    nextState.portfolios[0].items = items.map(normalizeItem);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+    localStorage.removeItem(OLD_STORAGE_KEY);
+    return nextState;
+  } catch (error) {
+    console.error('Portfolio migration failed', error);
+    return null;
   }
 };
 
-migrate();
+export const readLocalPortfolioState = () => {
+  const migratedState = migrateLegacyPortfolioState();
+  if (migratedState) {
+    return migratedState;
+  }
 
-/**
- * Get the entire portfolio state
- * @returns {Object} { activePortfolioId, portfolios }
- */
-export const getPortfolioState = () => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) {
-    const id = 'p_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-    return {
-      activePortfolioId: id,
-      portfolios: [{ id, name: 'Main Portfolio', items: [] }]
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    return createDefaultPortfolioState();
+  }
+
+  try {
+    return normalizePortfolioState(JSON.parse(raw));
+  } catch (error) {
+    console.error('Failed to parse local stock portfolio state', error);
+    return createDefaultPortfolioState();
+  }
+};
+
+export const writeLocalPortfolioState = (state) => {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizePortfolioState(state)));
+};
+
+export const hasMeaningfulLocalPortfolioData = () =>
+  readLocalPortfolioState().portfolios.some((portfolio) => portfolio.items.length > 0);
+
+export const getActivePortfolio = (state) => {
+  const normalizedState = normalizePortfolioState(state);
+  return (
+    normalizedState.portfolios.find((portfolio) => portfolio.id === normalizedState.activePortfolioId) ||
+    normalizedState.portfolios[0]
+  );
+};
+
+export const listPortfolios = (state) => normalizePortfolioState(state).portfolios;
+
+export const createPortfolio = (state, name) => {
+  const nextState = normalizePortfolioState(clone(state));
+  const id = createPortfolioId();
+  nextState.portfolios.push({
+    id,
+    name,
+    items: []
+  });
+  nextState.activePortfolioId = id;
+  return nextState;
+};
+
+export const switchPortfolio = (state, id) => {
+  const nextState = normalizePortfolioState(clone(state));
+  if (nextState.portfolios.some((portfolio) => portfolio.id === id)) {
+    nextState.activePortfolioId = id;
+  }
+  return nextState;
+};
+
+export const renamePortfolio = (state, id, newName) => {
+  const nextState = normalizePortfolioState(clone(state));
+  const portfolio = nextState.portfolios.find((entry) => entry.id === id);
+  if (portfolio) {
+    portfolio.name = newName;
+  }
+  return nextState;
+};
+
+export const deletePortfolio = (state, id) => {
+  const nextState = normalizePortfolioState(clone(state));
+  if (nextState.portfolios.length <= 1) {
+    return nextState;
+  }
+
+  nextState.portfolios = nextState.portfolios.filter((portfolio) => portfolio.id !== id);
+  if (!nextState.portfolios.some((portfolio) => portfolio.id === nextState.activePortfolioId)) {
+    nextState.activePortfolioId = nextState.portfolios[0].id;
+  }
+
+  return nextState;
+};
+
+export const addStock = (state, item) => {
+  const nextState = normalizePortfolioState(clone(state));
+  const activePortfolio = getActivePortfolio(nextState);
+  activePortfolio.items.push({
+    ...normalizeItem(item),
+    added_at: new Date().toISOString()
+  });
+  return nextState;
+};
+
+export const updateStock = (state, index, updatedItem) => {
+  const nextState = normalizePortfolioState(clone(state));
+  const activePortfolio = getActivePortfolio(nextState);
+  if (activePortfolio.items[index]) {
+    activePortfolio.items[index] = {
+      ...activePortfolio.items[index],
+      ...normalizeItem(updatedItem),
+      added_at: activePortfolio.items[index].added_at || new Date().toISOString()
     };
   }
-  return JSON.parse(data);
+  return nextState;
 };
 
-/**
- * Save the entire portfolio state
- * @param {Object} state 
- */
-export const savePortfolioState = (state) => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+export const deleteStock = (state, index) => {
+  const nextState = normalizePortfolioState(clone(state));
+  const activePortfolio = getActivePortfolio(nextState);
+  activePortfolio.items.splice(index, 1);
+  return nextState;
 };
 
-/**
- * Get the active portfolio
- * @returns {Object} The active portfolio object
- */
-export const getActivePortfolio = () => {
-  const state = getPortfolioState();
-  return state.portfolios.find(p => p.id === state.activePortfolioId) || state.portfolios[0];
-};
-
-/**
- * Get all portfolios
- * @returns {Array}
- */
-export const listPortfolios = () => {
-  return getPortfolioState().portfolios;
-};
-
-/**
- * Create a new portfolio
- * @param {string} name 
- */
-export const createPortfolio = (name) => {
-  const state = getPortfolioState();
-  const id = 'p_' + Date.now().toString() + '_' + Math.random().toString(36).substr(2, 9);
-  state.portfolios.push({ id, name, items: [] });
-  state.activePortfolioId = id;
-  savePortfolioState(state);
-  return id;
-};
-
-/**
- * Switch active portfolio
- * @param {string} id 
- */
-export const switchPortfolio = (id) => {
-  const state = getPortfolioState();
-  state.activePortfolioId = id;
-  savePortfolioState(state);
-};
-
-/**
- * Rename a portfolio
- * @param {string} id 
- * @param {string} newName 
- */
-export const renamePortfolio = (id, newName) => {
-  const state = getPortfolioState();
-  const p = state.portfolios.find(p => p.id === id);
-  if (p) {
-    p.name = newName;
-    savePortfolioState(state);
-  }
-};
-
-/**
- * Delete a portfolio
- * @param {string} id 
- */
-export const deletePortfolio = (id) => {
-  const state = getPortfolioState();
-  if (state.portfolios.length <= 1) return; // Keep at least one
-  
-  state.portfolios = state.portfolios.filter(p => p.id !== id);
-  if (state.activePortfolioId === id) {
-    state.activePortfolioId = state.portfolios[0].id;
-  }
-  savePortfolioState(state);
-};
-
-/**
- * Add a stock to the active portfolio
- */
-export const addStock = (item) => {
-  const state = getPortfolioState();
-  const p = state.portfolios.find(p => p.id === state.activePortfolioId);
-  if (p) {
-    p.items.push({ ...item, added_at: new Date().toISOString() });
-    savePortfolioState(state);
-  }
-};
-
-/**
- * Update a stock in the active portfolio
- */
-export const updateStock = (index, updatedItem) => {
-  const state = getPortfolioState();
-  const p = state.portfolios.find(p => p.id === state.activePortfolioId);
-  if (p && p.items[index]) {
-    p.items[index] = { ...p.items[index], ...updatedItem };
-    savePortfolioState(state);
-  }
-};
-
-/**
- * Remove a stock from the active portfolio
- */
-export const deleteStock = (index) => {
-  const state = getPortfolioState();
-  const p = state.portfolios.find(p => p.id === state.activePortfolioId);
-  if (p) {
-    p.items.splice(index, 1);
-    savePortfolioState(state);
-  }
-};
-
-/**
- * Calculate metrics for a portfolio item
- * @param {Object} item Portfolio item
- * @param {number} latestPrice Latest market price for the symbol
- * @returns {Object} Calculated metrics
- */
 export const calculateItemMetrics = (item, latestPrice) => {
-  const quantity = parseFloat(item.quantity);
-  const avgCost = parseFloat(item.average_cost);
-  const commRate = parseFloat(item.commission_rate || 0);
-  
-  let totalCost;
-  if (item.commission_included) {
-    totalCost = quantity * avgCost;
-  } else {
-    totalCost = (quantity * avgCost) * (1 + commRate);
-  }
+  const quantity = Number.parseFloat(item.quantity);
+  const avgCost = Number.parseFloat(item.average_cost);
+  const commRate = Number.parseFloat(item.commission_rate || 0);
+
+  const totalCost = item.commission_included
+    ? quantity * avgCost
+    : quantity * avgCost * (1 + commRate);
 
   const currentValue = quantity * latestPrice;
   const profitLoss = currentValue - totalCost;
@@ -194,21 +209,15 @@ export const calculateItemMetrics = (item, latestPrice) => {
   };
 };
 
-/**
- * Calculate overall portfolio summary
- * @param {Array} items Array of portfolio items
- * @param {Object} marketData Map of symbol -> latestPrice
- * @returns {Object} Summary metrics
- */
 export const calculateSummary = (items, marketData) => {
   let totalInvestment = 0;
   let totalCurrentValue = 0;
 
-  items.forEach(item => {
-    const stock = marketData.stocks.find(s => s.symbol === item.symbol);
+  items.forEach((item) => {
+    const stock = marketData.stocks.find((entry) => entry.symbol === item.symbol);
     const latestPrice = stock ? stock.metrics.ltp : item.average_cost;
     const metrics = calculateItemMetrics(item, latestPrice);
-    
+
     totalInvestment += metrics.totalCost;
     totalCurrentValue += metrics.currentValue;
   });
@@ -224,55 +233,97 @@ export const calculateSummary = (items, marketData) => {
   };
 };
 
-/**
- * Export active portfolio to CSV string
- * @returns {string} CSV content
- */
-export const exportToCSV = () => {
-  const active = getActivePortfolio();
-  if (active.items.length === 0) return '';
+export const exportToCSV = (state) => {
+  const activePortfolio = getActivePortfolio(state);
+  if (activePortfolio.items.length === 0) {
+    return '';
+  }
 
   const headers = ['symbol', 'quantity', 'average_cost', 'commission_rate', 'commission_included'];
-  const rows = active.items.map(item => [
-    item.symbol,
-    item.quantity,
-    item.average_cost,
-    item.commission_rate,
-    item.commission_included
-  ].join(','));
+  const rows = activePortfolio.items.map((item) =>
+    [
+      item.symbol,
+      item.quantity,
+      item.average_cost,
+      item.commission_rate,
+      item.commission_included
+    ].join(',')
+  );
 
   return [headers.join(','), ...rows].join('\n');
 };
 
-/**
- * Import portfolio from CSV string into active portfolio
- * @param {string} csvContent CSV content
- */
-export const importFromCSV = (csvContent) => {
-  const lines = csvContent.split('\n').filter(line => line.trim() !== '');
-  if (lines.length < 2) return;
+const parseCsvItems = (csvContent) => {
+  const lines = String(csvContent)
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
 
-  const headers = lines[0].split(',').map(h => h.trim());
-  const newItems = lines.slice(1).map(line => {
+  if (lines.length < 2) {
+    return [];
+  }
+
+  const headers = lines[0].split(',').map((header) => header.trim());
+  return lines.slice(1).map((line) => {
     const values = line.split(',');
     const item = {};
-    headers.forEach((header, index) => {
-      let val = values[index]?.trim();
-      if (header === 'quantity' || header === 'average_cost' || header === 'commission_rate') {
-        val = parseFloat(val);
-      } else if (header === 'commission_included') {
-        val = val.toLowerCase() === 'true';
-      }
-      item[header] = val;
-    });
-    return { ...item, added_at: new Date().toISOString() };
-  });
 
-  const state = getPortfolioState();
-  const p = state.portfolios.find(p => p.id === state.activePortfolioId);
-  if (p) {
-    p.items = [...p.items, ...newItems];
-    savePortfolioState(state);
-  }
+    headers.forEach((header, index) => {
+      let value = values[index]?.trim();
+      if (header === 'quantity' || header === 'average_cost' || header === 'commission_rate') {
+        value = Number.parseFloat(value);
+      } else if (header === 'commission_included') {
+        value = value === 'true';
+      }
+      item[header] = value;
+    });
+
+    return normalizeItem(item);
+  });
 };
 
+const appendItemsToActivePortfolio = (state, items) => {
+  const nextState = normalizePortfolioState(clone(state));
+  const activePortfolio = getActivePortfolio(nextState);
+  activePortfolio.items = [...activePortfolio.items, ...items.map(normalizeItem)];
+  return nextState;
+};
+
+export const importPortfolioData = (state, fileName, content) => {
+  const normalizedState = normalizePortfolioState(state);
+  const lowerName = String(fileName || '').toLowerCase();
+
+  if (lowerName.endsWith('.json')) {
+    const data = JSON.parse(content);
+
+    if (data?.portfolios && data?.activePortfolioId) {
+      const importedState = normalizePortfolioState(data);
+      const importedPortfolio =
+        importedState.portfolios.find((portfolio) => portfolio.id === importedState.activePortfolioId) ||
+        importedState.portfolios[0];
+
+      return {
+        state: appendItemsToActivePortfolio(normalizedState, importedPortfolio.items),
+        count: importedPortfolio.items.length,
+        message: `Imported ${importedPortfolio.items.length} items into ${getActivePortfolio(normalizedState).name}`
+      };
+    }
+
+    if (Array.isArray(data)) {
+      return {
+        state: appendItemsToActivePortfolio(normalizedState, data.map(normalizeItem)),
+        count: data.length,
+        message: `Imported ${data.length} items into ${getActivePortfolio(normalizedState).name}`
+      };
+    }
+
+    throw new Error('Invalid JSON file');
+  }
+
+  const csvItems = parseCsvItems(content);
+  return {
+    state: appendItemsToActivePortfolio(normalizedState, csvItems),
+    count: csvItems.length,
+    message: `Imported ${csvItems.length} items into ${getActivePortfolio(normalizedState).name}`
+  };
+};

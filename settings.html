@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DSE Toolkit | Settings</title>
+  <meta name="description" content="Configure optional server mode for portfolio sync and account access." />
+  <link rel="stylesheet" href="./styles.css" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icons/icon-192.png" />
+  <style>
+    body {
+      min-height: 100vh;
+    }
+
+    .settings-shell {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 4rem;
+    }
+
+    .settings-hero {
+      display: grid;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .settings-grid {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .settings-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+    }
+
+    .settings-card h2,
+    .settings-card h3 {
+      margin: 0 0 0.5rem;
+    }
+
+    .settings-card p {
+      margin: 0;
+      color: var(--muted);
+    }
+
+    .settings-form {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .settings-form label {
+      display: block;
+      margin-bottom: 0.4rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .settings-form input {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .settings-actions,
+    .auth-grid,
+    .import-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+
+    .settings-message {
+      min-height: 1.25rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .settings-message[data-tone='success'] {
+      color: var(--color-up);
+    }
+
+    .settings-message[data-tone='error'] {
+      color: var(--danger);
+    }
+
+    .settings-message[data-tone='warning'] {
+      color: #b45309;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .settings-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+
+    .settings-badge::before {
+      content: '';
+      width: 0.6rem;
+      height: 0.6rem;
+      border-radius: 999px;
+      background: var(--color-neutral);
+    }
+
+    .settings-badge.is-connected::before {
+      background: var(--color-up);
+    }
+
+    .settings-badge.is-login-required::before {
+      background: #f59e0b;
+    }
+
+    .settings-badge.is-unavailable::before {
+      background: var(--danger);
+    }
+
+    .settings-badge.is-client-only::before,
+    .settings-badge.is-checking::before {
+      background: var(--color-neutral);
+    }
+
+    .auth-stack {
+      display: grid;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .auth-summary {
+      margin-top: 1rem;
+      display: grid;
+      gap: 1rem;
+    }
+
+    .auth-panel {
+      padding: 1rem;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.03), rgba(15, 23, 42, 0.01));
+    }
+
+    .auth-panel h3 {
+      margin-bottom: 0.35rem;
+    }
+
+    .auth-panel p {
+      margin-top: 0;
+    }
+
+    .settings-modal-overlay {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(15, 23, 42, 0.62);
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      z-index: 2100;
+    }
+
+    .settings-modal-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .settings-modal {
+      width: min(100%, 420px);
+      border-radius: 24px;
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+      padding: 1.25rem;
+      transform: translateY(18px);
+      transition: transform 0.2s ease;
+    }
+
+    .settings-modal-overlay.open .settings-modal {
+      transform: translateY(0);
+    }
+
+    .settings-modal__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .settings-modal__header h3 {
+      margin: 0 0 0.25rem;
+    }
+
+    .settings-modal__close {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-size: 1.5rem;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0.1rem 0.25rem;
+    }
+
+    .auth-switcher {
+      display: inline-flex;
+      gap: 0.35rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 0.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .auth-switcher button {
+      border: none;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 700;
+      border-radius: 999px;
+      padding: 0.55rem 0.9rem;
+      cursor: pointer;
+    }
+
+    .auth-switcher button.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    .auth-modal-panel[hidden] {
+      display: none;
+    }
+
+    @media (min-width: 720px) {
+      .settings-modal-overlay {
+        align-items: center;
+      }
+    }
+
+    .import-card {
+      margin-top: 1rem;
+      padding: 1rem;
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(15, 157, 88, 0.08), rgba(15, 157, 88, 0.02));
+    }
+
+    .import-card h4 {
+      margin: 0 0 0.35rem;
+    }
+
+    .muted-note {
+      margin-top: 0.75rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav-bar">
+    <div class="nav-container">
+      <a href="./index.html" class="nav-logo">DSE Toolkit</a>
+      <div class="nav-links">
+        <a href="./market.html">Market</a>
+        <a href="./portfolio.html">Stocks</a>
+        <a href="./funds.html">Funds</a>
+        <a href="./analyzer.html">Analyzer</a>
+      </div>
+    </div>
+  </nav>
+  <div class="safe-top-spacer"></div>
+
+  <main class="settings-shell">
+    <section class="settings-hero">
+      <div class="eyebrow">Settings</div>
+      <h1>Optional Server Mode</h1>
+      <p class="lead">Leave the server URL empty to keep the app fully client-side. Add a server URL when you want portfolio data to move to an authenticated backend.</p>
+    </section>
+
+    <section class="settings-grid">
+      <article class="settings-card">
+        <h2>Connection</h2>
+        <p>Server mode applies to stock portfolios and mutual fund portfolios. Market data and AI settings remain local.</p>
+
+        <div class="status-row">
+          <span id="connection-status" class="settings-badge">Checking server...</span>
+          <span id="connection-detail" class="muted-note"></span>
+        </div>
+
+        <div class="settings-form">
+          <div>
+            <label for="server-url">Server URL</label>
+            <input id="server-url" type="url" placeholder="http://localhost:8787" />
+          </div>
+          <div class="settings-actions">
+            <button id="save-server-url" class="btn btn--solid" type="button">Save Server URL</button>
+            <button id="clear-server-url" class="btn" type="button">Use Client Only</button>
+          </div>
+          <div id="server-message" class="settings-message"></div>
+        </div>
+      </article>
+
+      <article id="auth-card" class="settings-card" hidden>
+        <h2>Account</h2>
+        <p>When a server is configured, portfolio pages require login before they can load server-backed data.</p>
+
+        <div class="auth-summary">
+          <div id="auth-guest-card" class="auth-panel" hidden>
+            <h3>Not logged in</h3>
+            <p>Use your server account to load synced stock and mutual fund portfolios.</p>
+            <div class="settings-actions" style="margin-top: 1rem;">
+              <button id="open-login-modal" class="btn btn--solid" type="button">Log In</button>
+              <button id="open-signup-modal" class="btn" type="button">Register</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="current-user-card" class="auth-panel" hidden style="margin-top: 1rem;">
+          <h3>Connected Account</h3>
+          <p id="current-user-email"></p>
+          <div class="settings-actions" style="margin-top: 1rem;">
+            <button id="logout-btn" class="btn" type="button">Log Out</button>
+          </div>
+        </div>
+      </article>
+
+      <article id="import-section" class="settings-card" hidden>
+        <h2>One-Time Local Import</h2>
+        <p>These imports copy your existing local browser data to the connected server once. They do not clear the local copy.</p>
+
+        <div id="import-stocks-card" class="import-card" hidden>
+          <h4>Stock portfolios</h4>
+          <p>Upload your existing stock portfolio document to the connected server.</p>
+          <div class="import-actions" style="margin-top: 0.75rem;">
+            <button id="import-stocks-btn" class="btn btn--solid" type="button">Import Stocks</button>
+            <button id="dismiss-stocks-btn" class="btn" type="button">Skip For Now</button>
+          </div>
+        </div>
+
+        <div id="import-funds-card" class="import-card" hidden>
+          <h4>Mutual funds</h4>
+          <p>Upload your existing mutual fund document to the connected server.</p>
+          <div class="import-actions" style="margin-top: 0.75rem;">
+            <button id="import-funds-btn" class="btn btn--solid" type="button">Import Funds</button>
+            <button id="dismiss-funds-btn" class="btn" type="button">Skip For Now</button>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div id="auth-modal" class="settings-modal-overlay" aria-hidden="true">
+    <div class="settings-modal">
+      <div class="settings-modal__header">
+        <div>
+          <h3 id="auth-modal-title">Log In</h3>
+          <p id="auth-modal-subtitle" class="muted-note" style="margin-top: 0;">Connect to your portfolio server account.</p>
+        </div>
+        <button id="close-auth-modal" class="settings-modal__close" type="button" aria-label="Close auth modal">&times;</button>
+      </div>
+
+      <div class="auth-switcher" role="tablist" aria-label="Authentication">
+        <button id="switch-login" type="button" class="active">Log In</button>
+        <button id="switch-signup" type="button">Register</button>
+      </div>
+
+      <form id="login-form" class="auth-modal-panel">
+        <div class="settings-form">
+          <div>
+            <label for="login-email">Email</label>
+            <input id="login-email" name="email" type="email" autocomplete="email" required />
+          </div>
+          <div>
+            <label for="login-password">Password</label>
+            <input id="login-password" name="password" type="password" autocomplete="current-password" minlength="8" required />
+          </div>
+          <button class="btn btn--solid" type="submit">Log In</button>
+          <div id="login-message" class="settings-message"></div>
+        </div>
+      </form>
+
+      <form id="signup-form" class="auth-modal-panel" hidden>
+        <div class="settings-form">
+          <div>
+            <label for="signup-email">Email</label>
+            <input id="signup-email" name="email" type="email" autocomplete="email" required />
+          </div>
+          <div>
+            <label for="signup-password">Password</label>
+            <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required />
+          </div>
+          <button class="btn btn--solid" type="submit">Create Account</button>
+          <div id="signup-message" class="settings-message"></div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="./src/settingsApp.js"></script>
+  <script type="module" src="./src/navStatus.js"></script>
+  <script type="module" src="./src/swRegister.js"></script>
+  <script type="module" src="./src/mobile-nav.js"></script>
+</body>
+</html>

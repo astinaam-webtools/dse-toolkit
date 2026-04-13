@@ -1,261 +1,282 @@
-/**
- * Mutual Funds Logic Library
- * Handles data management and calculations for the Mutual Funds feature.
- */
-
 const STORAGE_KEY = 'dse-mutual-funds';
 
-// --- Data Management ---
+const clone = (value) => JSON.parse(JSON.stringify(value));
 
-export function getFundsData() {
-  const data = localStorage.getItem(STORAGE_KEY);
-  if (!data) {
-    return {
-      version: 1,
-      activePortfolioId: null,
-      portfolios: []
-    };
+const createId = () => Date.now().toString() + Math.random().toString(36).slice(2, 8);
+
+const normalizeTransaction = (transaction) => ({
+  id: String(transaction?.id || createId()),
+  type: String(transaction?.type || 'BUY'),
+  date: transaction?.date || new Date().toISOString().split('T')[0],
+  units: Number.parseFloat(transaction?.units ?? 0) || 0,
+  price_per_unit: Number.parseFloat(transaction?.price_per_unit ?? 0) || 0,
+  total_cost: Number.parseFloat(transaction?.total_cost ?? 0) || 0,
+  notes: transaction?.notes ? String(transaction.notes) : ''
+});
+
+const normalizeFund = (fund) => ({
+  id: String(fund?.id || createId()),
+  name: String(fund?.name || 'Untitled Fund'),
+  amc: String(fund?.amc || ''),
+  symbol: String(fund?.symbol || ''),
+  current_nav: Number.parseFloat(fund?.current_nav ?? 0) || 0,
+  last_updated: fund?.last_updated || null,
+  transactions: Array.isArray(fund?.transactions)
+    ? fund.transactions.map(normalizeTransaction).sort((a, b) => new Date(a.date) - new Date(b.date))
+    : [],
+  nav_history: Array.isArray(fund?.nav_history)
+    ? fund.nav_history
+        .filter((entry) => entry && typeof entry === 'object')
+        .map((entry) => ({
+          date: entry.date || new Date().toISOString().split('T')[0],
+          nav: Number.parseFloat(entry.nav ?? 0) || 0
+        }))
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+    : []
+});
+
+const normalizePortfolio = (portfolio) => ({
+  id: String(portfolio?.id || createId()),
+  name: String(portfolio?.name || 'Untitled Portfolio'),
+  created_at: portfolio?.created_at || new Date().toISOString(),
+  funds: Array.isArray(portfolio?.funds) ? portfolio.funds.map(normalizeFund) : []
+});
+
+export function createEmptyFundsData() {
+  return {
+    version: 1,
+    activePortfolioId: null,
+    portfolios: []
+  };
+}
+
+export function normalizeFundsData(value) {
+  if (!value || typeof value !== 'object' || !Array.isArray(value.portfolios)) {
+    return createEmptyFundsData();
   }
+
+  const portfolios = value.portfolios
+    .filter((portfolio) => portfolio && typeof portfolio === 'object')
+    .map(normalizePortfolio);
+
+  const activePortfolioId =
+    value.activePortfolioId && portfolios.some((portfolio) => portfolio.id === value.activePortfolioId)
+      ? String(value.activePortfolioId)
+      : portfolios[0]?.id || null;
+
+  return {
+    version: typeof value.version === 'number' ? value.version : 1,
+    activePortfolioId,
+    portfolios
+  };
+}
+
+export function readLocalFundsData() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) {
+    return createEmptyFundsData();
+  }
+
   try {
-    return JSON.parse(data);
-  } catch (e) {
-    console.error("Failed to parse funds data", e);
-    return { version: 1, activePortfolioId: null, portfolios: [] };
+    return normalizeFundsData(JSON.parse(raw));
+  } catch (error) {
+    console.error('Failed to parse funds data', error);
+    return createEmptyFundsData();
   }
 }
 
-export function saveFundsData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+export function writeLocalFundsData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(normalizeFundsData(data)));
 }
 
-export function exportFundsData() {
-  const data = getFundsData();
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `dse-mutual-funds-${new Date().toISOString().split('T')[0]}.json`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+export function hasMeaningfulLocalFundsData() {
+  return readLocalFundsData().portfolios.some((portfolio) => portfolio.funds.length > 0);
 }
 
-export async function importFundsData(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target.result);
-        // Basic validation
-        if (!data.portfolios || !Array.isArray(data.portfolios)) {
-          throw new Error("Invalid data format");
-        }
-        saveFundsData(data);
-        resolve(data);
-      } catch (err) {
-        reject(err);
-      }
-    };
-    reader.onerror = reject;
-    reader.readAsText(file);
-  });
+export function serializeFundsData(data) {
+  return JSON.stringify(normalizeFundsData(data), null, 2);
 }
 
-// --- Core Actions ---
+export function parseImportedFundsData(text) {
+  const parsed = JSON.parse(text);
+  const normalized = normalizeFundsData(parsed);
+  if (!Array.isArray(normalized.portfolios)) {
+    throw new Error('Invalid data format');
+  }
+  return normalized;
+}
 
-export function createPortfolio(name) {
-  const data = getFundsData();
+export function createPortfolio(data, name) {
+  const nextData = normalizeFundsData(clone(data));
   const newPortfolio = {
-    id: Date.now().toString(),
-    name: name,
+    id: createId(),
+    name,
     created_at: new Date().toISOString(),
     funds: []
   };
-  data.portfolios.push(newPortfolio);
-  if (!data.activePortfolioId) {
-    data.activePortfolioId = newPortfolio.id;
+
+  nextData.portfolios.push(newPortfolio);
+  if (!nextData.activePortfolioId) {
+    nextData.activePortfolioId = newPortfolio.id;
   }
-  saveFundsData(data);
-  return newPortfolio;
+
+  return nextData;
 }
 
-export function renamePortfolio(id, newName) {
-  const data = getFundsData();
-  const portfolio = data.portfolios.find(p => p.id === id);
+export function renamePortfolio(data, id, newName) {
+  const nextData = normalizeFundsData(clone(data));
+  const portfolio = nextData.portfolios.find((entry) => entry.id === id);
   if (portfolio) {
     portfolio.name = newName;
-    saveFundsData(data);
   }
+  return nextData;
 }
 
-export function deletePortfolio(id) {
-  const data = getFundsData();
-  data.portfolios = data.portfolios.filter(p => p.id !== id);
-  if (data.activePortfolioId === id) {
-    data.activePortfolioId = data.portfolios.length > 0 ? data.portfolios[0].id : null;
+export function deletePortfolio(data, id) {
+  const nextData = normalizeFundsData(clone(data));
+  nextData.portfolios = nextData.portfolios.filter((portfolio) => portfolio.id !== id);
+  if (nextData.activePortfolioId === id) {
+    nextData.activePortfolioId = nextData.portfolios.length > 0 ? nextData.portfolios[0].id : null;
   }
-  saveFundsData(data);
+  return nextData;
 }
 
-export function addFund(portfolioId, name, amc, symbol) {
-  const data = getFundsData();
-  const portfolio = data.portfolios.find(p => p.id === portfolioId);
-  if (!portfolio) return null;
+export function addFund(data, portfolioId, name, amc, symbol) {
+  const nextData = normalizeFundsData(clone(data));
+  const portfolio = nextData.portfolios.find((entry) => entry.id === portfolioId);
+  if (!portfolio) {
+    return nextData;
+  }
 
-  const newFund = {
-    id: Date.now().toString(),
-    name,
-    amc,
-    symbol: symbol || '',
-    current_nav: 0,
-    last_updated: null,
-    transactions: [],
-    nav_history: []
-  };
-  portfolio.funds.push(newFund);
-  saveFundsData(data);
-  return newFund;
+  portfolio.funds.push(
+    normalizeFund({
+      id: createId(),
+      name,
+      amc,
+      symbol,
+      current_nav: 0,
+      last_updated: null,
+      transactions: [],
+      nav_history: []
+    })
+  );
+
+  return nextData;
 }
 
-export function renameFund(portfolioId, fundId, newName, newSymbol) {
-  const data = getFundsData();
-  const portfolio = data.portfolios.find(p => p.id === portfolioId);
-  if (!portfolio) return;
-  const fund = portfolio.funds.find(f => f.id === fundId);
+export function renameFund(data, portfolioId, fundId, newName, newSymbol) {
+  const nextData = normalizeFundsData(clone(data));
+  const portfolio = nextData.portfolios.find((entry) => entry.id === portfolioId);
+  const fund = portfolio?.funds.find((entry) => entry.id === fundId);
   if (fund) {
     fund.name = newName;
-    if (newSymbol !== undefined) fund.symbol = newSymbol;
-    saveFundsData(data);
+    if (newSymbol !== undefined) {
+      fund.symbol = newSymbol;
+    }
   }
+  return nextData;
 }
 
-export function deleteFund(portfolioId, fundId) {
-  const data = getFundsData();
-  const portfolio = data.portfolios.find(p => p.id === portfolioId);
-  if (!portfolio) return;
-  portfolio.funds = portfolio.funds.filter(f => f.id !== fundId);
-  saveFundsData(data);
+export function deleteFund(data, portfolioId, fundId) {
+  const nextData = normalizeFundsData(clone(data));
+  const portfolio = nextData.portfolios.find((entry) => entry.id === portfolioId);
+  if (portfolio) {
+    portfolio.funds = portfolio.funds.filter((fund) => fund.id !== fundId);
+  }
+  return nextData;
 }
 
-export function addTransaction(portfolioId, fundId, transaction) {
-  const data = getFundsData();
-  const portfolio = data.portfolios.find(p => p.id === portfolioId);
-  if (!portfolio) return null;
-  const fund = portfolio.funds.find(f => f.id === fundId);
-  if (!fund) return null;
+export function addTransaction(data, portfolioId, fundId, transaction) {
+  const nextData = normalizeFundsData(clone(data));
+  const portfolio = nextData.portfolios.find((entry) => entry.id === portfolioId);
+  const fund = portfolio?.funds.find((entry) => entry.id === fundId);
+  if (!fund) {
+    return nextData;
+  }
 
-  const newTx = {
-    id: Date.now().toString(),
-    ...transaction // date, type, units, price_per_unit, total_cost, notes
-  };
-  
-  // Ensure numeric types
-  newTx.units = parseFloat(newTx.units);
-  newTx.price_per_unit = parseFloat(newTx.price_per_unit);
-  newTx.total_cost = parseFloat(newTx.total_cost);
-
-  fund.transactions.push(newTx);
-  
-  // Sort transactions by date
+  fund.transactions.push(
+    normalizeTransaction({
+      id: createId(),
+      ...transaction
+    })
+  );
   fund.transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-  saveFundsData(data);
-  return newTx;
+  return nextData;
 }
 
-export function editTransaction(portfolioId, fundId, transactionId, updatedTransaction) {
-  const data = getFundsData();
-  const portfolio = data.portfolios.find(p => p.id === portfolioId);
-  if (!portfolio) return null;
-  const fund = portfolio.funds.find(f => f.id === fundId);
-  if (!fund) return null;
+export function editTransaction(data, portfolioId, fundId, transactionId, updatedTransaction) {
+  const nextData = normalizeFundsData(clone(data));
+  const portfolio = nextData.portfolios.find((entry) => entry.id === portfolioId);
+  const fund = portfolio?.funds.find((entry) => entry.id === fundId);
+  if (!fund) {
+    return nextData;
+  }
 
-  const txIndex = fund.transactions.findIndex(t => t.id === transactionId);
-  if (txIndex === -1) return null;
+  const transactionIndex = fund.transactions.findIndex((entry) => entry.id === transactionId);
+  if (transactionIndex === -1) {
+    return nextData;
+  }
 
-  // Merge updates
-  const tx = fund.transactions[txIndex];
-  Object.assign(tx, updatedTransaction);
-
-  // Ensure numeric types
-  if (tx.units) tx.units = parseFloat(tx.units);
-  if (tx.price_per_unit) tx.price_per_unit = parseFloat(tx.price_per_unit);
-  if (tx.total_cost) tx.total_cost = parseFloat(tx.total_cost);
-
-  // Sort transactions by date
+  fund.transactions[transactionIndex] = normalizeTransaction({
+    ...fund.transactions[transactionIndex],
+    ...updatedTransaction,
+    id: transactionId
+  });
   fund.transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
-  saveFundsData(data);
-  return tx;
+  return nextData;
 }
 
-export function deleteTransaction(portfolioId, fundId, transactionId) {
-  const data = getFundsData();
-  const portfolio = data.portfolios.find(p => p.id === portfolioId);
-  if (!portfolio) return;
-  const fund = portfolio.funds.find(f => f.id === fundId);
-  if (!fund) return;
-
-  fund.transactions = fund.transactions.filter(t => t.id !== transactionId);
-  saveFundsData(data);
+export function deleteTransaction(data, portfolioId, fundId, transactionId) {
+  const nextData = normalizeFundsData(clone(data));
+  const portfolio = nextData.portfolios.find((entry) => entry.id === portfolioId);
+  const fund = portfolio?.funds.find((entry) => entry.id === fundId);
+  if (fund) {
+    fund.transactions = fund.transactions.filter((transaction) => transaction.id !== transactionId);
+  }
+  return nextData;
 }
 
-export function updateNav(portfolioId, fundId, nav, date) {
-  const data = getFundsData();
-  const portfolio = data.portfolios.find(p => p.id === portfolioId);
-  if (!portfolio) return null;
-  const fund = portfolio.funds.find(f => f.id === fundId);
-  if (!fund) return null;
+export function updateNav(data, portfolioId, fundId, nav, date) {
+  const nextData = normalizeFundsData(clone(data));
+  const portfolio = nextData.portfolios.find((entry) => entry.id === portfolioId);
+  const fund = portfolio?.funds.find((entry) => entry.id === fundId);
+  if (!fund) {
+    return nextData;
+  }
 
-  const numNav = parseFloat(nav);
+  const numericNav = Number.parseFloat(nav) || 0;
   const updateDate = date || new Date().toISOString().split('T')[0];
+  const historyIndex = fund.nav_history.findIndex((entry) => entry.date === updateDate);
 
-  // Add to history if entry for date doesn't exist, or update it
-  const existingEntryIndex = fund.nav_history.findIndex(h => h.date === updateDate);
-  if (existingEntryIndex >= 0) {
-    fund.nav_history[existingEntryIndex].nav = numNav;
+  if (historyIndex >= 0) {
+    fund.nav_history[historyIndex].nav = numericNav;
   } else {
-    fund.nav_history.push({ date: updateDate, nav: numNav });
+    fund.nav_history.push({ date: updateDate, nav: numericNav });
   }
-  
-  // Sort history
+
   fund.nav_history.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // Update current_nav to the latest available in history
-  if (fund.nav_history.length > 0) {
-    const latest = fund.nav_history[fund.nav_history.length - 1];
-    fund.current_nav = latest.nav;
-    // We can also track the date of the latest NAV if needed, but last_updated is usually for the record modification time
-  } else {
-    fund.current_nav = numNav;
-  }
-  
+  const latest = fund.nav_history[fund.nav_history.length - 1];
+  fund.current_nav = latest ? latest.nav : numericNav;
   fund.last_updated = new Date().toISOString();
-
-  saveFundsData(data);
-  return fund;
+  return nextData;
 }
-
-// --- Calculations ---
 
 export function calculateFundStats(fund) {
   let totalUnits = 0;
   let totalCost = 0;
 
-  fund.transactions.forEach(tx => {
-    if (tx.type === 'BUY' || tx.type === 'DIVIDEND_REINVEST') {
-      totalUnits += tx.units;
-      totalCost += tx.total_cost;
-    } else if (tx.type === 'SELL') {
-      // Simple average cost reduction
+  fund.transactions.forEach((transaction) => {
+    if (transaction.type === 'BUY' || transaction.type === 'DIVIDEND_REINVEST') {
+      totalUnits += transaction.units;
+      totalCost += transaction.total_cost;
+    } else if (transaction.type === 'SELL') {
       const avgCost = totalUnits > 0 ? totalCost / totalUnits : 0;
-      totalUnits -= tx.units;
-      totalCost -= (tx.units * avgCost); // Reduce cost proportionally
+      totalUnits -= transaction.units;
+      totalCost -= transaction.units * avgCost;
     }
   });
 
-  // Handle floating point errors
   totalUnits = Math.max(0, totalUnits);
   totalCost = Math.max(0, totalCost);
 
@@ -278,7 +299,7 @@ export function calculatePortfolioStats(portfolio) {
   let totalInvested = 0;
   let currentValue = 0;
 
-  portfolio.funds.forEach(fund => {
+  portfolio.funds.forEach((fund) => {
     const stats = calculateFundStats(fund);
     totalInvested += stats.totalCost;
     currentValue += stats.currentValue;
@@ -301,8 +322,8 @@ export function calculateAggregateStats(portfolios) {
   let currentValue = 0;
   let fundCount = 0;
 
-  portfolios.forEach(pf => {
-    const stats = calculatePortfolioStats(pf);
+  portfolios.forEach((portfolio) => {
+    const stats = calculatePortfolioStats(portfolio);
     totalInvested += stats.totalInvested;
     currentValue += stats.currentValue;
     fundCount += stats.fundCount;

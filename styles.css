@@ -975,6 +975,8 @@ mark.hl {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
 .nav-logo {
@@ -987,6 +989,7 @@ mark.hl {
 .nav-links {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .nav-links a {
@@ -1001,12 +1004,183 @@ mark.hl {
   color: var(--accent);
 }
 
+.nav-server-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.55rem 0.85rem 0.55rem 0.8rem;
+  border-radius: 18px;
+  border: 1px solid var(--border);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 245, 249, 0.94));
+  color: var(--text);
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  min-width: 0;
+  max-width: min(48vw, 220px);
+}
+
+.nav-server-pill::before {
+  content: '';
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 999px;
+  background: var(--color-neutral);
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.12);
+  flex: 0 0 auto;
+}
+
+.nav-server-pill__body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+}
+
+.nav-server-pill__eyebrow {
+  font-size: 0.55rem;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--muted);
+  opacity: 0.9;
+}
+
+.nav-server-pill__label {
+  font-size: 0.82rem;
+  line-height: 1.1;
+  font-weight: 700;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-server-pill.is-connected::before {
+  background: var(--color-up);
+  box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.14);
+}
+
+.nav-server-pill.is-login-required::before {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.14);
+}
+
+.nav-server-pill.is-unavailable::before {
+  background: var(--danger);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.12);
+}
+
+.nav-server-pill.is-client-only::before,
+.nav-server-pill.is-checking::before {
+  background: var(--color-neutral);
+  box-shadow: 0 0 0 4px rgba(100, 116, 139, 0.12);
+}
+
+.nav-server-pill.is-client-only {
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(226, 232, 240, 0.92));
+}
+
+.nav-server-pill.is-connected {
+  background: linear-gradient(135deg, rgba(236, 253, 245, 0.98), rgba(209, 250, 229, 0.94));
+  border-color: rgba(16, 185, 129, 0.22);
+}
+
+.nav-server-pill.is-login-required {
+  background: linear-gradient(135deg, rgba(255, 251, 235, 0.98), rgba(254, 243, 199, 0.94));
+  border-color: rgba(245, 158, 11, 0.24);
+}
+
+.nav-server-pill.is-unavailable {
+  background: linear-gradient(135deg, rgba(254, 242, 242, 0.98), rgba(254, 226, 226, 0.94));
+  border-color: rgba(220, 38, 38, 0.22);
+}
+
+.nav-container.has-server-pill .nav-logo {
+  order: 1;
+}
+
+.nav-container.has-server-pill .nav-server-pill {
+  order: 2;
+  margin-left: auto;
+}
+
+.nav-container.has-server-pill .nav-links {
+  order: 3;
+  width: 100%;
+  gap: 0.65rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: none;
+}
+
+.nav-container.has-server-pill .nav-links::-webkit-scrollbar {
+  display: none;
+}
+
 @media (max-width: 600px) {
   .nav-links {
     gap: 0.75rem;
   }
   .nav-links a {
     font-size: 0.8rem;
+  }
+
+  .nav-container.has-server-pill .nav-links a {
+    white-space: nowrap;
+  }
+}
+
+@media (min-width: 720px) {
+  .nav-container.has-server-pill {
+    flex-wrap: nowrap;
+  }
+
+  .nav-container.has-server-pill .nav-links {
+    order: 2;
+    width: auto;
+    margin-left: auto;
+    padding-bottom: 0;
+    overflow: visible;
+  }
+
+  .nav-container.has-server-pill .nav-server-pill {
+    order: 3;
+    margin-left: 0;
+    max-width: 240px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .nav-server-pill {
+    background: linear-gradient(135deg, rgba(51, 65, 85, 0.96), rgba(30, 41, 59, 0.94));
+    border-color: rgba(148, 163, 184, 0.2);
+    color: #f8fafc;
+    box-shadow: 0 12px 28px rgba(2, 6, 23, 0.32);
+  }
+
+  .nav-server-pill__eyebrow {
+    color: #cbd5e1;
+    opacity: 0.78;
+  }
+
+  .nav-server-pill.is-client-only {
+    background: linear-gradient(135deg, rgba(71, 85, 105, 0.96), rgba(30, 41, 59, 0.94));
+    border-color: rgba(148, 163, 184, 0.22);
+  }
+
+  .nav-server-pill.is-connected {
+    background: linear-gradient(135deg, rgba(6, 78, 59, 0.96), rgba(6, 95, 70, 0.92));
+    border-color: rgba(52, 211, 153, 0.24);
+  }
+
+  .nav-server-pill.is-login-required {
+    background: linear-gradient(135deg, rgba(120, 53, 15, 0.96), rgba(146, 64, 14, 0.92));
+    border-color: rgba(251, 191, 36, 0.26);
+  }
+
+  .nav-server-pill.is-unavailable {
+    background: linear-gradient(135deg, rgba(127, 29, 29, 0.96), rgba(153, 27, 27, 0.92));
+    border-color: rgba(248, 113, 113, 0.24);
   }
 }
 
