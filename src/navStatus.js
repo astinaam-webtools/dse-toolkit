@@ -1,4 +1,5 @@
-import { applyConnectionState, getConnectionState, getStoredConnectionState } from './lib/serverClient.js';
+import { applyConnectionState } from './lib/serverClient.js';
+import { getConnectionState, getStoredConnectionState } from './lib/documentGateway.js';
 
 const ensurePill = () => {
   const navContainer = document.querySelector('.nav-container');

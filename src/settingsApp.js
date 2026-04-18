@@ -5,15 +5,15 @@ import {
   setImportDecision,
   setServerUrl
 } from './lib/appSettings.js';
+import { ApiError, probeServer } from './lib/serverClient.js';
 import {
-  ApiError,
   applyConnectionState,
   getConnectionState,
+  getSession,
   login,
   logout,
-  probeServer,
   signup
-} from './lib/serverClient.js';
+} from './lib/documentGateway.js';
 import {
   getLocalPortfolioState,
   hasLocalPortfolioState,
@@ -93,7 +93,8 @@ const renderConnectionState = async () => {
   const isConnected = state.code === 'connected';
   els.authGuestCard.hidden = !serverConfigured || isConnected;
   els.currentUserCard.hidden = !isConnected;
-  els.currentUserEmail.textContent = settings.user?.email || state.user?.email || '';
+  const session = getSession();
+  els.currentUserEmail.textContent = session.user?.email || state.user?.email || '';
 
   if (isConnected) {
     closeAuthModal();

@@ -4,12 +4,13 @@
   "description": "A mobile-first glossary for Dhaka Stock Exchange (DSE) investors to learn stock terms.",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/smoke-test.mjs",
+    "test": "node scripts/smoke-test.mjs && node scripts/server-mode-test.mjs",
     "build": "node scripts/build.mjs",
     "build:data": "node scripts/build-market-data.mjs",
     "android:sync": "node scripts/sync-android.mjs",
     "server:start": "npm --prefix server start",
-    "server:dev": "npm --prefix server run dev"
+    "server:dev": "npm --prefix server run dev",
+    "test:server-mode": "node scripts/server-mode-test.mjs"
   },
   "keywords": [],
   "author": "",
