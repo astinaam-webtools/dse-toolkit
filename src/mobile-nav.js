@@ -1,43 +1,44 @@
-import { App } from '@capacitor/app';
-import { Dialog } from '@capacitor/dialog';
-import { Capacitor } from '@capacitor/core';
+// This project is served as plain ES modules with no bundler, so avoid bare npm imports.
+const capacitorRuntime = window.Capacitor;
+const plugins = capacitorRuntime?.Plugins || {};
+const appPlugin = plugins.App;
+const dialogPlugin = plugins.Dialog;
+const isNativePlatform = Boolean(capacitorRuntime?.isNativePlatform?.());
 
-// Only run on native platforms
-if (Capacitor.isNativePlatform()) {
+if (!isNativePlatform || !appPlugin?.addListener) {
+  console.log('Mobile nav: Web mode or App plugin unavailable, skipping back button handler');
+} else {
   console.log('Mobile nav: Running on native platform');
 
-  // Register the back button listener
-  App.addListener('backButton', async ({ canGoBack }) => {
+  appPlugin.addListener('backButton', async ({ canGoBack }) => {
     console.log('Back button pressed. canGoBack:', canGoBack, 'Path:', window.location.pathname);
-    
+
     const path = window.location.pathname;
-    // Robust check for home page
     const isHome = path === '/' || path.endsWith('index.html') || path.endsWith('/public/index.html');
 
     if (canGoBack && !isHome) {
       window.history.back();
-    } else {
-      // Show exit confirmation
-      try {
-        const result = await Dialog.confirm({
-          title: 'Exit App',
-          message: 'Are you sure you want to exit?',
-          okButtonTitle: 'Exit',
-          cancelButtonTitle: 'Cancel',
-        });
-        
-        if (result.value) {
-          App.exitApp();
-        }
-      } catch (error) {
-        console.error('Dialog error:', error);
-        // Fallback
-        if (window.confirm('Are you sure you want to exit?')) {
-          App.exitApp();
-        }
+      return;
+    }
+
+    try {
+      const result = dialogPlugin?.confirm
+        ? await dialogPlugin.confirm({
+            title: 'Exit App',
+            message: 'Are you sure you want to exit?',
+            okButtonTitle: 'Exit',
+            cancelButtonTitle: 'Cancel'
+          })
+        : { value: window.confirm('Are you sure you want to exit?') };
+
+      if (result.value) {
+        appPlugin.exitApp?.();
+      }
+    } catch (error) {
+      console.error('Mobile nav exit flow failed:', error);
+      if (window.confirm('Are you sure you want to exit?')) {
+        appPlugin.exitApp?.();
       }
     }
   });
-} else {
-  console.log('Mobile nav: Not on native platform, skipping back button handler');
 }

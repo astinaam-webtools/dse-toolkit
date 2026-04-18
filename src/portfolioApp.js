@@ -44,7 +44,12 @@ const els = {
   manageModal: document.getElementById('manage-portfolios-modal'),
   closeManageModal: document.getElementById('close-manage-modal'),
   portfoliosListManage: document.getElementById('portfolios-list-manage'),
-  createPortfolioBtn: document.getElementById('create-portfolio-btn')
+  createPortfolioBtn: document.getElementById('create-portfolio-btn'),
+  symbolInput: document.getElementById('symbol'),
+  quantityInput: document.getElementById('quantity'),
+  averageCostInput: document.getElementById('avg-cost'),
+  commissionRateInput: document.getElementById('comm-rate'),
+  commissionIncludedInput: document.getElementById('comm-included')
 };
 
 const formatMoney = (value) =>
@@ -343,13 +348,56 @@ window.deletePortfolioConfirm = async (id) => {
 const handleFormSubmit = async (event) => {
   event.preventDefault();
 
+  if (pageState !== 'ready') {
+    return;
+  }
+
+  const symbol = els.symbolInput.value.trim().toUpperCase();
+  const quantity = Number.parseFloat(els.quantityInput.value);
+  const averageCost = Number.parseFloat(els.averageCostInput.value);
+  const commissionPercentRaw = els.commissionRateInput.value.trim();
+  const commissionPercent =
+    commissionPercentRaw === '' ? 0 : Number.parseFloat(commissionPercentRaw);
+
+  if (!symbol) {
+    alert('Please enter a stock symbol.');
+    console.warn('Portfolio save blocked: empty symbol');
+    els.symbolInput.focus();
+    return;
+  }
+
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    alert('Please enter a valid quantity greater than 0.');
+    console.warn('Portfolio save blocked: invalid quantity', { quantity: els.quantityInput.value });
+    els.quantityInput.focus();
+    return;
+  }
+
+  if (!Number.isFinite(averageCost) || averageCost <= 0) {
+    alert('Please enter a valid average cost greater than 0.');
+    console.warn('Portfolio save blocked: invalid average cost', {
+      averageCost: els.averageCostInput.value
+    });
+    els.averageCostInput.focus();
+    return;
+  }
+
+  if (!Number.isFinite(commissionPercent) || commissionPercent < 0) {
+    alert('Please enter a valid commission rate (0 or higher).');
+    console.warn('Portfolio save blocked: invalid commission rate', {
+      commissionRate: els.commissionRateInput.value
+    });
+    els.commissionRateInput.focus();
+    return;
+  }
+
   const index = Number.parseInt(els.editIndex.value, 10);
   const item = {
-    symbol: document.getElementById('symbol').value.toUpperCase(),
-    quantity: Number.parseFloat(document.getElementById('quantity').value),
-    average_cost: Number.parseFloat(document.getElementById('avg-cost').value),
-    commission_rate: Number.parseFloat(document.getElementById('comm-rate').value) / 100,
-    commission_included: document.getElementById('comm-included').checked
+    symbol,
+    quantity,
+    average_cost: averageCost,
+    commission_rate: commissionPercent / 100,
+    commission_included: els.commissionIncludedInput.checked
   };
 
   const nextState =
@@ -358,6 +406,7 @@ const handleFormSubmit = async (event) => {
   const saved = await persistPortfolioState(nextState);
   if (saved) {
     closeModal();
+    console.info('Portfolio position saved', { symbol: item.symbol, index });
   }
 };
 
@@ -417,6 +466,9 @@ const handleImport = (event) => {
 };
 
 const bindEvents = () => {
+  // Use JS validation so submit always flows through handleFormSubmit.
+  els.form.noValidate = true;
+
   els.addBtn.addEventListener('click', () => openModal());
   els.closeModal.addEventListener('click', closeModal);
   els.form.addEventListener('submit', handleFormSubmit);
