@@ -37,6 +37,10 @@ const STATUS_CONFIG = {
     label: 'Server connected',
     title: 'Server mode is enabled and your account is connected.'
   },
+  'pending-sync': {
+    label: 'Syncing...',
+    title: 'Changes saved locally. Uploading to server...'
+  },
   'login-required': {
     label: 'Server set, login required',
     title: 'A server is configured, but you need to log in before portfolios can load.'

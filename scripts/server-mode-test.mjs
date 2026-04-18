@@ -40,6 +40,9 @@ const {
 } = await import('../src/lib/appSettings.js');
 
 const {
+  addStock,
+  updateStock,
+  deleteStock,
   readLocalPortfolioState,
   writeLocalPortfolioState,
   createDefaultPortfolioState
@@ -80,6 +83,28 @@ const run = async () => {
 
   assert.equal(loadedStocks.portfolios[0].items.length, 1, 'Client-only stocks should persist to local storage');
   assert.ok(localStorage.getItem(STOCKS_KEY), 'Stocks local storage key should exist in client-only mode');
+
+  const addedState = addStock(createDefaultPortfolioState(), {
+    symbol: 'DAFODILCOM',
+    quantity: 5,
+    average_cost: 120,
+    commission_rate: 0.004,
+    commission_included: false
+  });
+  assert.equal(addedState.portfolios[0].items.length, 1, 'addStock should append to the active portfolio');
+
+  const updatedState = updateStock(addedState, 0, {
+    symbol: 'DAFODILCOM',
+    quantity: 8,
+    average_cost: 125,
+    commission_rate: 0.004,
+    commission_included: true
+  });
+  assert.equal(updatedState.portfolios[0].items[0].quantity, 8, 'updateStock should update the active portfolio item');
+  assert.equal(updatedState.portfolios[0].items[0].commission_included, true, 'updateStock should persist boolean fields');
+
+  const deletedState = deleteStock(updatedState, 0);
+  assert.equal(deletedState.portfolios[0].items.length, 0, 'deleteStock should remove from the active portfolio');
 
   const fundsDoc = createEmptyFundsData();
   fundsDoc.portfolios.push({

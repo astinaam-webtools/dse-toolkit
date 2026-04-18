@@ -4,7 +4,9 @@ import {
   readLocalFundsData,
   writeLocalFundsData
 } from './fundsLogic.js';
-import { loadDocument, saveDocument, uploadDocument } from './documentGateway.js';
+import { loadDocument, saveDocument, uploadDocument, registerLocalReader } from './documentGateway.js';
+
+registerLocalReader('funds', readLocalFundsData);
 
 export const loadFundsDataDocument = () =>
   loadDocument('funds', {

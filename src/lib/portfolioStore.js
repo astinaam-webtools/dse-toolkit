@@ -4,7 +4,9 @@ import {
   readLocalPortfolioState,
   writeLocalPortfolioState
 } from './portfolioLogic.js';
-import { loadDocument, saveDocument, uploadDocument } from './documentGateway.js';
+import { loadDocument, saveDocument, uploadDocument, registerLocalReader } from './documentGateway.js';
+
+registerLocalReader('stocks', readLocalPortfolioState);
 
 export const loadPortfolioState = () =>
   loadDocument('stocks', {

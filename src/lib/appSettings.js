@@ -7,6 +7,10 @@ const DEFAULT_SETTINGS = Object.freeze({
   importDecisions: {
     stocks: null,
     funds: null
+  },
+  pendingSync: {
+    stocks: false,
+    funds: false
   }
 });
 
@@ -62,6 +66,11 @@ const normalizeImportDecisions = (importDecisions) => ({
   funds: importDecisions?.funds || null
 });
 
+const normalizePendingSync = (pendingSync) => ({
+  stocks: Boolean(pendingSync?.stocks),
+  funds: Boolean(pendingSync?.funds)
+});
+
 export const normalizeAppSettings = (value) => {
   const settings = value && typeof value === 'object' ? value : {};
 
@@ -69,7 +78,8 @@ export const normalizeAppSettings = (value) => {
     serverUrl: normalizeServerUrl(settings.serverUrl),
     authToken: settings.authToken ? String(settings.authToken) : null,
     user: normalizeUser(settings.user),
-    importDecisions: normalizeImportDecisions(settings.importDecisions)
+    importDecisions: normalizeImportDecisions(settings.importDecisions),
+    pendingSync: normalizePendingSync(settings.pendingSync)
   };
 };
 
@@ -119,6 +129,10 @@ export const setServerUrl = (serverUrl) => {
       importDecisions: {
         stocks: null,
         funds: null
+      },
+      pendingSync: {
+        stocks: false,
+        funds: false
       }
     };
   });
@@ -133,6 +147,10 @@ export const clearServerUrl = () =>
     importDecisions: {
       stocks: null,
       funds: null
+    },
+    pendingSync: {
+      stocks: false,
+      funds: false
     }
   }));
 
@@ -158,5 +176,21 @@ export const setImportDecision = (type, decision) =>
     importDecisions: {
       ...current.importDecisions,
       [type]: decision || null
+    }
+  }));
+
+export const getPendingSync = () => getAppSettings().pendingSync;
+
+export const hasPendingSync = () => {
+  const ps = getPendingSync();
+  return ps.stocks || ps.funds;
+};
+
+export const setPendingSync = (type, value) =>
+  updateAppSettings((current) => ({
+    ...current,
+    pendingSync: {
+      ...current.pendingSync,
+      [type]: Boolean(value)
     }
   }));

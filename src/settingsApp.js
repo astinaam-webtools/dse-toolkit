@@ -14,6 +14,7 @@ import {
   logout,
   signup
 } from './lib/documentGateway.js';
+import { flushPendingSync } from './lib/documentGateway.js';
 import {
   getLocalPortfolioState,
   hasLocalPortfolioState,
@@ -179,6 +180,9 @@ const handleAuthSubmit = async (event, mode) => {
 
     form.reset();
     closeAuthModal();
+
+    // Auto-upload any locally-queued changes after reconnecting
+    flushPendingSync().catch((err) => console.warn('[offline-first] Post-login flush error:', err));
   } catch (error) {
     const message = error instanceof ApiError ? error.message : 'Unable to complete the request.';
     setMessage(messageEl, message, 'error');

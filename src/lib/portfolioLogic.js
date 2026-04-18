@@ -105,12 +105,12 @@ export const writeLocalPortfolioState = (state) => {
 export const hasMeaningfulLocalPortfolioData = () =>
   readLocalPortfolioState().portfolios.some((portfolio) => portfolio.items.length > 0);
 
+const getActivePortfolioEntry = (state) =>
+  state.portfolios.find((portfolio) => portfolio.id === state.activePortfolioId) || state.portfolios[0];
+
 export const getActivePortfolio = (state) => {
   const normalizedState = normalizePortfolioState(state);
-  return (
-    normalizedState.portfolios.find((portfolio) => portfolio.id === normalizedState.activePortfolioId) ||
-    normalizedState.portfolios[0]
-  );
+  return getActivePortfolioEntry(normalizedState);
 };
 
 export const listPortfolios = (state) => normalizePortfolioState(state).portfolios;
@@ -160,7 +160,7 @@ export const deletePortfolio = (state, id) => {
 
 export const addStock = (state, item) => {
   const nextState = normalizePortfolioState(clone(state));
-  const activePortfolio = getActivePortfolio(nextState);
+  const activePortfolio = getActivePortfolioEntry(nextState);
   activePortfolio.items.push({
     ...normalizeItem(item),
     added_at: new Date().toISOString()
@@ -170,7 +170,7 @@ export const addStock = (state, item) => {
 
 export const updateStock = (state, index, updatedItem) => {
   const nextState = normalizePortfolioState(clone(state));
-  const activePortfolio = getActivePortfolio(nextState);
+  const activePortfolio = getActivePortfolioEntry(nextState);
   if (activePortfolio.items[index]) {
     activePortfolio.items[index] = {
       ...activePortfolio.items[index],
@@ -183,7 +183,7 @@ export const updateStock = (state, index, updatedItem) => {
 
 export const deleteStock = (state, index) => {
   const nextState = normalizePortfolioState(clone(state));
-  const activePortfolio = getActivePortfolio(nextState);
+  const activePortfolio = getActivePortfolioEntry(nextState);
   activePortfolio.items.splice(index, 1);
   return nextState;
 };
@@ -284,7 +284,7 @@ const parseCsvItems = (csvContent) => {
 
 const appendItemsToActivePortfolio = (state, items) => {
   const nextState = normalizePortfolioState(clone(state));
-  const activePortfolio = getActivePortfolio(nextState);
+  const activePortfolio = getActivePortfolioEntry(nextState);
   activePortfolio.items = [...activePortfolio.items, ...items.map(normalizeItem)];
   return nextState;
 };
