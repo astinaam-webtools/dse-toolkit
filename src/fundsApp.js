@@ -53,6 +53,16 @@ const formatMoney = (amount) =>
     maximumFractionDigits: 2
   });
 
+const formatTransactionType = (type) => {
+  const labels = {
+    BUY: 'Buy / SIP',
+    SELL: 'Sell / Redeem',
+    DIVIDEND_REINVEST: 'Dividend Reinvest/CIP'
+  };
+
+  return labels[type] || String(type || '').replaceAll('_', ' ');
+};
+
 const setBusy = (nextBusy) => {
   busy = nextBusy;
 
@@ -165,6 +175,7 @@ const renderLockedState = () => {
   `;
 
   document.getElementById('exec-invested').textContent = formatMoney(0);
+  document.getElementById('exec-dividend').textContent = formatMoney(0);
   document.getElementById('exec-value').textContent = formatMoney(0);
   const gainEl = document.getElementById('exec-gain');
   gainEl.textContent = `${formatMoney(0)} (0.00%)`;
@@ -182,6 +193,7 @@ function updateExecutiveSummary() {
   const stats = Logic.calculateAggregateStats(selected);
 
   document.getElementById('exec-invested').textContent = formatMoney(stats.totalInvested);
+  document.getElementById('exec-dividend').textContent = formatMoney(stats.totalDividendReinvest);
   document.getElementById('exec-value').textContent = formatMoney(stats.currentValue);
 
   const gainEl = document.getElementById('exec-gain');
@@ -240,6 +252,10 @@ function renderPortfolioList() {
           <span class="stat-label">Value</span>
           <span class="stat-val">${formatMoney(stats.currentValue)}</span>
         </div>
+        <div class="stat-row" style="grid-column: span 2;">
+          <span class="stat-label">Dividend Reinvest/CIP</span>
+          <span class="stat-val">${formatMoney(stats.totalDividendReinvest)}</span>
+        </div>
         <div class="stat-row" style="grid-column: span 2; margin-top:0.25rem;">
           <span class="stat-label">Return</span>
           <span class="stat-val gain-loss ${gainClass}">
@@ -285,6 +301,7 @@ function renderPortfolioDetail() {
   const stats = Logic.calculatePortfolioStats(portfolio);
   document.getElementById('pf-total-value').textContent = formatMoney(stats.currentValue);
   document.getElementById('pf-invested').textContent = formatMoney(stats.totalInvested);
+  document.getElementById('pf-dividend').textContent = formatMoney(stats.totalDividendReinvest);
 
   const gainEl = document.getElementById('pf-gain');
   const gainSign = stats.gainLoss >= 0 ? '+' : '';
@@ -330,6 +347,10 @@ function renderPortfolioDetail() {
           <span class="stat-val">${fund.current_nav.toFixed(2)}</span>
         </div>
         <div class="stat-row" style="grid-column: span 2;">
+          <span class="stat-label">Dividend Reinvest/CIP</span>
+          <span class="stat-val">${formatMoney(fundStats.totalDividendReinvest)}</span>
+        </div>
+        <div class="stat-row" style="grid-column: span 2;">
           <span class="stat-label">Gain/Loss</span>
           <span class="stat-val gain-loss ${gainClass}">
             ${gainSign}${formatMoney(fundStats.gainLoss)} (${gainSign}${fundStats.gainLossPercent.toFixed(2)}%)
@@ -368,6 +389,7 @@ function renderFundDetail() {
   document.getElementById('fd-units').textContent = stats.totalUnits.toFixed(2);
   document.getElementById('fd-value').textContent = formatMoney(stats.currentValue);
   document.getElementById('fd-avg-cost').textContent = formatMoney(stats.avgCost);
+  document.getElementById('fd-dividend').textContent = formatMoney(stats.totalDividendReinvest);
 
   const gainEl = document.getElementById('fd-gain');
   const gainSign = stats.gainLoss >= 0 ? '+' : '';
@@ -382,7 +404,7 @@ function renderFundDetail() {
     listItem.onclick = () => openTransactionModal(transaction);
     listItem.innerHTML = `
       <div class="tx-info">
-        <div>${transaction.type.replace('_', ' ')}</div>
+        <div>${formatTransactionType(transaction.type)}</div>
         <div>${new Date(transaction.date).toLocaleDateString()} @ ${transaction.price_per_unit}</div>
       </div>
       <div class="tx-amount">

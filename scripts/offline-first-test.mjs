@@ -11,6 +11,7 @@
  *   7. flushPendingSync: no-ops when no auth
  *   8. Clearing server URL resets pendingSync flags
  *   9. hasPendingSync helper reflects state correctly
+ *  10. uploadDocument is non-blocking on network errors
  */
 
 import assert from 'node:assert/strict';
@@ -86,6 +87,7 @@ const {
 const {
   loadDocument,
   saveDocument,
+  uploadDocument,
   flushPendingSync,
   registerLocalReader
 } = await import('../src/lib/documentGateway.js');
@@ -318,10 +320,30 @@ const run = async () => {
   setServerUrl('http://new-server.example.com');
   assert.ok(getAppSettings().pendingSync.stocks === false, 'Test 9: pendingSync reset when server URL changes');
 
+  // ── Test 10: uploadDocument queues sync and does not throw on network error
+  setServerUrl('http://localhost:39001');
+  setAuthSession('tok', { id: 'u1', email: 'a@b.com' });
+  setPendingSync('stocks', false);
+
+  const uploadDoc = makeStockState();
+  mockFetchNetworkError();
+  const uploadedOffline = await uploadDocument('stocks', uploadDoc);
+
+  assert.equal(
+    uploadedOffline.portfolios[0].items.length,
+    1,
+    'Test 10: uploadDocument should return local document when server is unavailable'
+  );
+  assert.equal(
+    getPendingSync().stocks,
+    true,
+    'Test 10: uploadDocument should set pendingSync when upload fails'
+  );
+
   noFetch();
 
   console.log('Offline-first sync tests passed ✓', {
-    tests: 9
+    tests: 10
   });
 };
 

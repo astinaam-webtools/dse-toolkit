@@ -1,20 +1,21 @@
 import {
   clearServerUrl,
   getAppSettings,
+  getPendingSync,
   getImportDecision,
   setImportDecision,
   setServerUrl
 } from './lib/appSettings.js';
 import { ApiError, probeServer } from './lib/serverClient.js';
 import {
-  applyConnectionState,
   getConnectionState,
+  flushPendingSync,
   getSession,
   login,
   logout,
   signup
 } from './lib/documentGateway.js';
-import { flushPendingSync } from './lib/documentGateway.js';
+import { applyConnectionState } from './lib/serverClient.js';
 import {
   getLocalPortfolioState,
   hasLocalPortfolioState,
@@ -79,22 +80,72 @@ const showImports = (isConnected) => {
   els.importFundsCard.hidden = !hasFundsImport;
 };
 
+const getConnectionDetailText = (state, settings, session) => {
+  const serverUrl = settings.serverUrl;
+
+  if (!serverUrl || state.code === 'client-only') {
+    return 'No server URL configured. Portfolio data stays in this browser.';
+  }
+
+  if (state.code === 'checking') {
+    return `Checking ${serverUrl}...`;
+  }
+
+  if (state.code === 'connected') {
+    const email = session.user?.email || state.user?.email;
+    return email ? `Connected to ${serverUrl} as ${email}.` : `Connected to ${serverUrl}.`;
+  }
+
+  if (state.code === 'login-required') {
+    return `Server reachable at ${serverUrl}. Log in to use synced portfolios.`;
+  }
+
+  if (state.code === 'pending-sync') {
+    return `Connected to ${serverUrl}. Local changes are waiting to sync.`;
+  }
+
+  if (state.code === 'unavailable') {
+    const reason = state.detail || 'Unable to reach the configured server.';
+    return `${reason} (${serverUrl})`;
+  }
+
+  return state.detail || state.title || '';
+};
+
 const renderConnectionState = async () => {
-  const settings = getAppSettings();
+  let settings = getAppSettings();
   els.serverUrl.value = settings.serverUrl;
 
-  const state = await getConnectionState();
+  applyConnectionState(els.statusBadge, { code: 'checking' });
+  els.statusDetail.textContent = getConnectionDetailText({ code: 'checking' }, settings, getSession());
+
+  let state;
+  try {
+    state = await getConnectionState();
+  } catch (error) {
+    state = {
+      code: 'unavailable',
+      label: 'Server unavailable',
+      title: 'The configured server could not be reached or returned an error.',
+      detail: error?.message || 'Unable to reach the configured server.'
+    };
+  }
+
+  // Refresh from storage because auth/session calls can update settings mid-flight.
+  settings = getAppSettings();
+  els.serverUrl.value = settings.serverUrl;
+  const session = getSession();
+
   applyConnectionState(els.statusBadge, state);
-  els.statusDetail.textContent = state.detail || state.title || '';
+  els.statusDetail.textContent = getConnectionDetailText(state, settings, session);
 
   const serverConfigured = Boolean(settings.serverUrl);
   els.authCard.hidden = !serverConfigured;
   els.serverClear.disabled = !serverConfigured;
 
-  const isConnected = state.code === 'connected';
+  const isConnected = state.code === 'connected' || state.code === 'pending-sync';
   els.authGuestCard.hidden = !serverConfigured || isConnected;
   els.currentUserCard.hidden = !isConnected;
-  const session = getSession();
   els.currentUserEmail.textContent = session.user?.email || state.user?.email || '';
 
   if (isConnected) {
@@ -138,13 +189,22 @@ const handleSaveServerUrl = async (event) => {
   }
 
   els.serverSave.disabled = true;
-  setMessage(els.serverMessage, 'Checking server...', '');
+  setMessage(els.serverMessage, 'Saving server URL...', '');
 
   try {
-    await probeServer(rawServerUrl);
     const settings = setServerUrl(rawServerUrl);
     els.serverUrl.value = settings.serverUrl;
-    setMessage(els.serverMessage, 'Server URL saved. Log in to load server-backed portfolios.', 'success');
+
+    try {
+      await probeServer(settings.serverUrl);
+      setMessage(els.serverMessage, 'Server URL saved and reachable. Log in to use server-backed portfolios.', 'success');
+    } catch (error) {
+      setMessage(
+        els.serverMessage,
+        `Server URL saved, but server is currently unreachable (${error.message}). Data will stay local/offline-first until it reconnects.`,
+        'warning'
+      );
+    }
   } catch (error) {
     setMessage(els.serverMessage, error.message, 'error');
   } finally {
@@ -203,8 +263,22 @@ const handleImport = async (type) => {
     }
 
     setImportDecision(type, 'imported');
+    const pendingSync = getPendingSync();
+    if (pendingSync[type]) {
+      setMessage(
+        els.serverMessage,
+        `${type === 'stocks' ? 'Stocks' : 'Funds'} saved locally. Server sync is queued and will retry automatically when reachable.`,
+        'warning'
+      );
+    } else {
+      setMessage(
+        els.serverMessage,
+        `${type === 'stocks' ? 'Stocks' : 'Funds'} imported to server successfully.`,
+        'success'
+      );
+    }
   } catch (error) {
-    alert(error.message || 'Import failed.');
+    setMessage(els.serverMessage, error.message || 'Import failed.', 'error');
   } finally {
     button.disabled = false;
     showImports(true);

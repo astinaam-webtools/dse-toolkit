@@ -265,11 +265,15 @@ export function updateNav(data, portfolioId, fundId, nav, date) {
 export function calculateFundStats(fund) {
   let totalUnits = 0;
   let totalCost = 0;
+  let totalDividendReinvest = 0;
 
   fund.transactions.forEach((transaction) => {
     if (transaction.type === 'BUY' || transaction.type === 'DIVIDEND_REINVEST') {
       totalUnits += transaction.units;
       totalCost += transaction.total_cost;
+      if (transaction.type === 'DIVIDEND_REINVEST') {
+        totalDividendReinvest += transaction.total_cost;
+      }
     } else if (transaction.type === 'SELL') {
       const avgCost = totalUnits > 0 ? totalCost / totalUnits : 0;
       totalUnits -= transaction.units;
@@ -288,6 +292,7 @@ export function calculateFundStats(fund) {
   return {
     totalUnits,
     totalCost,
+    totalDividendReinvest,
     avgCost,
     currentValue,
     gainLoss,
@@ -298,11 +303,13 @@ export function calculateFundStats(fund) {
 export function calculatePortfolioStats(portfolio) {
   let totalInvested = 0;
   let currentValue = 0;
+  let totalDividendReinvest = 0;
 
   portfolio.funds.forEach((fund) => {
     const stats = calculateFundStats(fund);
     totalInvested += stats.totalCost;
     currentValue += stats.currentValue;
+    totalDividendReinvest += stats.totalDividendReinvest;
   });
 
   const gainLoss = currentValue - totalInvested;
@@ -311,6 +318,7 @@ export function calculatePortfolioStats(portfolio) {
   return {
     totalInvested,
     currentValue,
+    totalDividendReinvest,
     gainLoss,
     gainLossPercent,
     fundCount: portfolio.funds.length
@@ -320,12 +328,14 @@ export function calculatePortfolioStats(portfolio) {
 export function calculateAggregateStats(portfolios) {
   let totalInvested = 0;
   let currentValue = 0;
+  let totalDividendReinvest = 0;
   let fundCount = 0;
 
   portfolios.forEach((portfolio) => {
     const stats = calculatePortfolioStats(portfolio);
     totalInvested += stats.totalInvested;
     currentValue += stats.currentValue;
+    totalDividendReinvest += stats.totalDividendReinvest;
     fundCount += stats.fundCount;
   });
 
@@ -335,6 +345,7 @@ export function calculateAggregateStats(portfolios) {
   return {
     totalInvested,
     currentValue,
+    totalDividendReinvest,
     gainLoss,
     gainLossPercent,
     fundCount

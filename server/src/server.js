@@ -24,7 +24,10 @@ const app = Fastify({
 });
 
 await app.register(cors, {
-  origin: config.corsOrigin === '*' ? true : config.corsOrigin
+  origin: config.corsOrigin === '*' ? true : config.corsOrigin,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  maxAge: 86400
 });
 
 app.setErrorHandler((error, request, reply) => {

@@ -55,6 +55,8 @@ const STATUS_CONFIG = {
   }
 };
 
+const REQUEST_TIMEOUT_MS = 8000;
+
 const parseJsonResponse = async (response) => {
   const text = await response.text();
   if (!text) {
@@ -90,15 +92,24 @@ const performRequest = async (path, { method = 'GET', body, serverUrl, token } =
     headers.Authorization = `Bearer ${token}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
   let response;
   try {
     response = await fetch(buildApiUrl(path, serverUrl), {
       method,
       headers,
-      body: body !== undefined ? JSON.stringify(body) : undefined
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal
     });
-  } catch {
+  } catch (error) {
+    if (error?.name === 'AbortError') {
+      throw new ConnectionUnavailableError('Server request timed out.');
+    }
     throw new ConnectionUnavailableError();
+  } finally {
+    clearTimeout(timeoutId);
   }
 
   const data = await parseJsonResponse(response);

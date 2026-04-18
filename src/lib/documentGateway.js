@@ -102,13 +102,24 @@ export const uploadDocument = async (type, document) => {
     throw new AuthRequiredError();
   }
 
-  const data = await apiRequest(`/api/portfolio/${type}`, {
-    method: 'PUT',
-    body: { document }
-  });
+  try {
+    const data = await apiRequest(`/api/portfolio/${type}`, {
+      method: 'PUT',
+      body: { document }
+    });
 
-  setPendingSync(type, false);
-  return data?.document || document;
+    setPendingSync(type, false);
+    return data?.document || document;
+  } catch (error) {
+    if (error instanceof AuthRequiredError) {
+      throw error;
+    }
+
+    // Keep import/export flows non-blocking when server is temporarily unavailable.
+    setPendingSync(type, true);
+    console.warn(`[offline-first] Upload failed for "${type}", queued for sync:`, error.message);
+    return document;
+  }
 };
 
 /**
