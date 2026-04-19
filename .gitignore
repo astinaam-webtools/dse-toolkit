@@ -47,4 +47,7 @@ __pycache__/
 *.pyo
 *.pyd
 
+# Local scraping scripts/workspace
+scripts/scraping-local/
+
 assets/finalized
