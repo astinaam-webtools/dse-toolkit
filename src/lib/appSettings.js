@@ -7,7 +7,9 @@ const DEFAULT_SETTINGS = Object.freeze({
   ai: {
     mode: 'client',
     localOpenRouterApiKey: '',
-    localOpenRouterModel: ''
+    localOpenRouterModel: '',
+    serverPreferredModel: 'auto',
+    serverModelMode: 'auto'
   },
   importDecisions: {
     stocks: null,
@@ -15,7 +17,8 @@ const DEFAULT_SETTINGS = Object.freeze({
   },
   pendingSync: {
     stocks: false,
-    funds: false
+    funds: false,
+    chat_threads: false
   }
 });
 
@@ -73,15 +76,20 @@ const normalizeImportDecisions = (importDecisions) => ({
 
 const normalizePendingSync = (pendingSync) => ({
   stocks: Boolean(pendingSync?.stocks),
-  funds: Boolean(pendingSync?.funds)
+  funds: Boolean(pendingSync?.funds),
+  chat_threads: Boolean(pendingSync?.chat_threads)
 });
 
 const normalizeAiSettings = (ai) => {
   const mode = ai?.mode === 'server' ? 'server' : 'client';
+  const serverModelMode = ai?.serverModelMode === 'manual' ? 'manual' : 'auto';
+  const serverPreferredModel = ai?.serverPreferredModel ? String(ai.serverPreferredModel) : 'auto';
   return {
     mode,
     localOpenRouterApiKey: ai?.localOpenRouterApiKey ? String(ai.localOpenRouterApiKey) : '',
-    localOpenRouterModel: ai?.localOpenRouterModel ? String(ai.localOpenRouterModel) : ''
+    localOpenRouterModel: ai?.localOpenRouterModel ? String(ai.localOpenRouterModel) : '',
+    serverPreferredModel,
+    serverModelMode
   };
 };
 
@@ -147,7 +155,8 @@ export const setServerUrl = (serverUrl) => {
       },
       pendingSync: {
         stocks: false,
-        funds: false
+        funds: false,
+        chat_threads: false
       }
     };
   });
@@ -165,7 +174,8 @@ export const clearServerUrl = () =>
     },
     pendingSync: {
       stocks: false,
-      funds: false
+      funds: false,
+      chat_threads: false
     }
   }));
 
@@ -198,7 +208,7 @@ export const getPendingSync = () => getAppSettings().pendingSync;
 
 export const hasPendingSync = () => {
   const ps = getPendingSync();
-  return ps.stocks || ps.funds;
+  return Object.values(ps || {}).some(Boolean);
 };
 
 export const setPendingSync = (type, value) =>

@@ -1,6 +1,6 @@
 import { getDb } from './db.js';
 
-const DOCUMENT_TYPES = new Set(['stocks', 'funds']);
+const DOCUMENT_TYPES = new Set(['stocks', 'funds', 'chat_threads']);
 
 function generatePortfolioId() {
   return `p_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -19,6 +19,15 @@ export function getDefaultDocument(type) {
     };
   }
 
+  if (type === 'chat_threads') {
+    return {
+      version: 1,
+      activeThreadId: null,
+      selectedModel: 'auto',
+      threads: []
+    };
+  }
+
   return {
     version: 1,
     activePortfolioId: null,
@@ -32,13 +41,34 @@ export function validateDocumentShape(type, document) {
   }
 
   if (!Array.isArray(document.portfolios)) {
-    return 'Document must include a portfolios array.';
+    if (type !== 'chat_threads') {
+      return 'Document must include a portfolios array.';
+    }
   }
 
   if (type === 'stocks') {
     if (typeof document.activePortfolioId !== 'string' || document.activePortfolioId.trim() === '') {
       return 'Stocks document must include a non-empty activePortfolioId.';
     }
+    return null;
+  }
+
+  if (type === 'chat_threads') {
+    if (typeof document.version !== 'number') {
+      return 'Chat threads document must include a numeric version.';
+    }
+
+    if (
+      document.activeThreadId !== null &&
+      (typeof document.activeThreadId !== 'string' || document.activeThreadId.trim() === '')
+    ) {
+      return 'Chat threads document activeThreadId must be null or a non-empty string.';
+    }
+
+    if (!Array.isArray(document.threads)) {
+      return 'Chat threads document must include a threads array.';
+    }
+
     return null;
   }
 

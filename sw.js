@@ -1,10 +1,11 @@
-const CACHE_NAME = 'stock-glossary-v35';
-const RUNTIME_CACHE = 'runtime-stock-glossary-v35';
+const CACHE_NAME = 'stock-glossary-v38';
+const RUNTIME_CACHE = 'runtime-stock-glossary-v38';
 const PRECACHE_URLS = [
   './',
   './index.html',
   './analyzer.html',
   './guides.html',
+  './chat.html',
   './market.html',
   './stock.html',
   './portfolio.html',
@@ -21,6 +22,7 @@ const PRECACHE_URLS = [
   './src/portfolioApp.js',
   './src/fundsApp.js',
   './src/settingsApp.js',
+  './src/chatApp.js',
   './src/navStatus.js',
   './src/swRegister.js',
   './src/mobile-nav.js',
@@ -33,6 +35,8 @@ const PRECACHE_URLS = [
   './src/lib/appSettings.js',
   './src/lib/serverClient.js',
   './src/lib/documentGateway.js',
+  './src/lib/chatPrompts.js',
+  './src/lib/chatStore.js',
   './src/lib/portfolioStore.js',
   './src/lib/fundsStore.js',
   'https://cdn.jsdelivr.net/npm/chart.js'

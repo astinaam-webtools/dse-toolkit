@@ -1,7 +1,8 @@
-import { config } from './config.js';
 import { getDb } from './db.js';
+import { models } from './models.js';
+import { createOpenRouterClient, DEFAULT_OPENROUTER_MODEL } from './openrouterClient.js';
 
-const DEFAULT_MODEL = 'openai/gpt-oss-20b:free';
+const DEFAULT_MODEL = DEFAULT_OPENROUTER_MODEL;
 
 export const sanitizeAiSettings = (row) => {
   if (!row) {
@@ -61,31 +62,30 @@ export const saveUserAiSettings = async ({ userId, provider, apiKey, model }) =>
 };
 
 export const requestOpenRouterCompletion = async ({ apiKey, model, messages }) => {
-  if (!Array.isArray(messages) || messages.length === 0) {
-    throw new Error('At least one chat message is required.');
+  const client = createOpenRouterClient({ apiKey });
+  return client.completeChat({ model, messages });
+};
+
+export const getOpenRouterModels = () =>
+  [...models]
+    .filter((item) => item && item.model_id)
+    .sort((a, b) => String(a.model_name || '').localeCompare(String(b.model_name || '')));
+
+export const pickRandomModel = (list = getOpenRouterModels()) => {
+  if (!Array.isArray(list) || list.length === 0) {
+    return DEFAULT_MODEL;
   }
+  const index = Math.floor(Math.random() * list.length);
+  return list[index]?.model_id || DEFAULT_MODEL;
+};
 
-  const response = await fetch(`${config.openRouterBaseUrl}/chat/completions`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: model || DEFAULT_MODEL,
-      messages
-    })
-  });
-
-  const data = await response.json().catch(() => null);
-  if (!response.ok) {
-    const message = data?.error?.message || data?.error || 'OpenRouter request failed.';
-    throw new Error(message);
-  }
-
+export const resolveConfiguredServerApiKey = async (userId) => {
+  const dbRow = userId ? await getUserAiSettingsRow(userId) : null;
   return {
-    message: data?.choices?.[0]?.message?.content || '',
-    raw: data
+    apiKey: dbRow?.api_key || '',
+    model: dbRow?.model || DEFAULT_MODEL,
+    provider: dbRow?.provider || 'openrouter',
+    configured: Boolean(dbRow?.api_key)
   };
 };
 

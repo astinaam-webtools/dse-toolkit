@@ -20,8 +20,11 @@ import {
 } from './documents.js';
 import {
   DEFAULT_AI_MODEL,
+  getOpenRouterModels,
+  pickRandomModel,
   getUserAiSettingsRow,
   requestOpenRouterCompletion,
+  resolveConfiguredServerApiKey,
   sanitizeAiSettings,
   saveUserAiSettings
 } from './ai.js';
@@ -173,7 +176,20 @@ app.put('/api/portfolio/:type', { preHandler: [app.authenticate] }, async (reque
 
 app.get('/api/ai/settings', { preHandler: [app.authenticate] }, async (request) => {
   const row = await getUserAiSettingsRow(request.user.id);
-  return sanitizeAiSettings(row);
+  const payload = sanitizeAiSettings(row);
+  const envConfigured = Boolean(String(config.openRouterApiKey || '').trim());
+  return {
+    ...payload,
+    configured: envConfigured || payload.configured
+  };
+});
+
+app.get('/api/ai/models', { preHandler: [app.authenticate] }, async () => {
+  return {
+    provider: 'openrouter',
+    defaultModel: DEFAULT_AI_MODEL,
+    models: getOpenRouterModels()
+  };
 });
 
 app.put('/api/ai/settings', { preHandler: [app.authenticate] }, async (request, reply) => {
@@ -203,6 +219,7 @@ app.post('/api/ai/chat', { preHandler: [app.authenticate] }, async (request, rep
   const provider = String(request.body?.provider || 'openrouter').trim().toLowerCase();
   const messages = request.body?.messages;
   const requestedModel = String(request.body?.model || '').trim();
+  const mode = String(request.body?.mode || 'manual').trim().toLowerCase();
 
   if (provider !== 'openrouter') {
     return reply.status(400).send({ error: 'Only OpenRouter provider is currently supported.' });
@@ -212,22 +229,35 @@ app.post('/api/ai/chat', { preHandler: [app.authenticate] }, async (request, rep
     return reply.status(400).send({ error: 'messages[] is required.' });
   }
 
-  const row = await getUserAiSettingsRow(request.user.id);
-  if (!row?.api_key) {
-    return reply.status(400).send({ error: 'Server AI is not configured. Save an OpenRouter API key in Settings first.' });
+  const resolved = await resolveConfiguredServerApiKey(request.user.id);
+  const effectiveApiKey = String(config.openRouterApiKey || '').trim() || resolved.apiKey;
+  if (!effectiveApiKey) {
+    return reply.status(400).send({ error: 'Server AI is not configured. Set OPENROUTER_API_KEY on the backend.' });
   }
+
+  const models = getOpenRouterModels();
+  const selectedModel =
+    mode === 'auto'
+      ? pickRandomModel(models)
+      : requestedModel || resolved.model || DEFAULT_AI_MODEL;
 
   try {
     const completion = await requestOpenRouterCompletion({
-      apiKey: row.api_key,
-      model: requestedModel || row.model || DEFAULT_AI_MODEL,
+      apiKey: effectiveApiKey,
+      model: selectedModel,
       messages
     });
 
     return {
       provider: 'openrouter',
-      model: requestedModel || row.model || DEFAULT_AI_MODEL,
-      message: completion.message
+      model: completion.model || selectedModel,
+      message: completion.message,
+      meta: {
+        mode: mode === 'auto' ? 'auto' : 'manual',
+        latencyMs: completion.latencyMs,
+        respondedAt: new Date().toISOString(),
+        source: String(config.openRouterApiKey || '').trim() ? 'server-env' : 'user-settings'
+      }
     };
   } catch (error) {
     return reply.status(502).send({ error: error.message || 'OpenRouter request failed.' });

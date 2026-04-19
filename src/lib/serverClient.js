@@ -215,6 +215,8 @@ export const apiRequest = async (path, options = {}) => {
 
 export const getServerAiSettings = async () => apiRequest('/api/ai/settings');
 
+export const getServerAiModels = async () => apiRequest('/api/ai/models');
+
 export const saveServerAiSettings = async ({ apiKey, model }) =>
   apiRequest('/api/ai/settings', {
     method: 'PUT',
@@ -225,13 +227,14 @@ export const saveServerAiSettings = async ({ apiKey, model }) =>
     }
   });
 
-export const requestServerAiChat = async ({ messages, model }) =>
+export const requestServerAiChat = async ({ messages, model, mode }) =>
   apiRequest('/api/ai/chat', {
     method: 'POST',
     body: {
       provider: 'openrouter',
       messages,
-      model
+      model,
+      mode
     }
   });
 

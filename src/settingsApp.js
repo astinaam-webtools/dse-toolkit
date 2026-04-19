@@ -8,7 +8,7 @@ import {
   setServerUrl,
   updateAiSettings
 } from './lib/appSettings.js';
-import { ApiError, getServerAiSettings, probeServer, saveServerAiSettings } from './lib/serverClient.js';
+import { ApiError, getServerAiSettings, probeServer } from './lib/serverClient.js';
 import {
   getConnectionState,
   flushPendingSync,
@@ -66,10 +66,7 @@ const els = {
   aiServerSettings: document.getElementById('ai-server-settings'),
   aiLocalApiKey: document.getElementById('ai-local-api-key'),
   aiModel: document.getElementById('ai-model'),
-  aiServerApiKey: document.getElementById('ai-server-api-key'),
-  aiServerModel: document.getElementById('ai-server-model'),
   saveAiLocal: document.getElementById('save-ai-local'),
-  saveAiServer: document.getElementById('save-ai-server'),
   aiMessage: document.getElementById('ai-message'),
   aiServerState: document.getElementById('ai-server-state')
 };
@@ -258,15 +255,15 @@ const renderAiSettings = async () => {
   const aiSettings = getAiSettings();
   els.aiModeClient.checked = aiSettings.mode !== 'server';
   els.aiModeServer.checked = aiSettings.mode === 'server';
-  els.aiClientSettings.hidden = aiSettings.mode === 'server';
-  els.aiServerSettings.hidden = aiSettings.mode !== 'server';
+  els.aiClientSettings.hidden = false;
+  els.aiServerSettings.hidden = false;
+  els.aiClientSettings.style.display = aiSettings.mode === 'server' ? 'none' : 'grid';
+  els.aiServerSettings.style.display = aiSettings.mode === 'server' ? 'grid' : 'none';
   els.aiLocalApiKey.value = aiSettings.localOpenRouterApiKey || '';
   els.aiModel.value = aiSettings.localOpenRouterModel || '';
-  els.aiServerModel.value = aiSettings.localOpenRouterModel || DEFAULT_AI_MODEL;
 
   const appSettings = getAppSettings();
   const hasServerConnection = Boolean(appSettings.serverUrl && appSettings.authToken);
-  els.saveAiServer.disabled = !hasServerConnection;
 
   if (!hasServerConnection) {
     els.aiServerState.textContent = 'Connect and log in to a server to use server AI mode.';
@@ -279,7 +276,7 @@ const renderAiSettings = async () => {
     const model = data?.model || aiSettings.localOpenRouterModel || DEFAULT_AI_MODEL;
     els.aiServerState.textContent = configured
       ? `Server AI is configured (${data.provider || 'openrouter'}, model: ${model}).`
-      : 'Server AI key is not configured yet. Save it below.';
+      : 'Server AI is not configured on the backend yet. Contact your server administrator.';
   } catch (error) {
     els.aiServerState.textContent = `Could not load server AI settings: ${error.message}`;
   }
@@ -288,19 +285,18 @@ const renderAiSettings = async () => {
 const handleAiModeChange = async () => {
   const mode = els.aiModeServer.checked ? 'server' : 'client';
 
+  updateAiSettings({ mode });
   if (mode === 'client') {
     const apiKey = els.aiLocalApiKey.value.trim();
     const model = els.aiModel.value.trim();
     if (!apiKey || !model) {
-      els.aiModeServer.checked = true;
-      els.aiModeClient.checked = false;
-      setMessage(els.aiMessage, 'Client-only AI requires both OpenRouter API key and model name.', 'warning');
-      return;
+      setMessage(els.aiMessage, 'Client-only AI selected. Add API key + model to run analysis.', 'warning');
+    } else {
+      setMessage(els.aiMessage, 'AI mode set to Client-only AI.', 'success');
     }
+  } else {
+    setMessage(els.aiMessage, 'AI mode set to Server AI.', 'success');
   }
-
-  updateAiSettings({ mode });
-  setMessage(els.aiMessage, `AI mode set to ${mode === 'server' ? 'Server AI' : 'Client-only AI'}.`, 'success');
   await renderAiSettings();
 };
 
@@ -318,32 +314,6 @@ const handleSaveAiLocal = () => {
     localOpenRouterModel: model
   });
   setMessage(els.aiMessage, 'Client AI settings saved.', 'success');
-};
-
-const handleSaveAiServer = async () => {
-  const apiKey = els.aiServerApiKey.value.trim();
-  const model = els.aiServerModel.value.trim() || DEFAULT_AI_MODEL;
-
-  if (!apiKey) {
-    setMessage(els.aiMessage, 'Enter an OpenRouter API key before saving to server.', 'warning');
-    return;
-  }
-
-  els.saveAiServer.disabled = true;
-  setMessage(els.aiMessage, 'Saving server AI settings...', '');
-
-  try {
-    await saveServerAiSettings({ apiKey, model });
-    updateAiSettings({ localOpenRouterModel: model, mode: 'server' });
-    els.aiModeServer.checked = true;
-    els.aiModeClient.checked = false;
-    setMessage(els.aiMessage, 'Server AI settings saved successfully.', 'success');
-  } catch (error) {
-    const message = error instanceof ApiError ? error.message : 'Unable to save server AI settings.';
-    setMessage(els.aiMessage, message, 'error');
-  } finally {
-    await renderAiSettings();
-  }
 };
 
 const handleAuthSubmit = async (event, mode) => {
@@ -446,7 +416,6 @@ const init = async () => {
   els.aiModeClient.addEventListener('change', handleAiModeChange);
   els.aiModeServer.addEventListener('change', handleAiModeChange);
   els.saveAiLocal.addEventListener('click', handleSaveAiLocal);
-  els.saveAiServer.addEventListener('click', handleSaveAiServer);
 
   els.authModal.addEventListener('click', (event) => {
     if (event.target === els.authModal) {
