@@ -5,18 +5,136 @@ let marketData = null;
 let currentView = 'buckets';
 let activeSectorFilter = null; // Track active sector filter
 let activeBucketFilter = null; // Track active bucket filter
+let activeQuickFilter = null;
+let screenerSort = 'change-desc';
 
 // DOM Elements
 const els = {
   date: document.getElementById('market-date'),
   statusDot: document.getElementById('market-status-dot'),
   search: document.getElementById('stock-search'),
+  quickFilters: document.getElementById('quick-filters'),
+  resultLine: document.getElementById('market-result-line'),
+  screenerSort: document.getElementById('screener-sort'),
   buckets: document.getElementById('bucket-container'),
   screenerBody: document.getElementById('screener-body'),
   modal: document.getElementById('stock-modal'),
   modalBody: document.getElementById('modal-body'),
   tabs: document.querySelectorAll('.tab-btn'),
   views: document.querySelectorAll('.view-section')
+};
+
+const getChangeValue = (stock) => Number(stock?.deltas?.price_1d || 0);
+const getVolumeValue = (stock) => Number(stock?.metrics?.volume || 0);
+const getPeValue = (stock) => Number(stock?.metrics?.pe || 0);
+
+const applyQuickFilter = (stocks) => {
+  if (!activeQuickFilter || activeQuickFilter === 'clear') {
+    return stocks;
+  }
+
+  if (activeQuickFilter === 'gainers') {
+    return stocks
+      .filter((stock) => getChangeValue(stock) > 0)
+      .sort((a, b) => getChangeValue(b) - getChangeValue(a))
+      .slice(0, 30);
+  }
+
+  if (activeQuickFilter === 'losers') {
+    return stocks
+      .filter((stock) => getChangeValue(stock) < 0)
+      .sort((a, b) => getChangeValue(a) - getChangeValue(b))
+      .slice(0, 30);
+  }
+
+  if (activeQuickFilter === 'volume') {
+    return stocks.sort((a, b) => getVolumeValue(b) - getVolumeValue(a)).slice(0, 30);
+  }
+
+  if (activeQuickFilter === 'value') {
+    return stocks
+      .filter((stock) => {
+        const pe = getPeValue(stock);
+        const dividend = Number(stock?.metrics?.dividendYield || 0);
+        return pe > 0 && pe <= 15 && dividend >= 3;
+      })
+      .sort((a, b) => getPeValue(a) - getPeValue(b))
+      .slice(0, 40);
+  }
+
+  return stocks;
+};
+
+const sortScreenerStocks = (stocks) => {
+  const list = [...stocks];
+
+  if (screenerSort === 'change-asc') {
+    return list.sort((a, b) => getChangeValue(a) - getChangeValue(b));
+  }
+
+  if (screenerSort === 'volume-desc') {
+    return list.sort((a, b) => getVolumeValue(b) - getVolumeValue(a));
+  }
+
+  if (screenerSort === 'pe-asc') {
+    return list.sort((a, b) => {
+      const aPe = getPeValue(a);
+      const bPe = getPeValue(b);
+      if (!aPe && !bPe) return 0;
+      if (!aPe) return 1;
+      if (!bPe) return -1;
+      return aPe - bPe;
+    });
+  }
+
+  if (screenerSort === 'symbol-asc') {
+    return list.sort((a, b) => a.symbol.localeCompare(b.symbol));
+  }
+
+  return list.sort((a, b) => getChangeValue(b) - getChangeValue(a));
+};
+
+const setQuickFilterUI = () => {
+  if (!els.quickFilters) {
+    return;
+  }
+
+  els.quickFilters.querySelectorAll('[data-quick-filter]').forEach((btn) => {
+    const filter = btn.dataset.quickFilter;
+    btn.classList.toggle('active', filter === activeQuickFilter && filter !== 'clear');
+  });
+};
+
+const getQuickFilterLabel = () => {
+  const labels = {
+    gainers: 'Top Gainers',
+    losers: 'Top Losers',
+    volume: 'High Volume',
+    value: 'Value Picks'
+  };
+  return labels[activeQuickFilter] || '';
+};
+
+const updateResultLine = (stockCount, query = '') => {
+  if (!els.resultLine) {
+    return;
+  }
+
+  const parts = [`${stockCount} stocks`];
+  if (activeBucketFilter) {
+    parts.push('bucket filtered');
+  }
+  if (activeSectorFilter) {
+    parts.push(`sector: ${activeSectorFilter}`);
+  }
+  if (activeQuickFilter) {
+    parts.push(`quick filter: ${getQuickFilterLabel()}`);
+  }
+  if (query && !query.startsWith('Bucket:') && !query.startsWith('Sector:')) {
+    parts.push(`search: "${query}"`);
+  }
+
+  els.resultLine.textContent = `Showing ${parts.join(' | ')}`;
 };
 
 // --- Initialization ---
@@ -38,6 +156,7 @@ const init = async () => {
     
     renderHeader();
     renderView();
+    setQuickFilterUI();
     
     // Event Listeners
     els.search.addEventListener('input', (e) => {
@@ -49,6 +168,30 @@ const init = async () => {
         activeBucketFilter = null;
       }
       renderView(e.target.value);
+    });
+
+    els.quickFilters?.addEventListener('click', (event) => {
+      const target = event.target.closest('[data-quick-filter]');
+      if (!target) {
+        return;
+      }
+
+      const filter = target.dataset.quickFilter;
+      if (filter === 'clear') {
+        activeQuickFilter = null;
+      } else {
+        activeQuickFilter = activeQuickFilter === filter ? null : filter;
+      }
+
+      setQuickFilterUI();
+      renderView(els.search.value);
+    });
+
+    els.screenerSort?.addEventListener('change', (event) => {
+      screenerSort = event.target.value || 'change-desc';
+      if (currentView === 'screener') {
+        renderView(els.search.value);
+      }
     });
 
     els.tabs.forEach(btn => {
@@ -117,9 +260,13 @@ const renderView = (query = '') => {
     } else {
       stocks = filterStocks(marketData.stocks, query);
     }
+
+    stocks = applyQuickFilter(stocks);
   } else {
     stocks = filterStocks(marketData.stocks, query);
   }
+
+  updateResultLine(stocks.length, query);
 
   if (currentView === 'buckets') {
     renderBuckets(stocks);
@@ -143,11 +290,12 @@ const renderBuckets = (stocks) => {
       <div class="bucket-header">
         <div class="bucket-title-group">
           <span class="bucket-title">${b.title}</span>
-          <span class="info-icon" onclick="alert('${b.description}\\n\\nCriteria: ${b.criteria}\\nFormula: ${b.formula}')" title="Criteria">ⓘ</span>
         </div>
         <span class="bucket-count">${b.matches.length}</span>
       </div>
-      <p style="font-size:0.85rem; color:#666; margin-bottom:1rem;">${b.description}</p>
+      <p class="bucket-description">${b.description}</p>
+      <p class="bucket-meta"><strong>Criteria:</strong> ${b.criteria}</p>
+      <p class="bucket-meta"><strong>Formula:</strong> ${b.formula}</p>
       <div class="stock-list">
         ${b.matches.slice(0, 5).map(stock => renderStockRow(stock)).join('')}
       </div>
@@ -163,6 +311,8 @@ window.filterScreenerByBucket = (bucketId) => {
   // Set the active bucket filter
   activeBucketFilter = bucketId;
   activeSectorFilter = null; // Clear sector filter
+  activeQuickFilter = null;
+  setQuickFilterUI();
   
   // Switch to screener tab
   const screenerTab = document.querySelector('.tab-btn[data-view="screener"]');
@@ -179,8 +329,8 @@ window.filterScreenerByBucket = (bucketId) => {
 };
 
 const renderScreener = (stocks) => {
-  // Limit to 50 for performance if no search
-  const displayStocks = stocks.slice(0, 100); 
+  const sortedStocks = sortScreenerStocks(stocks);
+  const displayStocks = sortedStocks.slice(0, 100);
   
   els.screenerBody.innerHTML = displayStocks.map(stock => `
     <tr onclick="window.openStock('${stock.symbol}')">
@@ -262,6 +412,8 @@ window.filterBySector = (sectorName) => {
   // Set the active sector filter
   activeSectorFilter = sectorName;
   activeBucketFilter = null; // Clear bucket filter
+  activeQuickFilter = null;
+  setQuickFilterUI();
   
   // Switch to screener tab
   const screenerTab = document.querySelector('.tab-btn[data-view="screener"]');

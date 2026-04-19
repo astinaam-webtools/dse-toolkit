@@ -51,6 +51,29 @@
       <label for="search" class="sr-only">Search for a term</label>
       <input id="search" type="search" placeholder="Search P/E, EPS, ROE…" autocomplete="off" />
       <div id="stats" role="status" aria-live="polite"></div>
+      <div class="search-assist" aria-label="Search helpers">
+        <div class="search-assist__group" aria-label="Quick term suggestions">
+          <p class="search-assist__label">Quick Terms</p>
+          <div class="chip-row" id="quick-term-chips">
+            <button class="chip" type="button" data-query="P/E">P/E</button>
+            <button class="chip" type="button" data-query="EPS">EPS</button>
+            <button class="chip" type="button" data-query="ROE">ROE</button>
+            <button class="chip" type="button" data-query="Debt to Equity">Debt/Equity</button>
+            <button class="chip" type="button" data-query="Dividend Yield">Dividend Yield</button>
+            <button class="chip chip--accent" type="button" id="surprise-term">Surprise Me</button>
+          </div>
+        </div>
+        <div class="search-assist__group" aria-label="Recent searches">
+          <p class="search-assist__label">Recent Searches</p>
+          <div class="chip-row" id="recent-searches">
+            <span class="chip chip--placeholder">No recent searches yet</span>
+          </div>
+        </div>
+        <div class="search-assist__group" aria-label="Browse by category">
+          <p class="search-assist__label">Browse by Category</p>
+          <div class="chip-row" id="category-chips"></div>
+        </div>
+      </div>
     </section>
 
     <section id="terms" class="terms" aria-live="polite"></section>

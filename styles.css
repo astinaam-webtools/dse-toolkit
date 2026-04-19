@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Sora:wght@600;700&display=swap');
+
 :root {
   color-scheme: light dark;
-  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Manrope', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --bg: #f8fafc;
   --card: #ffffff;
   --text: #0f172a;
@@ -80,6 +82,12 @@ body {
   cursor: pointer;
 }
 
+.btn--dark {
+  background: #1f2937;
+  border-color: #1f2937;
+  color: #fff;
+}
+
 .hero__content {
   max-width: 720px;
   margin: 0 auto;
@@ -95,6 +103,7 @@ body {
 }
 
 h1 {
+  font-family: 'Sora', 'Manrope', system-ui, sans-serif;
   font-size: clamp(2rem, 4vw, 3rem);
   margin: 0 0 1rem;
 }
@@ -148,6 +157,72 @@ input[type='search']:focus {
   margin-top: 0.65rem;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.search-assist {
+  margin-top: 0.95rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.search-assist__group {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.search-assist__label {
+  margin: 0;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.chip {
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.3rem 0.72rem;
+  font-size: 0.78rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: transform 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.chip:hover {
+  transform: translateY(-1px);
+  border-color: rgba(15, 157, 88, 0.42);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+}
+
+.chip--soft {
+  background: rgba(15, 157, 88, 0.08);
+  color: var(--accent);
+}
+
+.chip--accent {
+  background: var(--accent);
+  color: #fff;
+  border-color: transparent;
+}
+
+.chip--placeholder {
+  cursor: default;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.chip:focus-visible {
+  outline: 3px solid rgba(15, 157, 88, 0.24);
+  outline-offset: 2px;
 }
 
 .terms {
@@ -920,6 +995,21 @@ mark.hl {
   .btn {
     border-color: rgba(255, 255, 255, 0.1);
   }
+
+  .chip {
+    background: rgba(148, 163, 184, 0.14);
+    border-color: rgba(148, 163, 184, 0.28);
+    color: #e2e8f0;
+  }
+
+  .chip--soft {
+    background: rgba(16, 185, 129, 0.16);
+    color: #6ee7b7;
+  }
+
+  .chip--accent {
+    color: #f8fafc;
+  }
   
   mark.hl {
     background: rgba(253, 224, 71, 0.3);
@@ -1236,6 +1326,44 @@ mark.hl {
 .term-card.featured {
   border: 2px solid var(--accent);
   background: linear-gradient(to bottom right, var(--card), #f0fdf4);
+}
+
+.featured-header {
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.featured-header__icon {
+  font-size: 1.18rem;
+}
+
+.featured-header__title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.featured-cta {
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.market-glance__number {
+  font-weight: 800;
+  font-feature-settings: 'tnum';
+}
+
+.market-glance__number.up {
+  color: var(--color-up);
+}
+
+.market-glance__number.down {
+  color: var(--color-down);
+}
+
+.market-glance__fallback {
+  font-size: 0.8rem;
 }
 
 /* Dark Mode Overrides for New Components */

@@ -82,6 +82,48 @@
       color: var(--text); /* Ensure text is visible */
     }
 
+    .market-tools {
+      margin-top: 0.9rem;
+      display: grid;
+      gap: 0.65rem;
+    }
+
+    .quick-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .quick-filter-btn {
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 0.32rem 0.72rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .quick-filter-btn:hover {
+      border-color: rgba(15, 157, 88, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .quick-filter-btn.active {
+      background: var(--text);
+      color: var(--bg);
+      border-color: transparent;
+    }
+
+    .market-result-line {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
     /* Tabs */
     .tabs {
       display: flex;
@@ -168,6 +210,18 @@
       font-weight: 600;
     }
 
+    .bucket-description {
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin: 0 0 0.75rem;
+    }
+
+    .bucket-meta {
+      margin: 0 0 0.4rem;
+      font-size: 0.76rem;
+      color: var(--muted);
+    }
+
     .stock-row {
       display: flex;
       justify-content: space-between;
@@ -209,6 +263,29 @@
       padding: 12px;
       border-bottom: 1px solid var(--border);
       font-size: 0.875rem;
+    }
+
+    .screener-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      margin-bottom: 0.6rem;
+    }
+
+    .screener-toolbar label {
+      font-size: 0.78rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .screener-toolbar select {
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.35rem 0.55rem;
+      font-size: 0.8rem;
     }
     
     /* Sparkline SVG */
@@ -349,6 +426,15 @@
       .heatmap-grid {
         grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
       }
+
+      .market-tools {
+        grid-template-columns: 1fr auto;
+        align-items: center;
+      }
+
+      .market-result-line {
+        text-align: right;
+      }
     }
 
     @media (min-width: 1024px) {
@@ -468,6 +554,16 @@
     <div class="search-bar">
       <input type="text" id="stock-search" placeholder="Search Symbol, Sector..." />
     </div>
+    <div class="market-tools">
+      <div class="quick-filters" id="quick-filters" aria-label="Quick market filters">
+        <button class="quick-filter-btn" type="button" data-quick-filter="gainers">Top Gainers</button>
+        <button class="quick-filter-btn" type="button" data-quick-filter="losers">Top Losers</button>
+        <button class="quick-filter-btn" type="button" data-quick-filter="volume">High Volume</button>
+        <button class="quick-filter-btn" type="button" data-quick-filter="value">Value Picks</button>
+        <button class="quick-filter-btn" type="button" data-quick-filter="clear">Clear</button>
+      </div>
+      <p id="market-result-line" class="market-result-line">Showing full market snapshot.</p>
+    </div>
   </header>
 
   <nav class="tabs">
@@ -487,6 +583,16 @@
 
     <!-- View: Screener -->
     <section id="view-screener" class="view-section">
+      <div class="screener-toolbar">
+        <label for="screener-sort">Sort by</label>
+        <select id="screener-sort">
+          <option value="change-desc">Change % (High to Low)</option>
+          <option value="change-asc">Change % (Low to High)</option>
+          <option value="volume-desc">Volume (High to Low)</option>
+          <option value="pe-asc">P/E (Low to High)</option>
+          <option value="symbol-asc">Symbol (A to Z)</option>
+        </select>
+      </div>
       <div style="overflow-x: auto;">
         <table class="screener-table">
           <thead>

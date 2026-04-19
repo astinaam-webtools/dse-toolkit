@@ -8,6 +8,21 @@ const stats = document.getElementById('stats');
 const analyzerForm = document.getElementById('behavior-form');
 const analysisOutput = document.getElementById('analysis-output');
 const marketGlance = document.getElementById('market-glance');
+const quickTermChips = document.getElementById('quick-term-chips');
+const recentSearchesEl = document.getElementById('recent-searches');
+const categoryChipsEl = document.getElementById('category-chips');
+const surpriseTermBtn = document.getElementById('surprise-term');
+
+const RECENT_SEARCHES_KEY = 'dse_toolkit_recent_searches_v1';
+const MAX_RECENT_SEARCHES = 6;
+
+const escapeHtml = (value) =>
+  String(value || '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
 
 const renderCards = (dataset, tokens = []) => {
   if (!termContainer || !stats) return;
@@ -52,11 +67,11 @@ const renderCards = (dataset, tokens = []) => {
 const renderFeaturedTerm = () => {
   if (!termContainer || !terms.length) return;
   const randomTerm = terms[Math.floor(Math.random() * terms.length)];
-  
+
   termContainer.innerHTML = `
-    <div class="featured-header" style="margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-      <span style="font-size: 1.2rem;">💡</span>
-      <h3 style="margin: 0;">Term of the Day</h3>
+    <div class="featured-header">
+      <span class="featured-header__icon" aria-hidden="true">💡</span>
+      <h3 class="featured-header__title">Term of the Day</h3>
     </div>
     <article class="term-card featured">
       <div class="meta">
@@ -75,16 +90,19 @@ const renderFeaturedTerm = () => {
           .map((tag) => `<span class="badge">${tag}</span>`)
           .join('')}
       </div>
-      <div style="margin-top: 1.5rem; text-align: center;">
+      <div class="featured-cta">
         <button class="btn" id="show-all-terms">Browse all ${terms.length} terms</button>
       </div>
     </article>
   `;
-  
+
   document.getElementById('show-all-terms')?.addEventListener('click', () => {
+    if (searchInput) {
+      searchInput.value = '';
+    }
     renderCards(terms, []);
   });
-  
+
   stats.textContent = 'Featured term';
 };
 
@@ -119,8 +137,8 @@ const initMarketGlance = async () => {
       <div class="market-glance__item">
         <span class="label">Up / Down</span>
         <span class="value">
-          <span style="color: var(--color-up)">${up}</span> / 
-          <span style="color: var(--color-down)">${down}</span>
+          <span class="market-glance__number up">${up}</span> /
+          <span class="market-glance__number down">${down}</span>
         </span>
       </div>
     `;
@@ -128,9 +146,74 @@ const initMarketGlance = async () => {
     
   } catch (e) {
     console.error(e);
-    marketGlance.innerHTML = '<p class="muted" style="font-size: 0.8rem;">Market data unavailable</p>';
+    marketGlance.innerHTML = '<p class="muted market-glance__fallback">Market data unavailable</p>';
     marketGlance.classList.remove('hidden');
   }
+};
+
+const getRecentSearches = () => {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(RECENT_SEARCHES_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((item) => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveRecentSearches = (items) => {
+  localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(items.slice(0, MAX_RECENT_SEARCHES)));
+};
+
+const addRecentSearch = (query) => {
+  const normalized = String(query || '').trim();
+  if (!normalized || normalized.length < 2) {
+    return;
+  }
+
+  const existing = getRecentSearches().filter((item) => item.toLowerCase() !== normalized.toLowerCase());
+  saveRecentSearches([normalized, ...existing]);
+};
+
+const renderRecentSearches = () => {
+  if (!recentSearchesEl) {
+    return;
+  }
+
+  const recent = getRecentSearches();
+  if (!recent.length) {
+    recentSearchesEl.innerHTML = '<span class="chip chip--placeholder">No recent searches yet</span>';
+    return;
+  }
+
+  recentSearchesEl.innerHTML = recent
+    .map(
+      (query) =>
+        `<button class="chip" type="button" data-recent-query="${escapeHtml(query)}">${escapeHtml(query)}</button>`
+    )
+    .join('');
+};
+
+const renderCategoryChips = () => {
+  if (!categoryChipsEl) {
+    return;
+  }
+
+  const categoryCounts = terms.reduce((acc, term) => {
+    const category = term.category || 'General';
+    acc.set(category, (acc.get(category) || 0) + 1);
+    return acc;
+  }, new Map());
+
+  const topCategories = [...categoryCounts.entries()]
+    .sort((a, b) => (b[1] - a[1]) || a[0].localeCompare(b[0]))
+    .slice(0, 8);
+
+  categoryChipsEl.innerHTML = topCategories
+    .map(
+      ([name, count]) =>
+        `<button class="chip chip--soft" type="button" data-category-query="${escapeHtml(name)}">${escapeHtml(name)} (${count})</button>`
+    )
+    .join('');
 };
 
 const debounce = (fn, wait = 200) => {
@@ -141,17 +224,28 @@ const debounce = (fn, wait = 200) => {
   };
 };
 
+const runSearch = (query) => {
+  const cleaned = String(query || '').trim();
+
+  if (!cleaned) {
+    renderFeaturedTerm();
+    return;
+  }
+
+  const tokens = tokenize(cleaned);
+  const filtered = filterTerms(terms, cleaned);
+  renderCards(filtered, tokens);
+};
+
 const handleInput = (event) => {
   const query = event.target.value;
-  
+
   if (!query.trim()) {
     renderFeaturedTerm();
     return;
   }
 
-  const tokens = tokenize(query);
-  const filtered = filterTerms(terms, query);
-  renderCards(filtered, tokens);
+  runSearch(query);
 };
 
 
@@ -166,26 +260,81 @@ if (termContainer && searchInput) {
     const heroActions = document.querySelector('.hero__actions');
     if (heroActions) {
       const backBtn = document.createElement('a');
-      backBtn.className = 'btn btn--solid';
+      backBtn.className = 'btn btn--dark';
       backBtn.href = `stock.html?symbol=${encodeURIComponent(symbolParam)}`;
       backBtn.textContent = `← Back to ${symbolParam}`;
-      backBtn.style.backgroundColor = '#333'; // Distinct color
-      backBtn.style.borderColor = '#333';
-      
+
       // Insert as first child
       heroActions.insertBefore(backBtn, heroActions.firstChild);
     }
   }
 
+  renderCategoryChips();
+  renderRecentSearches();
+
+  quickTermChips?.addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-query]');
+    if (!chip || !searchInput) {
+      return;
+    }
+
+    const query = chip.getAttribute('data-query') || '';
+    searchInput.value = query;
+    runSearch(query);
+    addRecentSearch(query);
+    renderRecentSearches();
+    termContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  surpriseTermBtn?.addEventListener('click', () => {
+    if (!searchInput || !terms.length) {
+      return;
+    }
+
+    const randomTerm = terms[Math.floor(Math.random() * terms.length)];
+    const query = randomTerm.shortForm || randomTerm.title;
+    searchInput.value = query;
+    runSearch(query);
+    addRecentSearch(query);
+    renderRecentSearches();
+    termContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  recentSearchesEl?.addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-recent-query]');
+    const query = chip?.getAttribute('data-recent-query');
+    if (!query || !searchInput) {
+      return;
+    }
+
+    searchInput.value = query;
+    runSearch(query);
+    termContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  categoryChipsEl?.addEventListener('click', (event) => {
+    const chip = event.target.closest('[data-category-query]');
+    const query = chip?.getAttribute('data-category-query');
+    if (!query || !searchInput) {
+      return;
+    }
+
+    searchInput.value = query;
+    runSearch(query);
+    addRecentSearch(query);
+    renderRecentSearches();
+    termContainer?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
   if (queryParam) {
     // Set the search input value to the query parameter
     searchInput.value = queryParam;
     searchInput.setAttribute('value', queryParam); // Ensure attribute is set for some browsers
-    
+
     // Trigger the search
-    const tokens = tokenize(queryParam);
-    const filtered = filterTerms(terms, queryParam);
-    renderCards(filtered, tokens);
+    runSearch(queryParam);
+    addRecentSearch(queryParam);
+    renderRecentSearches();
 
     // Scroll to results for better visibility
     setTimeout(() => {
@@ -207,7 +356,34 @@ if (termContainer && searchInput) {
     if (ev.key === 'Escape') {
       searchInput.value = '';
       renderFeaturedTerm();
+      return;
     }
+
+    if (ev.key === 'Enter') {
+      addRecentSearch(searchInput.value);
+      renderRecentSearches();
+    }
+  });
+
+  document.addEventListener('keydown', (ev) => {
+    if (ev.key !== '/') {
+      return;
+    }
+
+    const target = ev.target;
+    const isEditable =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement ||
+      target?.isContentEditable;
+
+    if (isEditable) {
+      return;
+    }
+
+    ev.preventDefault();
+    searchInput.focus();
+    searchInput.select();
   });
 }
 
