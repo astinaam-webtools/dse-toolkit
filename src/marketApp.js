@@ -1,4 +1,6 @@
 import { getStockBuckets, filterStocks, getSectorHeatmap } from './lib/marketLogic.js';
+import { getAiSettings } from './lib/appSettings.js';
+import { requestServerAiChat } from './lib/serverClient.js';
 
 // State
 let marketData = null;
@@ -472,13 +474,6 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-// Save settings on Enter
-document.getElementById('api-key-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') {
-    window.saveSettings();
-  }
-});
-
 window.openStock = (symbol) => {
   const stock = marketData.stocks.find(s => s.symbol === symbol);
   if (!stock) return;
@@ -532,14 +527,43 @@ window.openStock = (symbol) => {
   els.modal.classList.add('open');
 };
 
-window.analyzeStock = async (symbol) => {
-  const apiKey = localStorage.getItem('openrouter_key');
-  const preferredModel = localStorage.getItem('openrouter_model') || "openai/gpt-oss-20b:free";
-  
-  if (!apiKey) {
-    alert('Please set your OpenRouter API Key in Settings first.');
-    return;
+const requestAiCompletion = async ({ aiSettings, messages }) => {
+  if (aiSettings.mode === 'server') {
+    const response = await requestServerAiChat({
+      messages,
+      model: aiSettings.localOpenRouterModel
+    });
+    return response?.message || '';
   }
+
+  const apiKey = aiSettings.localOpenRouterApiKey;
+  const model = String(aiSettings.localOpenRouterModel || '').trim();
+  if (!apiKey || !model) {
+    throw new Error('Client-only AI requires both OpenRouter API key and model name in Settings.');
+  }
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      model,
+      messages
+    })
+  });
+
+  if (!response.ok) {
+    throw new Error('AI request failed. Check your Settings and try again.');
+  }
+
+  const data = await response.json();
+  return data?.choices?.[0]?.message?.content || '';
+};
+
+window.analyzeStock = async (symbol) => {
+  const aiSettings = getAiSettings();
 
   const stock = marketData.stocks.find(s => s.symbol === symbol);
   
@@ -678,24 +702,12 @@ Provide a concise analysis in Markdown format:
   addChatMessage('system', `Analyzing ${stock.symbol}...`);
 
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        "model": preferredModel,
-        "messages": [
-          {"role": "user", "content": prompt}
-        ]
-      })
+    const markdown = await requestAiCompletion({
+      aiSettings,
+      messages: [
+        { role: 'user', content: prompt }
+      ]
     });
-
-    if (!response.ok) throw new Error('AI Request failed');
-    
-    const data = await response.json();
-    const markdown = data.choices[0].message.content;
     
     addChatMessage('ai', markdown);
 
@@ -715,28 +727,18 @@ Provide a concise analysis in Markdown format:
     const thinkingId = addChatMessage('thinking', 'AI is thinking...');
     
     try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          "model": preferredModel,
-          "messages": [
-            {"role": "system", "content": `Context: Analyzing ${stock.symbol}. Previous analysis provided.`},
-            {"role": "user", "content": text}
-          ]
-        })
+      const answer = await requestAiCompletion({
+        aiSettings,
+        messages: [
+          { role: 'system', content: `Context: Analyzing ${stock.symbol}. Previous analysis provided.` },
+          { role: 'user', content: text }
+        ]
       });
-
-      if (!response.ok) throw new Error('AI Request failed');
       
       // Remove thinking indicator
       removeChatMessage(thinkingId);
-      
-      const data = await response.json();
-      addChatMessage('ai', data.choices[0].message.content);
+
+      addChatMessage('ai', answer);
 
     } catch (err) {
       removeChatMessage(thinkingId);

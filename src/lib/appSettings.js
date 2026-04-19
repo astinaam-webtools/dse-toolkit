@@ -4,6 +4,11 @@ const DEFAULT_SETTINGS = Object.freeze({
   serverUrl: '',
   authToken: null,
   user: null,
+  ai: {
+    mode: 'client',
+    localOpenRouterApiKey: '',
+    localOpenRouterModel: ''
+  },
   importDecisions: {
     stocks: null,
     funds: null
@@ -71,6 +76,15 @@ const normalizePendingSync = (pendingSync) => ({
   funds: Boolean(pendingSync?.funds)
 });
 
+const normalizeAiSettings = (ai) => {
+  const mode = ai?.mode === 'server' ? 'server' : 'client';
+  return {
+    mode,
+    localOpenRouterApiKey: ai?.localOpenRouterApiKey ? String(ai.localOpenRouterApiKey) : '',
+    localOpenRouterModel: ai?.localOpenRouterModel ? String(ai.localOpenRouterModel) : ''
+  };
+};
+
 export const normalizeAppSettings = (value) => {
   const settings = value && typeof value === 'object' ? value : {};
 
@@ -78,6 +92,7 @@ export const normalizeAppSettings = (value) => {
     serverUrl: normalizeServerUrl(settings.serverUrl),
     authToken: settings.authToken ? String(settings.authToken) : null,
     user: normalizeUser(settings.user),
+    ai: normalizeAiSettings(settings.ai),
     importDecisions: normalizeImportDecisions(settings.importDecisions),
     pendingSync: normalizePendingSync(settings.pendingSync)
   };
@@ -194,3 +209,18 @@ export const setPendingSync = (type, value) =>
       [type]: Boolean(value)
     }
   }));
+
+export const getAiSettings = () => getAppSettings().ai;
+
+export const updateAiSettings = (updater) =>
+  updateAppSettings((current) => {
+    const nextAi =
+      typeof updater === 'function'
+        ? updater({ ...current.ai })
+        : { ...current.ai, ...(updater || {}) };
+
+    return {
+      ...current,
+      ai: normalizeAiSettings(nextAi)
+    };
+  });

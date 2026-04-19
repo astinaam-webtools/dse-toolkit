@@ -6,7 +6,8 @@ export const config = {
   port: Number.parseInt(process.env.PORT || '3001', 10),
   dbPath: process.env.DB_PATH ? path.resolve(process.cwd(), process.env.DB_PATH) : defaultDbPath,
   jwtSecret: process.env.JWT_SECRET || 'change-me',
-  corsOrigin: process.env.CORS_ORIGIN || '*'
+  corsOrigin: process.env.CORS_ORIGIN || '*',
+  openRouterBaseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1'
 };
 
 export function assertConfig() {

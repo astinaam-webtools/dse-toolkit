@@ -213,6 +213,28 @@ export const apiRequest = async (path, options = {}) => {
   });
 };
 
+export const getServerAiSettings = async () => apiRequest('/api/ai/settings');
+
+export const saveServerAiSettings = async ({ apiKey, model }) =>
+  apiRequest('/api/ai/settings', {
+    method: 'PUT',
+    body: {
+      provider: 'openrouter',
+      apiKey,
+      model
+    }
+  });
+
+export const requestServerAiChat = async ({ messages, model }) =>
+  apiRequest('/api/ai/chat', {
+    method: 'POST',
+    body: {
+      provider: 'openrouter',
+      messages,
+      model
+    }
+  });
+
 export const getConnectionState = async () => {
   const settings = getAppSettings();
   if (!settings.serverUrl) {

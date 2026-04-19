@@ -71,6 +71,41 @@
       font-size: 1rem;
     }
 
+    .settings-form select {
+      width: 100%;
+      padding: 0.85rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    .mode-toggle {
+      display: grid;
+      gap: 0.55rem;
+      margin-top: 1rem;
+    }
+
+    .mode-toggle label {
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .mode-toggle input[type='radio'] {
+      width: auto;
+      margin: 0;
+    }
+
+    .ai-mode-note {
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+    }
+
     .settings-actions,
     .auth-grid,
     .import-actions {
@@ -303,8 +338,42 @@
 
     <section class="settings-grid">
       <article class="settings-card">
+        <h2>AI Analyst</h2>
+        <p>Choose where AI analysis runs. Client mode calls OpenRouter from this browser. Server mode uses your connected server account and server-side OpenRouter key.</p>
+
+        <div class="mode-toggle">
+          <label>
+            <input id="ai-mode-client" name="ai-mode" type="radio" value="client" checked />
+            Client-only AI (browser)
+          </label>
+          <label>
+            <input id="ai-mode-server" name="ai-mode" type="radio" value="server" />
+            Server AI (requires connected server login)
+          </label>
+        </div>
+
+        <div class="settings-form" style="margin-top: 1rem;">
+          <div>
+            <label for="ai-local-api-key">OpenRouter API Key</label>
+            <input id="ai-local-api-key" type="password" placeholder="sk-or-..." autocomplete="off" />
+          </div>
+          <div>
+            <label for="ai-model">Preferred Model</label>
+            <input id="ai-model" type="text" placeholder="openai/gpt-oss-20b:free" />
+            <p class="muted-note">Required for client-only AI mode.</p>
+          </div>
+          <div class="settings-actions">
+            <button id="save-ai-local" class="btn btn--solid" type="button">Save Client AI Settings</button>
+            <button id="save-ai-server" class="btn" type="button">Save Server AI Key</button>
+          </div>
+          <p id="ai-server-state" class="ai-mode-note"></p>
+          <div id="ai-message" class="settings-message"></div>
+        </div>
+      </article>
+
+      <article class="settings-card">
         <h2>Connection</h2>
-        <p>Server mode applies to stock portfolios and mutual fund portfolios. Market data and AI settings remain local.</p>
+        <p>Server mode applies to stock portfolios, mutual funds, and (optionally) AI analyst requests when server AI mode is selected.</p>
 
         <div class="status-row">
           <span id="connection-status" class="settings-badge">Checking server...</span>

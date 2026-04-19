@@ -1,4 +1,4 @@
-const SW_VERSION = 'v18';
+const SW_VERSION = 'v19';
 const SW_URL = `./sw.js?${SW_VERSION}`;
 
 if ('serviceWorker' in navigator) {

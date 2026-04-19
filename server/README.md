@@ -20,6 +20,7 @@ Set the environment variables before starting:
 - `DB_PATH`: SQLite database path, defaults to `./data/app.db`
 - `JWT_SECRET`: required signing secret for JWTs
 - `CORS_ORIGIN`: allowed frontend origin, defaults to `*`
+- `OPENROUTER_BASE_URL`: OpenRouter API base URL, defaults to `https://openrouter.ai/api/v1`
 
 ## Run
 
@@ -43,5 +44,12 @@ npm start
 - `PUT /api/portfolio/stocks`
 - `GET /api/portfolio/funds`
 - `PUT /api/portfolio/funds`
+- `GET /api/ai/settings`
+- `PUT /api/ai/settings`
+- `POST /api/ai/chat`
 
-All portfolio endpoints require `Authorization: Bearer <token>`.
+Portfolio and AI endpoints require `Authorization: Bearer <token>`.
+
+AI notes:
+- Initial provider support is `openrouter` only.
+- Save OpenRouter key via `PUT /api/ai/settings` before calling `POST /api/ai/chat`.

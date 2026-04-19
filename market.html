@@ -548,21 +548,11 @@
           <span id="market-date">Loading...</span>
         </div>
       </div>
-      <button class="settings-btn" id="open-settings" title="Settings">⚙️</button>
+      <a href="./settings.html" class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; padding: 4px 10px; font-size: 0.8rem;">Settings</a>
     </div>
     
     <div class="search-bar">
       <input type="text" id="stock-search" placeholder="Search Symbol, Sector..." />
-    </div>
-    <div class="market-tools">
-      <div class="quick-filters" id="quick-filters" aria-label="Quick market filters">
-        <button class="quick-filter-btn" type="button" data-quick-filter="gainers">Top Gainers</button>
-        <button class="quick-filter-btn" type="button" data-quick-filter="losers">Top Losers</button>
-        <button class="quick-filter-btn" type="button" data-quick-filter="volume">High Volume</button>
-        <button class="quick-filter-btn" type="button" data-quick-filter="value">Value Picks</button>
-        <button class="quick-filter-btn" type="button" data-quick-filter="clear">Clear</button>
-      </div>
-      <p id="market-result-line" class="market-result-line">Showing full market snapshot.</p>
     </div>
   </header>
 
@@ -583,6 +573,16 @@
 
     <!-- View: Screener -->
     <section id="view-screener" class="view-section">
+      <div class="market-tools">
+        <div class="quick-filters" id="quick-filters" aria-label="Quick market filters">
+          <button class="quick-filter-btn" type="button" data-quick-filter="gainers">Top Gainers</button>
+          <button class="quick-filter-btn" type="button" data-quick-filter="losers">Top Losers</button>
+          <button class="quick-filter-btn" type="button" data-quick-filter="volume">High Volume</button>
+          <button class="quick-filter-btn" type="button" data-quick-filter="value">Value Picks</button>
+          <button class="quick-filter-btn" type="button" data-quick-filter="clear">Clear</button>
+        </div>
+        <p id="market-result-line" class="market-result-line">Showing full market snapshot.</p>
+      </div>
       <div class="screener-toolbar">
         <label for="screener-sort">Sort by</label>
         <select id="screener-sort">
@@ -646,37 +646,6 @@
     </div>
   </div>
 
-  <!-- Settings Modal -->
-  <div class="modal-overlay" id="settings-modal">
-    <div class="modal-content">
-      <button class="close-modal" onclick="closeModal('settings-modal')">&times;</button>
-      <h3>Settings</h3>
-      <p>Configure AI Analyst</p>
-      <div style="margin-bottom: 1rem;">
-        <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">OpenRouter API Key</label>
-        <input type="password" id="api-key-input" placeholder="sk-or-..." style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        <p style="font-size:0.75rem; color:#666; margin-top:4px;">Key is stored in your browser (localStorage). Never sent to our server.</p>
-        <details style="margin-top:8px; font-size:0.8rem;">
-          <summary style="cursor:pointer; color:#0f9d58; font-weight:500;">How to get an API key?</summary>
-          <ol style="margin:8px 0 0 16px; color:#555; line-height:1.6;">
-            <li>Go to <a href="https://openrouter.ai" target="_blank" rel="noopener" style="color:#0f9d58;">openrouter.ai</a></li>
-            <li>Sign up or log in (Google/GitHub supported)</li>
-            <li>Navigate to <strong>Keys</strong> in the dashboard</li>
-            <li>Click <strong>Create Key</strong> and copy the key (starts with <code>sk-or-</code>)</li>
-            <li>Paste it above and save</li>
-          </ol>
-          <p style="margin-top:6px; color:#888;">Free tier available with limited credits. Add payment for higher limits.</p>
-        </details>
-      </div>
-      <div style="margin-bottom: 1rem;">
-        <label style="display:block; margin-bottom:0.5rem; font-size:0.9rem;">Preferred Model (Optional)</label>
-        <input type="text" id="model-input" placeholder="e.g. openai/gpt-oss-20b:free" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px;">
-        <p style="font-size:0.75rem; color:#666; margin-top:4px;">Leave empty to use default (GPT-OSS 20B Free).</p>
-      </div>
-      <button class="btn-ai" onclick="saveSettings()">Save Settings</button>
-    </div>
-  </div>
-
   <script type="module" src="./src/marketApp.js"></script>
   <script type="module" src="./src/navStatus.js"></script>
   <script type="module" src="./src/swRegister.js"></script>
@@ -685,28 +654,6 @@
     // Global modal helpers
     window.closeModal = (id) => {
       document.getElementById(id).classList.remove('open');
-    };
-    
-    document.getElementById('open-settings').addEventListener('click', () => {
-      document.getElementById('api-key-input').value = localStorage.getItem('openrouter_key') || '';
-      document.getElementById('model-input').value = localStorage.getItem('openrouter_model') || '';
-      document.getElementById('settings-modal').classList.add('open');
-    });
-
-    window.saveSettings = () => {
-      const key = document.getElementById('api-key-input').value.trim();
-      const model = document.getElementById('model-input').value.trim();
-      
-      if(key) {
-        localStorage.setItem('openrouter_key', key);
-        if (model) localStorage.setItem('openrouter_model', model);
-        else localStorage.removeItem('openrouter_model');
-        
-        alert('Settings saved!');
-        closeModal('settings-modal');
-      } else {
-        alert('Please enter an API Key.');
-      }
     };
   </script>
 

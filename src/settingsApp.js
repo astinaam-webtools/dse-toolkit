@@ -1,12 +1,14 @@
 import {
   clearServerUrl,
   getAppSettings,
+  getAiSettings,
   getPendingSync,
   getImportDecision,
   setImportDecision,
-  setServerUrl
+  setServerUrl,
+  updateAiSettings
 } from './lib/appSettings.js';
-import { ApiError, probeServer } from './lib/serverClient.js';
+import { ApiError, getServerAiSettings, probeServer, saveServerAiSettings } from './lib/serverClient.js';
 import {
   getConnectionState,
   flushPendingSync,
@@ -57,10 +59,38 @@ const els = {
   importStocksBtn: document.getElementById('import-stocks-btn'),
   importFundsBtn: document.getElementById('import-funds-btn'),
   dismissStocksBtn: document.getElementById('dismiss-stocks-btn'),
-  dismissFundsBtn: document.getElementById('dismiss-funds-btn')
+  dismissFundsBtn: document.getElementById('dismiss-funds-btn'),
+  aiModeClient: document.getElementById('ai-mode-client'),
+  aiModeServer: document.getElementById('ai-mode-server'),
+  aiLocalApiKey: document.getElementById('ai-local-api-key'),
+  aiModel: document.getElementById('ai-model'),
+  saveAiLocal: document.getElementById('save-ai-local'),
+  saveAiServer: document.getElementById('save-ai-server'),
+  aiMessage: document.getElementById('ai-message'),
+  aiServerState: document.getElementById('ai-server-state')
 };
 
 let authMode = 'login';
+
+const DEFAULT_AI_MODEL = 'openai/gpt-oss-20b:free';
+
+const migrateLegacyAiKeys = () => {
+  const oldKey = localStorage.getItem('openrouter_key');
+  const oldModel = localStorage.getItem('openrouter_model');
+  const aiSettings = getAiSettings();
+
+  if (oldKey && !aiSettings.localOpenRouterApiKey) {
+    updateAiSettings({
+      localOpenRouterApiKey: oldKey,
+      localOpenRouterModel: oldModel || aiSettings.localOpenRouterModel || ''
+    });
+  }
+
+  if (oldKey || oldModel) {
+    localStorage.removeItem('openrouter_key');
+    localStorage.removeItem('openrouter_model');
+  }
+};
 
 const setMessage = (element, text, tone = '') => {
   if (!element) {
@@ -153,6 +183,7 @@ const renderConnectionState = async () => {
   }
 
   showImports(isConnected);
+  await renderAiSettings();
 };
 
 const renderAuthModal = () => {
@@ -217,6 +248,95 @@ const handleClearServerUrl = async () => {
   clearServerUrl();
   setMessage(els.serverMessage, 'Server mode disabled. The app is back in client-only mode.', 'success');
   await renderConnectionState();
+};
+
+const renderAiSettings = async () => {
+  const aiSettings = getAiSettings();
+  els.aiModeClient.checked = aiSettings.mode !== 'server';
+  els.aiModeServer.checked = aiSettings.mode === 'server';
+  els.aiLocalApiKey.value = aiSettings.localOpenRouterApiKey || '';
+  els.aiModel.value = aiSettings.localOpenRouterModel || '';
+
+  const appSettings = getAppSettings();
+  const hasServerConnection = Boolean(appSettings.serverUrl && appSettings.authToken);
+  els.saveAiServer.disabled = !hasServerConnection;
+
+  if (!hasServerConnection) {
+    els.aiServerState.textContent = 'Connect and log in to a server to use server AI mode.';
+    return;
+  }
+
+  try {
+    const data = await getServerAiSettings();
+    const configured = data?.configured;
+    const model = data?.model || aiSettings.localOpenRouterModel || DEFAULT_AI_MODEL;
+    els.aiServerState.textContent = configured
+      ? `Server AI is configured (${data.provider || 'openrouter'}, model: ${model}).`
+      : 'Server AI key is not configured yet. Save it below.';
+  } catch (error) {
+    els.aiServerState.textContent = `Could not load server AI settings: ${error.message}`;
+  }
+};
+
+const handleAiModeChange = async () => {
+  const mode = els.aiModeServer.checked ? 'server' : 'client';
+
+  if (mode === 'client') {
+    const apiKey = els.aiLocalApiKey.value.trim();
+    const model = els.aiModel.value.trim();
+    if (!apiKey || !model) {
+      els.aiModeServer.checked = true;
+      els.aiModeClient.checked = false;
+      setMessage(els.aiMessage, 'Client-only AI requires both OpenRouter API key and model name.', 'warning');
+      return;
+    }
+  }
+
+  updateAiSettings({ mode });
+  setMessage(els.aiMessage, `AI mode set to ${mode === 'server' ? 'Server AI' : 'Client-only AI'}.`, 'success');
+  await renderAiSettings();
+};
+
+const handleSaveAiLocal = () => {
+  const apiKey = els.aiLocalApiKey.value.trim();
+  const model = els.aiModel.value.trim();
+
+  if (!apiKey || !model) {
+    setMessage(els.aiMessage, 'Client-only AI requires both OpenRouter API key and model name.', 'warning');
+    return;
+  }
+
+  updateAiSettings({
+    localOpenRouterApiKey: apiKey,
+    localOpenRouterModel: model
+  });
+  setMessage(els.aiMessage, 'Client AI settings saved.', 'success');
+};
+
+const handleSaveAiServer = async () => {
+  const apiKey = els.aiLocalApiKey.value.trim();
+  const model = els.aiModel.value.trim() || DEFAULT_AI_MODEL;
+
+  if (!apiKey) {
+    setMessage(els.aiMessage, 'Enter an OpenRouter API key before saving to server.', 'warning');
+    return;
+  }
+
+  els.saveAiServer.disabled = true;
+  setMessage(els.aiMessage, 'Saving server AI settings...', '');
+
+  try {
+    await saveServerAiSettings({ apiKey, model });
+    updateAiSettings({ localOpenRouterModel: model, mode: 'server' });
+    els.aiModeServer.checked = true;
+    els.aiModeClient.checked = false;
+    setMessage(els.aiMessage, 'Server AI settings saved successfully.', 'success');
+  } catch (error) {
+    const message = error instanceof ApiError ? error.message : 'Unable to save server AI settings.';
+    setMessage(els.aiMessage, message, 'error');
+  } finally {
+    await renderAiSettings();
+  }
 };
 
 const handleAuthSubmit = async (event, mode) => {
@@ -291,6 +411,8 @@ const dismissImport = (type) => {
 };
 
 const init = async () => {
+  migrateLegacyAiKeys();
+
   els.serverSave.addEventListener('click', handleSaveServerUrl);
   els.serverClear.addEventListener('click', handleClearServerUrl);
   els.openLoginModal.addEventListener('click', () => openAuthModal('login'));
@@ -314,6 +436,10 @@ const init = async () => {
   els.importFundsBtn.addEventListener('click', () => handleImport('funds'));
   els.dismissStocksBtn.addEventListener('click', () => dismissImport('stocks'));
   els.dismissFundsBtn.addEventListener('click', () => dismissImport('funds'));
+  els.aiModeClient.addEventListener('change', handleAiModeChange);
+  els.aiModeServer.addEventListener('change', handleAiModeChange);
+  els.saveAiLocal.addEventListener('click', handleSaveAiLocal);
+  els.saveAiServer.addEventListener('click', handleSaveAiServer);
 
   els.authModal.addEventListener('click', (event) => {
     if (event.target === els.authModal) {
@@ -329,6 +455,7 @@ const init = async () => {
 
   renderAuthModal();
   await renderConnectionState();
+  await renderAiSettings();
 };
 
 init();

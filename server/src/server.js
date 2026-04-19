@@ -18,6 +18,13 @@ import {
   savePortfolioDocument,
   validateDocumentShape
 } from './documents.js';
+import {
+  DEFAULT_AI_MODEL,
+  getUserAiSettingsRow,
+  requestOpenRouterCompletion,
+  sanitizeAiSettings,
+  saveUserAiSettings
+} from './ai.js';
 
 const app = Fastify({
   logger: true
@@ -162,6 +169,69 @@ app.put('/api/portfolio/:type', { preHandler: [app.authenticate] }, async (reque
   }
 
   return savePortfolioDocument(request.user.id, type, document);
+});
+
+app.get('/api/ai/settings', { preHandler: [app.authenticate] }, async (request) => {
+  const row = await getUserAiSettingsRow(request.user.id);
+  return sanitizeAiSettings(row);
+});
+
+app.put('/api/ai/settings', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const provider = String(request.body?.provider || 'openrouter').trim().toLowerCase();
+  const apiKey = String(request.body?.apiKey || '').trim();
+  const model = String(request.body?.model || DEFAULT_AI_MODEL).trim();
+
+  if (provider !== 'openrouter') {
+    return reply.status(400).send({ error: 'Only OpenRouter provider is currently supported.' });
+  }
+
+  if (!apiKey || !apiKey.startsWith('sk-or-')) {
+    return reply.status(400).send({ error: 'A valid OpenRouter API key is required.' });
+  }
+
+  const row = await saveUserAiSettings({
+    userId: request.user.id,
+    provider,
+    apiKey,
+    model
+  });
+
+  return sanitizeAiSettings(row);
+});
+
+app.post('/api/ai/chat', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const provider = String(request.body?.provider || 'openrouter').trim().toLowerCase();
+  const messages = request.body?.messages;
+  const requestedModel = String(request.body?.model || '').trim();
+
+  if (provider !== 'openrouter') {
+    return reply.status(400).send({ error: 'Only OpenRouter provider is currently supported.' });
+  }
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return reply.status(400).send({ error: 'messages[] is required.' });
+  }
+
+  const row = await getUserAiSettingsRow(request.user.id);
+  if (!row?.api_key) {
+    return reply.status(400).send({ error: 'Server AI is not configured. Save an OpenRouter API key in Settings first.' });
+  }
+
+  try {
+    const completion = await requestOpenRouterCompletion({
+      apiKey: row.api_key,
+      model: requestedModel || row.model || DEFAULT_AI_MODEL,
+      messages
+    });
+
+    return {
+      provider: 'openrouter',
+      model: requestedModel || row.model || DEFAULT_AI_MODEL,
+      message: completion.message
+    };
+  } catch (error) {
+    return reply.status(502).send({ error: error.message || 'OpenRouter request failed.' });
+  }
 });
 
 async function start() {
