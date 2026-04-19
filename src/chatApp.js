@@ -12,8 +12,8 @@ import {
   loadChatState,
   saveChatState,
   setActiveThread,
-  setThreadLockedAutoModel,
   snapshotThreadForRequest,
+  updateThreadMessage,
   updateSelectedServerModel,
   uploadChatState
 } from './lib/chatStore.js';
@@ -26,6 +26,7 @@ import {
 const els = {
   back: document.getElementById('chat-back'),
   newThread: document.getElementById('chat-new-thread'),
+  newThreadSidebar: document.getElementById('chat-new-thread-sidebar'),
   syncState: document.getElementById('chat-sync-state'),
   threadList: document.getElementById('chat-thread-list'),
   modelSelect: document.getElementById('chat-model-select'),
@@ -33,6 +34,7 @@ const els = {
   deleteThread: document.getElementById('chat-delete-thread'),
   feed: document.getElementById('chat-feed'),
   composer: document.getElementById('chat-composer'),
+  includeStockData: document.getElementById('chat-include-stock-data'),
   input: document.getElementById('chat-input'),
   send: document.getElementById('chat-send')
 };
@@ -44,9 +46,10 @@ const state = {
   chat: getLocalChatState(),
   serverModels: [],
   loading: false,
-  pendingAssistantThreadId: null,
   bootstrap: null,
-  lastMeta: null
+  lastMeta: null,
+  expandedMetaMessageIds: new Set(),
+  includeStockData: false
 };
 
 const formatTime = (value) => {
@@ -131,6 +134,58 @@ const renderSyncState = async () => {
   }
 };
 
+const autoResizeComposer = () => {
+  const input = els.input;
+  if (!input) {
+    return;
+  }
+
+  input.style.height = 'auto';
+  const next = Math.min(Math.max(input.scrollHeight, 42), 180);
+  input.style.height = `${next}px`;
+};
+
+const canIncludeStockData = (thread = getActiveThread()) => Boolean(thread?.systemPrompt);
+
+const shouldIncludeStockDataForSend = (thread = getActiveThread()) => {
+  if (!canIncludeStockData(thread)) {
+    return false;
+  }
+
+  if (!thread.messages.length) {
+    return true;
+  }
+
+  return Boolean(state.includeStockData);
+};
+
+const syncIncludeStockDataControl = () => {
+  if (!els.includeStockData) {
+    return;
+  }
+
+  const thread = getActiveThread();
+  const canInclude = canIncludeStockData(thread);
+  const nextChecked = shouldIncludeStockDataForSend(thread);
+  state.includeStockData = nextChecked;
+
+  els.includeStockData.disabled = !canInclude;
+  els.includeStockData.checked = nextChecked;
+  els.includeStockData.title = canInclude
+    ? 'Adds the stock analysis context to this request.'
+    : 'Stock context is only available in stock analysis threads.';
+};
+
+const buildRequestMessages = (thread, includeStockData = true) => {
+  const requestMessages = snapshotThreadForRequest(thread);
+
+  if (!includeStockData && requestMessages[0]?.role === 'system' && thread?.systemPrompt) {
+    requestMessages.shift();
+  }
+
+  return requestMessages;
+};
+
 const persist = async () => {
   state.chat = await saveChatState(state.chat);
   await renderSyncState();
@@ -170,20 +225,39 @@ const renderFeed = () => {
   const html = thread.messages
     .map((message) => {
       const cls = message.role === 'assistant' ? 'bubble-assistant' : 'bubble-user';
-      const body = message.role === 'assistant' ? renderMarkdown(message.content) : escapeHtml(message.content);
-      const meta = message.meta
-        ? `<div class="bubble-meta">${message.meta.model ? `Model: ${escapeHtml(message.meta.model)}` : ''}${message.meta.latencyMs != null ? ` · ${Number(message.meta.latencyMs)}ms` : ''}${message.meta.respondedAt ? ` · ${escapeHtml(formatTime(message.meta.respondedAt))}` : ''}</div>`
-        : '';
-      return `<div class="bubble ${cls}">${body}${meta}</div>`;
+      const isPendingAssistant = message.role === 'assistant' && Boolean(message.meta?.pending);
+      const isFailedAssistant = message.role === 'assistant' && Boolean(message.meta?.failed);
+
+      let body;
+      if (isPendingAssistant) {
+        body = '<span class="thinking-dots"><span></span><span></span><span></span></span>Thinking...';
+      } else if (message.role === 'assistant') {
+        body = renderMarkdown(message.content);
+      } else {
+        body = escapeHtml(message.content);
+      }
+
+      const detailsVisible = state.expandedMetaMessageIds.has(message.id);
+      const detailsToggle =
+        message.role === 'assistant' && !isPendingAssistant && !isFailedAssistant && message.meta
+          ? `<button class="bubble-meta-toggle" type="button" data-toggle-meta-id="${message.id}">${detailsVisible ? 'Hide details' : 'Show details'}</button>`
+          : '';
+
+      const meta =
+        message.meta && detailsVisible
+          ? `<div class="bubble-meta">${message.meta.model ? `Model: ${escapeHtml(message.meta.model)}` : ''}${message.meta.respondedAt ? `${message.meta.model ? ' · ' : ''}${escapeHtml(formatTime(message.meta.respondedAt))}` : ''}${message.meta.latencyMs != null ? ` · ${Number(message.meta.latencyMs)}ms` : ''}</div>`
+          : '';
+
+      const retry =
+        isFailedAssistant
+          ? `<button class="bubble-retry" type="button" data-retry-message-id="${message.id}">Retry</button>`
+          : '';
+
+      return `<div class="bubble ${cls} ${isPendingAssistant ? 'bubble-thinking' : ''}">${body}${detailsToggle}${meta}${retry}</div>`;
     })
     .join('');
 
-  const thinkingBubble =
-    state.loading && state.pendingAssistantThreadId === thread.id
-      ? '<div class="bubble bubble-assistant bubble-thinking"><span class="thinking-dots"><span></span><span></span><span></span></span>Thinking...</div>'
-      : '';
-
-  els.feed.innerHTML = html + thinkingBubble;
+  els.feed.innerHTML = html;
   els.feed.scrollTop = els.feed.scrollHeight;
 };
 
@@ -195,56 +269,41 @@ const getRandomModel = () => {
   return state.serverModels[index]?.model_id || '';
 };
 
-const resolveServerModelForThread = (thread) => {
+const resolveServerModelForThread = () => {
   const selected = getSelectedServerModel();
   if (selected !== 'auto') {
-    return {
-      selectedModel: selected,
-      lockedModel: ''
-    };
-  }
-
-  const alreadyLocked = String(thread.lockedAutoModel || '').trim();
-  if (alreadyLocked) {
-    return {
-      selectedModel: alreadyLocked,
-      lockedModel: alreadyLocked
-    };
+    return selected;
   }
 
   const picked = getRandomModel();
-  return {
-    selectedModel: picked,
-    lockedModel: picked
-  };
+  return picked;
 };
 
 const setLoading = (value) => {
   state.loading = Boolean(value);
   els.send.disabled = state.loading;
   els.input.disabled = state.loading;
+  if (els.includeStockData) {
+    els.includeStockData.disabled = state.loading || !canIncludeStockData();
+  }
 };
 
 const requestCompletion = async (messages, thread) => {
   const aiSettings = getAiSettings();
 
   if (aiSettings.mode === 'server') {
-    const resolved = resolveServerModelForThread(thread);
-    if (resolved.lockedModel) {
-      state.chat = setThreadLockedAutoModel(state.chat, thread.id, resolved.lockedModel);
-      await persist();
-    }
+    const selectedModel = resolveServerModelForThread();
 
     const reply = await requestServerAiChat({
       messages,
-      model: resolved.selectedModel,
+      model: selectedModel,
       mode: getSelectedServerModel() === 'auto' ? 'auto' : 'manual'
     });
 
     return {
       text: reply?.message || '',
       meta: {
-        model: reply?.model || resolved.selectedModel,
+        model: reply?.model || selectedModel,
         latencyMs: reply?.meta?.latencyMs,
         respondedAt: reply?.meta?.respondedAt || new Date().toISOString()
       }
@@ -299,59 +358,107 @@ const sendMessage = async (rawText) => {
   setLoading(true);
 
   try {
-    state.chat = appendThreadMessage(state.chat, thread.id, {
+    const includeStockData = shouldIncludeStockDataForSend(thread);
+
+    const userMessage = {
       role: 'user',
       content: text
+    };
+    state.chat = appendThreadMessage(state.chat, thread.id, userMessage);
+    const threadAfterUser = getActiveThread();
+    const insertedUser = threadAfterUser?.messages[threadAfterUser.messages.length - 1];
+
+    state.chat = appendThreadMessage(state.chat, thread.id, {
+      role: 'assistant',
+      content: '',
+      meta: {
+        pending: true,
+        requestForMessageId: insertedUser?.id || null,
+        requestForContent: text,
+        includeStockData,
+        model: getSelectedServerModel() === 'auto' ? 'Auto' : getSelectedServerModel()
+      }
     });
+
     await persist();
     renderThreadList();
     renderFeed();
 
     const nextThread = getActiveThread();
-    state.pendingAssistantThreadId = nextThread?.id || thread.id;
+    const pendingMessage = nextThread?.messages[nextThread.messages.length - 1];
     renderFeed();
-    const requestMessages = snapshotThreadForRequest(nextThread);
+    const requestMessages = buildRequestMessages(nextThread, includeStockData);
     const response = await requestCompletion(requestMessages, nextThread);
 
-    state.chat = appendThreadMessage(state.chat, thread.id, {
-      role: 'assistant',
-      content: response.text,
-      meta: response.meta
-    });
+    if (pendingMessage?.id) {
+      state.chat = updateThreadMessage(state.chat, thread.id, pendingMessage.id, {
+        content: response.text,
+        meta: {
+          ...response.meta,
+          failed: false,
+          pending: false,
+          requestForMessageId: insertedUser?.id || null,
+          requestForContent: text
+        }
+      });
+    }
     await persist();
 
     state.lastMeta = response.meta;
-    state.pendingAssistantThreadId = null;
+    if (!nextThread?.messages?.length && canIncludeStockData(nextThread)) {
+      state.includeStockData = false;
+    }
+    if (canIncludeStockData(nextThread) && includeStockData) {
+      state.includeStockData = false;
+    }
     renderThreadList();
     renderFeed();
+    syncIncludeStockDataControl();
     renderMeta(response.meta);
   } catch (error) {
-    state.pendingAssistantThreadId = null;
-    state.chat = appendThreadMessage(state.chat, thread.id, {
-      role: 'assistant',
-      content: `Request failed: ${error.message}`,
-      meta: null
-    });
+    const nextThread = getActiveThread();
+    const pendingMessage = nextThread?.messages[nextThread.messages.length - 1];
+    if (pendingMessage?.id && pendingMessage.meta?.pending) {
+      state.chat = updateThreadMessage(state.chat, thread.id, pendingMessage.id, {
+        content: `Request failed: ${error.message}`,
+        meta: {
+          ...(pendingMessage.meta || {}),
+          pending: false,
+          failed: true,
+          failedAt: new Date().toISOString(),
+          error: error.message
+        }
+      });
+    }
     await persist();
     renderFeed();
+    syncIncludeStockDataControl();
   } finally {
     setLoading(false);
+    autoResizeComposer();
+    syncIncludeStockDataControl();
   }
 };
 
-const handleBootstrapAutostart = async () => {
-  if (!qs.get('autostart')) {
-    return;
-  }
+const shouldOpenFreshAnalysisThread = () => {
+  const fromAnalysisEntry = qs.get('newThread') === '1' || qs.get('autostart') === '1';
+  return Boolean(state.bootstrap && fromAnalysisEntry);
+};
 
+const prefillSeedPromptInComposer = () => {
   const thread = getActiveThread();
   if (!thread || thread.messages.length > 0) {
     return;
   }
 
   const seed = state.bootstrap?.seedMessage;
-  if (seed) {
-    await sendMessage(seed);
+  if (!seed) {
+    return;
+  }
+
+  if (!String(els.input.value || '').trim()) {
+    els.input.value = seed;
+    autoResizeComposer();
   }
 };
 
@@ -368,7 +475,7 @@ const renderModelPicker = () => {
 
   const selected = getSelectedServerModel();
   const options = [
-    '<option value="auto">Auto (random on new chat)</option>',
+    '<option value="auto">Auto (random per message)</option>',
     ...state.serverModels.map((item) => `<option value="${escapeHtml(item.model_id)}">${escapeHtml(item.model_name)}</option>`)
   ];
 
@@ -398,6 +505,17 @@ const hydrateServerModels = async () => {
 const initChatState = async () => {
   state.chat = await loadChatState();
   state.bootstrap = await parseBootstrapContext();
+
+  if (shouldOpenFreshAnalysisThread()) {
+    const created = createThread(state.chat, {
+      title: state.bootstrap.title,
+      context: state.bootstrap.context,
+      systemPrompt: state.bootstrap.systemPrompt
+    });
+    state.chat = created.state;
+    await persist();
+    return;
+  }
 
   if (!state.chat.threads.length) {
     const bootstrap = state.bootstrap
@@ -436,7 +554,7 @@ const bindEvents = () => {
     window.location.href = './market.html';
   });
 
-  els.newThread.addEventListener('click', async () => {
+  const createNewThread = async () => {
     const bootstrap = state.bootstrap
       ? {
           title: state.bootstrap.title,
@@ -450,7 +568,11 @@ const bindEvents = () => {
     await persist();
     renderThreadList();
     renderFeed();
-  });
+    syncIncludeStockDataControl();
+  };
+
+  els.newThread.addEventListener('click', createNewThread);
+  els.newThreadSidebar?.addEventListener('click', createNewThread);
 
   els.threadList.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-thread-id]');
@@ -462,20 +584,95 @@ const bindEvents = () => {
     await persist();
     renderThreadList();
     renderFeed();
+    syncIncludeStockDataControl();
+  });
+
+  els.feed.addEventListener('click', async (event) => {
+    const retryBtn = event.target.closest('[data-retry-message-id]');
+    if (retryBtn) {
+      const thread = getActiveThread();
+      if (!thread || state.loading) {
+        return;
+      }
+
+      const failedMessage = thread.messages.find((m) => m.id === retryBtn.dataset.retryMessageId);
+      const promptText = failedMessage?.meta?.requestForContent || '';
+      if (!promptText) {
+        return;
+      }
+
+      setLoading(true);
+      try {
+        state.chat = updateThreadMessage(state.chat, thread.id, failedMessage.id, {
+          content: '',
+          meta: {
+            ...(failedMessage.meta || {}),
+            pending: true,
+            failed: false,
+            retriedAt: new Date().toISOString(),
+            model: getSelectedServerModel() === 'auto' ? 'Auto' : getSelectedServerModel()
+          }
+        });
+        await persist();
+        renderFeed();
+
+        const refreshedThread = getActiveThread();
+        const requestMessages = buildRequestMessages(
+          refreshedThread,
+          failedMessage?.meta?.includeStockData !== false
+        );
+        const response = await requestCompletion(requestMessages, refreshedThread);
+
+        state.chat = updateThreadMessage(state.chat, thread.id, failedMessage.id, {
+          content: response.text,
+          meta: {
+            ...response.meta,
+            failed: false,
+            pending: false,
+            requestForMessageId: failedMessage.meta?.requestForMessageId || null,
+            requestForContent: promptText
+          }
+        });
+        await persist();
+        renderFeed();
+        syncIncludeStockDataControl();
+      } catch (error) {
+        state.chat = updateThreadMessage(state.chat, thread.id, failedMessage.id, {
+          content: `Request failed: ${error.message}`,
+          meta: {
+            ...(failedMessage.meta || {}),
+            pending: false,
+            failed: true,
+            error: error.message,
+            failedAt: new Date().toISOString(),
+            requestForContent: promptText
+          }
+        });
+        await persist();
+        renderFeed();
+        syncIncludeStockDataControl();
+      } finally {
+        setLoading(false);
+        syncIncludeStockDataControl();
+      }
+      return;
+    }
+
+    const toggleBtn = event.target.closest('[data-toggle-meta-id]');
+    if (toggleBtn) {
+      const messageId = toggleBtn.dataset.toggleMetaId;
+      if (state.expandedMetaMessageIds.has(messageId)) {
+        state.expandedMetaMessageIds.delete(messageId);
+      } else {
+        state.expandedMetaMessageIds.add(messageId);
+      }
+      renderFeed();
+    }
   });
 
   els.modelSelect.addEventListener('change', async () => {
     const value = els.modelSelect.value || 'auto';
     updateSelectedServerModel(value);
-
-    if (value === 'auto') {
-      const thread = getActiveThread();
-      if (thread) {
-        state.chat = setThreadLockedAutoModel(state.chat, thread.id, '');
-        await persist();
-      }
-    }
-
     renderMeta({ model: value === 'auto' ? 'Auto' : value });
   });
 
@@ -489,6 +686,7 @@ const bindEvents = () => {
     await persist();
     renderThreadList();
     renderFeed();
+    syncIncludeStockDataControl();
   });
 
   els.deleteThread.addEventListener('click', async () => {
@@ -507,12 +705,35 @@ const bindEvents = () => {
     await persist();
     renderThreadList();
     renderFeed();
+    syncIncludeStockDataControl();
+  });
+
+  els.includeStockData?.addEventListener('change', () => {
+    state.includeStockData = Boolean(els.includeStockData.checked);
+    syncIncludeStockDataControl();
   });
 
   els.composer.addEventListener('submit', async (event) => {
     event.preventDefault();
     const text = els.input.value;
     els.input.value = '';
+    autoResizeComposer();
+    await sendMessage(text);
+  });
+
+  els.input.addEventListener('input', () => {
+    autoResizeComposer();
+  });
+
+  els.input.addEventListener('keydown', async (event) => {
+    if (event.key !== 'Enter' || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    const text = els.input.value;
+    els.input.value = '';
+    autoResizeComposer();
     await sendMessage(text);
   });
 };
@@ -527,11 +748,12 @@ const init = async () => {
   renderMeta(state.lastMeta || {});
   await renderSyncState();
   bindEvents();
+  prefillSeedPromptInComposer();
+  autoResizeComposer();
+  syncIncludeStockDataControl();
 
   flushPendingSync().catch(() => {});
   uploadChatState(state.chat).catch(() => {});
-
-  await handleBootstrapAutostart();
 };
 
 init().catch((error) => {

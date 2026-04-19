@@ -564,7 +564,7 @@ window.analyzeStock = async (symbol) => {
   const params = new URLSearchParams({
     source: 'market',
     symbol,
-    autostart: '1',
+    newThread: '1',
     returnTo: window.location.pathname + window.location.search
   });
 

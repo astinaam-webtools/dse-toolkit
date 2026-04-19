@@ -56,6 +56,7 @@ const STATUS_CONFIG = {
 };
 
 const REQUEST_TIMEOUT_MS = 8000;
+const AI_CHAT_TIMEOUT_MS = 120000;
 
 const parseJsonResponse = async (response) => {
   const text = await response.text();
@@ -79,7 +80,7 @@ const buildApiUrl = (path, serverUrl = getAppSettings().serverUrl) => {
   return new URL(path, `${baseUrl}/`).toString();
 };
 
-const performRequest = async (path, { method = 'GET', body, serverUrl, token } = {}) => {
+const performRequest = async (path, { method = 'GET', body, serverUrl, token, timeoutMs = REQUEST_TIMEOUT_MS } = {}) => {
   const headers = {
     Accept: 'application/json'
   };
@@ -93,7 +94,7 @@ const performRequest = async (path, { method = 'GET', body, serverUrl, token } =
   }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let response;
   try {
@@ -230,6 +231,7 @@ export const saveServerAiSettings = async ({ apiKey, model }) =>
 export const requestServerAiChat = async ({ messages, model, mode }) =>
   apiRequest('/api/ai/chat', {
     method: 'POST',
+    timeoutMs: AI_CHAT_TIMEOUT_MS,
     body: {
       provider: 'openrouter',
       messages,

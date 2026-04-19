@@ -89,6 +89,14 @@
       cursor: pointer; font-family: inherit;
     }
 
+    .btn-new-thread--main {
+      width: 100%;
+      margin-top: .35rem;
+      padding: .44rem .6rem;
+      font-size: .82rem;
+      border-radius: 10px;
+    }
+
     .thread-list {
       flex: 1; overflow-y: auto;
       padding: .35rem;
@@ -97,7 +105,7 @@
       -webkit-overflow-scrolling: touch;
     }
     .thread-item {
-      width: 100%;
+      width: 97%;
       border: 1px solid var(--border);
       background: var(--card); color: var(--text);
       border-radius: 8px;
@@ -217,6 +225,24 @@
       display: flex; gap: .25rem; flex-wrap: wrap;
     }
 
+    .bubble-meta-toggle,
+    .bubble-retry {
+      margin-top: .3rem;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      border-radius: 999px;
+      padding: .12rem .45rem;
+      font-size: .65rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .bubble-retry {
+      color: #fca5a5;
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
     .bubble-thinking {
       background: color-mix(in srgb, var(--card) 95%, transparent);
       border: 1px dashed color-mix(in srgb, var(--border) 85%, transparent);
@@ -248,13 +274,37 @@
 
     /* ── Composer ── */
     .composer {
-      display: flex; align-items: center;
+      display: flex; align-items: flex-end;
+      flex-wrap: wrap;
       gap: .35rem;
       padding: .4rem .55rem;
       padding-bottom: calc(.4rem + env(safe-area-inset-bottom, 0px));
       border-top: 1px solid var(--border);
       background: var(--card);
       flex-shrink: 0;
+    }
+
+    .composer-options {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .composer-check {
+      display: inline-flex;
+      align-items: center;
+      gap: .32rem;
+      font-size: .68rem;
+      color: var(--muted);
+      user-select: none;
+      cursor: pointer;
+    }
+
+    .composer-check input {
+      width: .85rem;
+      height: .85rem;
+      accent-color: var(--accent);
     }
     .chat-input {
       flex: 1; min-width: 0;
@@ -264,6 +314,13 @@
       padding: .45rem .7rem;
       font-size: .86rem; font-family: inherit;
       outline: none;
+      resize: none;
+      min-height: 42px;
+      max-height: 180px;
+      overflow-y: auto;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
     }
     .chat-input:focus { border-color: var(--accent); }
 
@@ -350,11 +407,12 @@
         <label for="drawer-toggle" class="drawer-close" aria-label="Close">&times;</label>
       </div>
       <div class="drawer-actions">
-        <button id="chat-new-thread" class="btn-new-thread" type="button">+ New</button>
+        <button id="chat-new-thread" class="btn-new-thread" type="button">+ New Thread</button>
         <button id="chat-back" class="btn-mini" type="button">← Back</button>
       </div>
       <div id="chat-thread-list" class="thread-list"></div>
       <div class="drawer-footer">
+        <button id="chat-new-thread-sidebar" class="btn-new-thread btn-new-thread--main" type="button">Create New Thread</button>
         <span class="status-note" id="chat-sync-state">Sync state unknown.</span>
       </div>
     </aside>
@@ -371,7 +429,13 @@
       </div>
       <div id="chat-feed" class="chat-feed"></div>
       <form id="chat-composer" class="composer" autocomplete="off">
-        <input id="chat-input" class="chat-input" type="text" placeholder="Ask about a stock or the market..." autocomplete="off" />
+        <div class="composer-options">
+          <label class="composer-check" for="chat-include-stock-data">
+            <input id="chat-include-stock-data" type="checkbox" />
+            Include stock data
+          </label>
+        </div>
+        <textarea id="chat-input" class="chat-input" rows="1" placeholder="Ask about a stock or the market..." autocomplete="off"></textarea>
         <button id="chat-send" class="btn-send" type="submit">Send</button>
       </form>
     </section>

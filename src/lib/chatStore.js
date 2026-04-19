@@ -157,6 +157,34 @@ export const appendThreadMessage = (state, threadId, message) => {
   return next;
 };
 
+export const updateThreadMessage = (state, threadId, messageId, updater) => {
+  const next = normalizeState(state);
+  next.threads = next.threads.map((thread) => {
+    if (thread.id !== threadId) {
+      return thread;
+    }
+
+    const messages = thread.messages.map((message) => {
+      if (message.id !== messageId) {
+        return message;
+      }
+
+      const patch =
+        typeof updater === 'function' ? updater({ ...message }) : (updater && typeof updater === 'object' ? updater : {});
+
+      return normalizeMessage({ ...message, ...patch });
+    });
+
+    return {
+      ...thread,
+      updatedAt: nowIso(),
+      messages
+    };
+  });
+
+  return next;
+};
+
 export const setThreadLockedAutoModel = (state, threadId, modelId) => {
   const next = normalizeState(state);
   next.threads = next.threads.map((thread) =>
@@ -229,6 +257,12 @@ export const snapshotThreadForRequest = (thread) => {
     if (!item.content) {
       return;
     }
+
+    // Skip local synthetic assistant messages (failed/pending placeholders)
+    if (item.role === 'assistant' && item.meta && (item.meta.failed || item.meta.pending)) {
+      return;
+    }
+
     messages.push({ role: item.role, content: item.content });
   });
 

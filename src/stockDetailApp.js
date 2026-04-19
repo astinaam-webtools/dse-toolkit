@@ -231,7 +231,7 @@ const analyzeStock = async (stock) => {
   const params = new URLSearchParams({
     source: 'stock',
     symbol: stock.symbol,
-    autostart: '1',
+    newThread: '1',
     returnTo: window.location.pathname + window.location.search
   });
 
