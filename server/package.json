@@ -5,8 +5,8 @@
   "type": "module",
   "description": "Optional Fastify + SQLite backend for DSE Toolkit portfolio sync.",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "node --watch src/server.js"
+    "start": "node --env-file=.env src/server.js",
+    "dev": "node --env-file=.env --watch src/server.js"
   },
   "dependencies": {
     "@fastify/cors": "^11.1.0",

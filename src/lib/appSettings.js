@@ -1,4 +1,5 @@
 const SETTINGS_KEY = 'dse_toolkit_app_settings_v1';
+const CONNECTION_STATE_EVENT = 'dse:connection-state-changed';
 
 const DEFAULT_SETTINGS = Object.freeze({
   serverUrl: '',
@@ -23,6 +24,30 @@ const DEFAULT_SETTINGS = Object.freeze({
 });
 
 const clone = (value) => JSON.parse(JSON.stringify(value));
+
+const emitConnectionStateChanged = (reason) => {
+  if (typeof window === 'undefined' || typeof window.dispatchEvent !== 'function') {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(CONNECTION_STATE_EVENT, {
+      detail: { reason }
+    })
+  );
+};
+
+const isSameUser = (a, b) => {
+  if (!a && !b) {
+    return true;
+  }
+
+  if (!a || !b) {
+    return false;
+  }
+
+  return a.id === b.id && a.email === b.email;
+};
 
 const normalizeUser = (user) => {
   if (!user || typeof user !== 'object') {
@@ -138,11 +163,14 @@ export const updateAppSettings = (updater) => {
 
 export const setServerUrl = (serverUrl) => {
   const normalizedUrl = normalizeServerUrl(serverUrl);
+  let changed = false;
 
-  return updateAppSettings((current) => {
+  const next = updateAppSettings((current) => {
     if (current.serverUrl === normalizedUrl) {
       return current;
     }
+
+    changed = true;
 
     return {
       ...current,
@@ -160,38 +188,97 @@ export const setServerUrl = (serverUrl) => {
       }
     };
   });
+
+  if (changed) {
+    emitConnectionStateChanged('server-url-updated');
+  }
+
+  return next;
 };
 
-export const clearServerUrl = () =>
-  updateAppSettings((current) => ({
-    ...current,
-    serverUrl: '',
-    authToken: null,
-    user: null,
-    importDecisions: {
-      stocks: null,
-      funds: null
-    },
-    pendingSync: {
-      stocks: false,
-      funds: false,
-      chat_threads: false
+export const clearServerUrl = () => {
+  let changed = false;
+
+  const next = updateAppSettings((current) => {
+    if (!current.serverUrl && !current.authToken && !current.user) {
+      return current;
     }
-  }));
 
-export const setAuthSession = (token, user) =>
-  updateAppSettings((current) => ({
-    ...current,
-    authToken: token ? String(token) : null,
-    user: normalizeUser(user)
-  }));
+    changed = true;
 
-export const clearAuthSession = () =>
-  updateAppSettings((current) => ({
-    ...current,
-    authToken: null,
-    user: null
-  }));
+    return {
+      ...current,
+      serverUrl: '',
+      authToken: null,
+      user: null,
+      importDecisions: {
+        stocks: null,
+        funds: null
+      },
+      pendingSync: {
+        stocks: false,
+        funds: false,
+        chat_threads: false
+      }
+    };
+  });
+
+  if (changed) {
+    emitConnectionStateChanged('server-url-cleared');
+  }
+
+  return next;
+};
+
+export const setAuthSession = (token, user) => {
+  const nextToken = token ? String(token) : null;
+  const nextUser = normalizeUser(user);
+  let changed = false;
+
+  const next = updateAppSettings((current) => {
+    if (current.authToken === nextToken && isSameUser(current.user, nextUser)) {
+      return current;
+    }
+
+    changed = true;
+
+    return {
+      ...current,
+      authToken: nextToken,
+      user: nextUser
+    };
+  });
+
+  if (changed) {
+    emitConnectionStateChanged(nextToken ? 'auth-session-set' : 'auth-session-cleared');
+  }
+
+  return next;
+};
+
+export const clearAuthSession = () => {
+  let changed = false;
+
+  const next = updateAppSettings((current) => {
+    if (!current.authToken && !current.user) {
+      return current;
+    }
+
+    changed = true;
+
+    return {
+      ...current,
+      authToken: null,
+      user: null
+    };
+  });
+
+  if (changed) {
+    emitConnectionStateChanged('auth-session-cleared');
+  }
+
+  return next;
+};
 
 export const getImportDecision = (type) => getAppSettings().importDecisions[type] || null;
 

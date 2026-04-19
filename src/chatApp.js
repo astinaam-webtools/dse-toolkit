@@ -31,7 +31,6 @@ const els = {
   modelSelect: document.getElementById('chat-model-select'),
   clearThread: document.getElementById('chat-clear-thread'),
   deleteThread: document.getElementById('chat-delete-thread'),
-  metaPanel: document.getElementById('chat-meta-panel'),
   feed: document.getElementById('chat-feed'),
   composer: document.getElementById('chat-composer'),
   input: document.getElementById('chat-input'),
@@ -45,6 +44,7 @@ const state = {
   chat: getLocalChatState(),
   serverModels: [],
   loading: false,
+  pendingAssistantThreadId: null,
   bootstrap: null,
   lastMeta: null
 };
@@ -136,29 +136,7 @@ const persist = async () => {
   await renderSyncState();
 };
 
-const renderMeta = (meta) => {
-  const aiSettings = getAiSettings();
-  const session = getSession();
-  const chips = [];
-
-  chips.push(`<span class="meta-chip">Mode: ${aiSettings.mode === 'server' ? 'Server' : 'Client-only'}</span>`);
-
-  if (aiSettings.mode === 'client') {
-    chips.push(`<span class="meta-chip">Model: ${escapeHtml(aiSettings.localOpenRouterModel || 'Not configured')}</span>`);
-  } else {
-    chips.push(`<span class="meta-chip">Model: ${escapeHtml(meta?.model || 'Auto')}</span>`);
-    chips.push(`<span class="meta-chip">Server: ${session.serverUrl ? 'Connected profile' : 'Not connected'}</span>`);
-  }
-
-  if (meta?.latencyMs != null) {
-    chips.push(`<span class="meta-chip">Latency: ${Number(meta.latencyMs)} ms</span>`);
-  }
-  if (meta?.respondedAt) {
-    chips.push(`<span class="meta-chip">Time: ${escapeHtml(formatTime(meta.respondedAt))}</span>`);
-  }
-
-  els.metaPanel.innerHTML = chips.join('');
-};
+const renderMeta = () => {};
 
 const renderThreadList = () => {
   const activeId = state.chat.activeThreadId;
@@ -200,7 +178,12 @@ const renderFeed = () => {
     })
     .join('');
 
-  els.feed.innerHTML = html;
+  const thinkingBubble =
+    state.loading && state.pendingAssistantThreadId === thread.id
+      ? '<div class="bubble bubble-assistant bubble-thinking"><span class="thinking-dots"><span></span><span></span><span></span></span>Thinking...</div>'
+      : '';
+
+  els.feed.innerHTML = html + thinkingBubble;
   els.feed.scrollTop = els.feed.scrollHeight;
 };
 
@@ -325,6 +308,8 @@ const sendMessage = async (rawText) => {
     renderFeed();
 
     const nextThread = getActiveThread();
+    state.pendingAssistantThreadId = nextThread?.id || thread.id;
+    renderFeed();
     const requestMessages = snapshotThreadForRequest(nextThread);
     const response = await requestCompletion(requestMessages, nextThread);
 
@@ -336,10 +321,12 @@ const sendMessage = async (rawText) => {
     await persist();
 
     state.lastMeta = response.meta;
+    state.pendingAssistantThreadId = null;
     renderThreadList();
     renderFeed();
     renderMeta(response.meta);
   } catch (error) {
+    state.pendingAssistantThreadId = null;
     state.chat = appendThreadMessage(state.chat, thread.id, {
       role: 'assistant',
       content: `Request failed: ${error.message}`,

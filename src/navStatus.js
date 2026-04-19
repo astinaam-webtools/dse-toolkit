@@ -1,6 +1,11 @@
 import { applyConnectionState } from './lib/serverClient.js';
 import { getConnectionState, getStoredConnectionState, flushPendingSync, hasPendingSync } from './lib/documentGateway.js';
 
+const CONNECTION_STATE_EVENT = 'dse:connection-state-changed';
+
+let isRefreshing = false;
+let refreshQueued = false;
+
 const ensurePill = () => {
   const navContainer = document.querySelector('.nav-container');
   if (!navContainer) {
@@ -27,11 +32,18 @@ const ensurePill = () => {
   return pill;
 };
 
-const init = async () => {
+const refreshPill = async () => {
   const pill = ensurePill();
   if (!pill) {
     return;
   }
+
+  if (isRefreshing) {
+    refreshQueued = true;
+    return;
+  }
+
+  isRefreshing = true;
 
   applyConnectionState(pill, getStoredConnectionState());
 
@@ -56,7 +68,22 @@ const init = async () => {
       code: 'unavailable',
       label: 'Server unavailable'
     });
+  } finally {
+    isRefreshing = false;
+
+    if (refreshQueued) {
+      refreshQueued = false;
+      refreshPill().catch(() => {});
+    }
   }
+};
+
+const init = () => {
+  refreshPill().catch(() => {});
+
+  window.addEventListener(CONNECTION_STATE_EVENT, () => {
+    refreshPill().catch(() => {});
+  });
 };
 
 init();
