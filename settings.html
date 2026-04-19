@@ -352,7 +352,7 @@
           </label>
         </div>
 
-        <div class="settings-form" style="margin-top: 1rem;">
+        <div id="ai-client-settings" class="settings-form" style="margin-top: 1rem;">
           <div>
             <label for="ai-local-api-key">OpenRouter API Key</label>
             <input id="ai-local-api-key" type="password" placeholder="sk-or-..." autocomplete="off" />
@@ -364,11 +364,25 @@
           </div>
           <div class="settings-actions">
             <button id="save-ai-local" class="btn btn--solid" type="button">Save Client AI Settings</button>
-            <button id="save-ai-server" class="btn" type="button">Save Server AI Key</button>
+          </div>
+        </div>
+
+        <div id="ai-server-settings" class="settings-form" style="margin-top: 1rem;" hidden>
+          <div>
+            <label for="ai-server-api-key">Server OpenRouter API Key</label>
+            <input id="ai-server-api-key" type="password" placeholder="sk-or-..." autocomplete="off" />
+          </div>
+          <div>
+            <label for="ai-server-model">Server Model</label>
+            <input id="ai-server-model" type="text" placeholder="openai/gpt-oss-20b:free" />
+          </div>
+          <div class="settings-actions">
+            <button id="save-ai-server" class="btn btn--solid" type="button">Save Server AI Key</button>
           </div>
           <p id="ai-server-state" class="ai-mode-note"></p>
-          <div id="ai-message" class="settings-message"></div>
         </div>
+
+        <div id="ai-message" class="settings-message"></div>
       </article>
 
       <article class="settings-card">

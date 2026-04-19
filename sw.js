@@ -1,5 +1,5 @@
-const CACHE_NAME = 'stock-glossary-v34';
-const RUNTIME_CACHE = 'runtime-stock-glossary-v34';
+const CACHE_NAME = 'stock-glossary-v35';
+const RUNTIME_CACHE = 'runtime-stock-glossary-v35';
 const PRECACHE_URLS = [
   './',
   './index.html',

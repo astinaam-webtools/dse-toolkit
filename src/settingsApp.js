@@ -62,8 +62,12 @@ const els = {
   dismissFundsBtn: document.getElementById('dismiss-funds-btn'),
   aiModeClient: document.getElementById('ai-mode-client'),
   aiModeServer: document.getElementById('ai-mode-server'),
+  aiClientSettings: document.getElementById('ai-client-settings'),
+  aiServerSettings: document.getElementById('ai-server-settings'),
   aiLocalApiKey: document.getElementById('ai-local-api-key'),
   aiModel: document.getElementById('ai-model'),
+  aiServerApiKey: document.getElementById('ai-server-api-key'),
+  aiServerModel: document.getElementById('ai-server-model'),
   saveAiLocal: document.getElementById('save-ai-local'),
   saveAiServer: document.getElementById('save-ai-server'),
   aiMessage: document.getElementById('ai-message'),
@@ -254,8 +258,11 @@ const renderAiSettings = async () => {
   const aiSettings = getAiSettings();
   els.aiModeClient.checked = aiSettings.mode !== 'server';
   els.aiModeServer.checked = aiSettings.mode === 'server';
+  els.aiClientSettings.hidden = aiSettings.mode === 'server';
+  els.aiServerSettings.hidden = aiSettings.mode !== 'server';
   els.aiLocalApiKey.value = aiSettings.localOpenRouterApiKey || '';
   els.aiModel.value = aiSettings.localOpenRouterModel || '';
+  els.aiServerModel.value = aiSettings.localOpenRouterModel || DEFAULT_AI_MODEL;
 
   const appSettings = getAppSettings();
   const hasServerConnection = Boolean(appSettings.serverUrl && appSettings.authToken);
@@ -314,8 +321,8 @@ const handleSaveAiLocal = () => {
 };
 
 const handleSaveAiServer = async () => {
-  const apiKey = els.aiLocalApiKey.value.trim();
-  const model = els.aiModel.value.trim() || DEFAULT_AI_MODEL;
+  const apiKey = els.aiServerApiKey.value.trim();
+  const model = els.aiServerModel.value.trim() || DEFAULT_AI_MODEL;
 
   if (!apiKey) {
     setMessage(els.aiMessage, 'Enter an OpenRouter API key before saving to server.', 'warning');
