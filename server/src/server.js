@@ -11,6 +11,14 @@ import {
   verifyToken
 } from './auth.js';
 import { assertConfig, config } from './config.js';
+import {
+  buildGitHubOAuthAuthorizeUrl,
+  exchangeGitHubOAuthCodeForToken,
+  fetchGitHubUserProfile,
+  verifyGitHubOrgMembership,
+  verifySignedOAuthState
+} from './githubOAuth.js';
+import { deleteUserGitHubOAuth, getUserGitHubOAuth, saveUserGitHubOAuth } from './githubOAuthStore.js';
 import { getDb } from './db.js';
 import {
   getPortfolioDocument,
@@ -23,11 +31,21 @@ import {
   getOpenRouterModels,
   pickRandomModel,
   getUserAiSettingsRow,
+  requestGitHubCopilotCompletion,
+  requestGitHubCopilotModels,
   requestOpenRouterCompletion,
   resolveConfiguredServerApiKey,
   sanitizeAiSettings,
   saveUserAiSettings
 } from './ai.js';
+import {
+  disconnectCopilotSdkUser,
+  getCopilotSdkAuthStatus,
+  getCopilotSdkHealth,
+  listCopilotSdkModels,
+  resetCopilotSdkSession,
+  sendCopilotSdkChat
+} from './copilotSdkService.js';
 
 const app = Fastify({
   logger: true
@@ -148,6 +166,73 @@ app.get('/api/auth/me', { preHandler: [app.authenticate] }, async (request) => {
   };
 });
 
+app.get('/api/ai/copilot-sdk/oauth/start', { preHandler: [app.authenticate] }, async (request, reply) => {
+  if (!config.githubOauthClientId || !config.githubOauthClientSecret || !config.githubOauthRedirectUri) {
+    return reply.status(400).send({
+      error: 'GitHub OAuth is not configured. Set GITHUB_OAUTH_CLIENT_ID, GITHUB_OAUTH_CLIENT_SECRET, and GITHUB_OAUTH_REDIRECT_URI.'
+    });
+  }
+
+  const oauth = buildGitHubOAuthAuthorizeUrl({ userId: request.user.id });
+  return {
+    authorizeUrl: oauth.authorizeUrl,
+    state: oauth.state
+  };
+});
+
+app.get('/api/ai/copilot-sdk/oauth/callback', async (request, reply) => {
+  const code = String(request.query?.code || '').trim();
+  const state = String(request.query?.state || '').trim();
+
+  if (!code || !state) {
+    return reply.status(400).send({ error: 'OAuth callback requires code and state.' });
+  }
+
+  try {
+    const verified = verifySignedOAuthState(state);
+    const token = await exchangeGitHubOAuthCodeForToken({ code });
+
+    if (!token.accessToken) {
+      return reply.status(400).send({ error: 'GitHub OAuth token exchange returned an empty access token.' });
+    }
+
+    const profile = await fetchGitHubUserProfile({ token: token.accessToken });
+    const orgAllowed = await verifyGitHubOrgMembership({
+      token: token.accessToken,
+      requiredOrg: config.githubOauthRequiredOrg
+    });
+
+    if (!orgAllowed) {
+      return reply.status(403).send({
+        error: `User is not a member of required organization ${config.githubOauthRequiredOrg}.`
+      });
+    }
+
+    await saveUserGitHubOAuth({
+      userId: verified.userId,
+      accessToken: token.accessToken,
+      tokenType: token.tokenType,
+      scope: token.scope,
+      refreshToken: token.refreshToken,
+      expiresIn: token.expiresIn,
+      refreshTokenExpiresIn: token.refreshTokenExpiresIn,
+      githubLogin: profile.login,
+      githubId: profile.id
+    });
+
+    await disconnectCopilotSdkUser(verified.userId);
+
+    return {
+      ok: true,
+      userId: verified.userId,
+      githubLogin: profile.login,
+      scope: token.scope || null
+    };
+  } catch (error) {
+    return reply.status(400).send({ error: error.message || 'GitHub OAuth callback failed.' });
+  }
+});
+
 app.get('/api/portfolio/:type', { preHandler: [app.authenticate] }, async (request, reply) => {
   const type = request.params.type;
 
@@ -190,6 +275,189 @@ app.get('/api/ai/models', { preHandler: [app.authenticate] }, async () => {
     defaultModel: DEFAULT_AI_MODEL,
     models: getOpenRouterModels()
   };
+});
+
+app.get('/api/ai/copilot-sdk/test/health', { preHandler: [app.authenticate] }, async (request) => {
+  const oauthRecord = await getUserGitHubOAuth(request.user.id);
+  const configured = Boolean(String(oauthRecord?.access_token || '').trim());
+
+  return {
+    provider: 'copilot-sdk',
+    configured,
+    oauthConfigured: Boolean(config.githubOauthClientId && config.githubOauthClientSecret && config.githubOauthRedirectUri),
+    requiredOrg: config.githubOauthRequiredOrg || null,
+    githubLogin: oauthRecord?.github_login || null,
+    tokenScope: oauthRecord?.scope || null
+  };
+});
+
+app.get('/api/ai/copilot-sdk/test/user', { preHandler: [app.authenticate] }, async (request, reply) => {
+  try {
+    const payload = await getCopilotSdkAuthStatus(request.user.id);
+    return {
+      provider: 'copilot-sdk',
+      ...payload
+    };
+  } catch (error) {
+    return reply.status(400).send({ error: error.message || 'Copilot SDK user status failed.' });
+  }
+});
+
+app.get('/api/ai/copilot-sdk/test/models', { preHandler: [app.authenticate] }, async (request, reply) => {
+  try {
+    await getCopilotSdkHealth(request.user.id);
+    const models = await listCopilotSdkModels(request.user.id);
+
+    return {
+      provider: 'copilot-sdk',
+      count: Array.isArray(models) ? models.length : 0,
+      models
+    };
+  } catch (error) {
+    return reply.status(502).send({ error: error.message || 'Copilot SDK models request failed.' });
+  }
+});
+
+app.post('/api/ai/copilot-sdk/test/chat', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const model = String(request.body?.model || '').trim();
+  const sessionId = String(request.body?.sessionId || '').trim();
+  const prompt = String(request.body?.prompt || '').trim();
+  const messages = request.body?.messages;
+
+  if (!prompt && !Array.isArray(messages)) {
+    return reply.status(400).send({ error: 'prompt or messages[] is required.' });
+  }
+
+  try {
+    const completion = await sendCopilotSdkChat({
+      userId: request.user.id,
+      model,
+      sessionId,
+      prompt,
+      messages
+    });
+
+    return {
+      provider: 'copilot-sdk',
+      model: completion.model,
+      sessionId: completion.sessionId,
+      message: completion.message,
+      meta: {
+        latencyMs: completion.latencyMs,
+        respondedAt: new Date().toISOString()
+      },
+      raw: completion.rawEvent
+    };
+  } catch (error) {
+    return reply.status(502).send({ error: error.message || 'Copilot SDK chat request failed.' });
+  }
+});
+
+app.post('/api/ai/copilot-sdk/test/session/reset', { preHandler: [app.authenticate] }, async (request, reply) => {
+  try {
+    const sessionId = String(request.body?.sessionId || '').trim();
+    const result = await resetCopilotSdkSession({ userId: request.user.id, sessionId });
+    return {
+      provider: 'copilot-sdk',
+      ...result
+    };
+  } catch (error) {
+    return reply.status(500).send({ error: error.message || 'Failed to reset Copilot SDK session.' });
+  }
+});
+
+app.delete('/api/ai/copilot-sdk/oauth', { preHandler: [app.authenticate] }, async (request, reply) => {
+  try {
+    await deleteUserGitHubOAuth(request.user.id);
+    await disconnectCopilotSdkUser(request.user.id);
+
+    return {
+      ok: true,
+      message: 'GitHub OAuth token removed for this user.'
+    };
+  } catch (error) {
+    return reply.status(500).send({ error: error.message || 'Failed to remove GitHub OAuth token.' });
+  }
+});
+
+app.get('/api/ai/copilot/test/health', { preHandler: [app.authenticate] }, async () => {
+  const configured = Boolean(String(config.githubCopilotApiKey || '').trim());
+
+  return {
+    provider: 'github-copilot-models',
+    configured,
+    baseUrl: config.githubCopilotBaseUrl,
+    apiVersion: config.githubCopilotApiVersion,
+    defaultModel: config.githubCopilotModel,
+    org: config.githubCopilotOrg || null,
+    message: configured
+      ? 'GitHub Copilot credentials are configured on the server.'
+      : 'Set GITHUB_COPILOT_API_KEY in server/.env to enable Copilot test APIs.'
+  };
+});
+
+app.get('/api/ai/copilot/test/models', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const apiKey = String(config.githubCopilotApiKey || '').trim();
+  if (!apiKey) {
+    return reply.status(400).send({ error: 'GITHUB_COPILOT_API_KEY is not configured on the backend.' });
+  }
+
+  try {
+    const models = await requestGitHubCopilotModels({
+      apiKey,
+      baseUrl: config.githubCopilotBaseUrl,
+      apiVersion: config.githubCopilotApiVersion,
+      org: config.githubCopilotOrg
+    });
+
+    return {
+      provider: 'github-copilot-models',
+      count: models.length,
+      models
+    };
+  } catch (error) {
+    return reply.status(502).send({ error: error.message || 'GitHub Copilot models request failed.' });
+  }
+});
+
+app.post('/api/ai/copilot/test/chat', { preHandler: [app.authenticate] }, async (request, reply) => {
+  const messages = request.body?.messages;
+  const requestedModel = String(request.body?.model || '').trim();
+
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return reply.status(400).send({ error: 'messages[] is required.' });
+  }
+
+  const apiKey = String(config.githubCopilotApiKey || '').trim();
+  if (!apiKey) {
+    return reply.status(400).send({ error: 'GITHUB_COPILOT_API_KEY is not configured on the backend.' });
+  }
+
+  try {
+    const completion = await requestGitHubCopilotCompletion({
+      apiKey,
+      baseUrl: config.githubCopilotBaseUrl,
+      apiVersion: config.githubCopilotApiVersion,
+      org: config.githubCopilotOrg,
+      model: requestedModel || config.githubCopilotModel,
+      messages
+    });
+
+    return {
+      provider: 'github-copilot-models',
+      model: completion.model,
+      message: completion.message,
+      meta: {
+        latencyMs: completion.latencyMs,
+        respondedAt: new Date().toISOString(),
+        org: config.githubCopilotOrg || null,
+        apiVersion: config.githubCopilotApiVersion
+      },
+      raw: completion.raw
+    };
+  } catch (error) {
+    return reply.status(502).send({ error: error.message || 'GitHub Copilot chat request failed.' });
+  }
 });
 
 app.put('/api/ai/settings', { preHandler: [app.authenticate] }, async (request, reply) => {

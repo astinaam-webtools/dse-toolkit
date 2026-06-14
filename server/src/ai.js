@@ -1,5 +1,6 @@
 import { getDb } from './db.js';
 import { models } from './models.js';
+import { createGitHubCopilotClient } from './copilotClient.js';
 import { createOpenRouterClient, DEFAULT_OPENROUTER_MODEL } from './openrouterClient.js';
 
 const DEFAULT_MODEL = DEFAULT_OPENROUTER_MODEL;
@@ -64,6 +65,16 @@ export const saveUserAiSettings = async ({ userId, provider, apiKey, model }) =>
 export const requestOpenRouterCompletion = async ({ apiKey, model, messages }) => {
   const client = createOpenRouterClient({ apiKey });
   return client.completeChat({ model, messages });
+};
+
+export const requestGitHubCopilotCompletion = async ({ apiKey, model, messages, baseUrl, apiVersion, org }) => {
+  const client = createGitHubCopilotClient({ apiKey, baseUrl, apiVersion, org });
+  return client.completeChat({ model, messages });
+};
+
+export const requestGitHubCopilotModels = async ({ apiKey, baseUrl, apiVersion, org }) => {
+  const client = createGitHubCopilotClient({ apiKey, baseUrl, apiVersion, org });
+  return client.listModels();
 };
 
 export const getOpenRouterModels = () =>

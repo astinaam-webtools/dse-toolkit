@@ -53,10 +53,28 @@ async function initDb() {
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS user_github_oauth (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL UNIQUE,
+      provider TEXT NOT NULL,
+      access_token TEXT NOT NULL,
+      token_type TEXT,
+      scope TEXT,
+      refresh_token TEXT,
+      expires_at TEXT,
+      refresh_token_expires_at TEXT,
+      github_login TEXT,
+      github_id INTEGER,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
     CREATE INDEX IF NOT EXISTS idx_portfolio_documents_user_type
       ON portfolio_documents(user_id, document_type);
     CREATE INDEX IF NOT EXISTS idx_user_ai_settings_user_id ON user_ai_settings(user_id);
+    CREATE INDEX IF NOT EXISTS idx_user_github_oauth_user_id ON user_github_oauth(user_id);
   `);
 
   return db;
