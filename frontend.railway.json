@@ -1,0 +1,22 @@
+{
+  "$schema": "https://backboard.railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "echo 'Static frontend, no build step'",
+    "watchPatterns": [
+      "*.html",
+      "styles.css",
+      "sw.js",
+      "manifest.webmanifest",
+      "src/**",
+      "data/**"
+    ]
+  },
+  "deploy": {
+    "startCommand": "npx --yes http-server . -p $PORT -c-1",
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 30,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}
