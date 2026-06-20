@@ -11,10 +11,7 @@
   <style>
     /* Market Lens Specific Styles */
     :root {
-      --color-up: #10b981;
-      --color-down: #ef4444;
-      --color-neutral: #6b7280;
-      --bg-card: var(--card);
+      --bg-card: var(--surface);
       --bg-app: var(--bg);
     }
 
@@ -236,7 +233,7 @@
     .stock-info p { margin: 0; font-size: 0.75rem; color: var(--muted); }
     
     .stock-metrics { text-align: right; }
-    .price { font-weight: 600; display: block; }
+    .price { font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
     .change { font-size: 0.75rem; font-weight: 500; }
     .change.up { color: var(--color-up); }
     .change.down { color: var(--color-down); }
