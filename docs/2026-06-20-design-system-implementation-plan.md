@@ -104,12 +104,12 @@ and motion. Unblocks all later phases.
    hardcode hex.
 
 **Acceptance:**
-- [ ] No hex color literals remain in `styles.css` `:root` or dark block.
-- [ ] `market.html`, `portfolio.html`, `funds.html` no longer redefine
+- [x] No hex color literals remain in `styles.css` `:root` or dark block.
+- [x] `market.html`, `portfolio.html`, `funds.html` no longer redefine
       `--color-up`, `--color-down`, or `--color-neutral`.
-- [ ] Light mode visually unchanged in intent (green accent, red down) but
+- [x] Light mode visually unchanged in intent (green accent, red down) but
       neutrals are faintly green-tinted.
-- [ ] Dark mode surfaces are not muddy (verify on `market` and `portfolio`).
+- [x] Dark mode surfaces are not muddy (verify on `market` and `portfolio`).
 
 ### Task 1.2 — Unify typography to Manrope + Sora
 
@@ -135,9 +135,9 @@ and motion. Unblocks all later phases.
    letter-spacing: 0.01em; }` to compensate light-on-dark thinning.
 
 **Acceptance:**
-- [ ] No `Inter` `<link>` remains in any HTML.
-- [ ] Moving glossary → market no longer changes the typeface.
-- [ ] Numeric columns align (tabular-nums) on `market` screener and
+- [x] No `Inter` `<link>` remains in any HTML.
+- [x] Moving glossary → market no longer changes the typeface.
+- [x] Numeric columns align (tabular-nums) on `market` screener and
       `portfolio` summary.
 
 ### Task 1.3 — Add spacing, radius, and motion token scales
@@ -152,9 +152,9 @@ and motion. Unblocks all later phases.
    Just establish the tokens so Phase 3 can reference them.
 
 **Acceptance:**
-- [ ] Tokens exist and are referenced by at least the new component CSS in
+- [x] Tokens exist and are referenced by at least the new component CSS in
       Phase 3.
-- [ ] No visual change yet (additive only).
+- [x] No visual change yet (additive only).
 
 ### Task 1.4 — Add reduced-motion support; kill the heartbeat
 
@@ -172,16 +172,16 @@ and motion. Unblocks all later phases.
    via the blanket rule). No per-animation edits needed.
 
 **Acceptance:**
-- [ ] With OS "reduce motion" on, no animation plays anywhere on the site.
-- [ ] The footer heart no longer animates on any page, motion setting or not.
-- [ ] Thinking dots still show (static) when reduced motion is on.
+- [x] With OS "reduce motion" on, no animation plays anywhere on the site.
+- [x] The footer heart no longer animates on any page, motion setting or not.
+- [x] Thinking dots still show (static) when reduced motion is on.
 
 ### Phase 1 gate
 
-- [ ] `npm test` passes.
-- [ ] Site loads in light + dark; no unstyled flashes from missing tokens.
-- [ ] No console errors about missing fonts.
-- [ ] `grep -rn "Inter:" styles.css index.html guides.html stock.html` returns
+- [x] `npm test` passes.
+- [x] Site loads in light + dark; no unstyled flashes from missing tokens.
+- [x] No console errors about missing fonts.
+- [x] `grep -rn "Inter:" styles.css index.html guides.html stock.html` returns
       nothing (the `@import` for Manrope/Sora stays).
 
 ---
@@ -224,11 +224,11 @@ change; works offline (JS is already required for every page).
    to inline SVG icons for consistency (pick one icon vocabulary).
 
 **Acceptance:**
-- [ ] `shell.js` loads on every page (add `<script type="module"
+- [x] `shell.js` loads on every page (add `<script type="module"
       src="./src/shell.js"></script>` in Phase 2.3).
-- [ ] Tabbar shows on mobile; siderail on `≥1024px`.
-- [ ] Active tab reflects the current page.
-- [ ] "More" sheet opens and links work.
+- [x] Tabbar shows on mobile; siderail on `≥1024px`.
+- [x] Active tab reflects the current page.
+- [x] "More" sheet opens and links work.
 
 ### Task 2.2 — Define the shared page shell layout
 
@@ -245,7 +245,7 @@ change; works offline (JS is already required for every page).
    shell, not hand-placed.
 
 **Acceptance:**
-- [ ] `.page`, `.page--reading`, `.page--data`, `.topbar` exist and are used by
+- [x] `.page`, `.page--reading`, `.page--data`, `.topbar` exist and are used by
       at least one page after Phase 4.
 
 ### Task 2.3 — Apply the shell to every page
@@ -274,10 +274,10 @@ change; works offline (JS is already required for every page).
    back action in its `.topbar`.
 
 **Acceptance:**
-- [ ] Every page has `viewport-fit=cover`.
-- [ ] Every page shows the same tabbar + footer (no duplicated markup).
-- [ ] No page renders two nav bars.
-- [ ] `grep -rn 'class="footer"' *.html` returns nothing (footer is injected).
+- [x] Every page has `viewport-fit=cover`.
+- [x] Every page shows the same tabbar + footer (no duplicated markup).
+- [x] No page renders two nav bars.
+- [x] `grep -rn 'class="footer"' *.html` returns nothing (footer is injected).
 
 ### Task 2.4 — Input-mode detection
 
@@ -289,16 +289,16 @@ change; works offline (JS is already required for every page).
    `.sector-tile:hover`) and ensures touch targets are ≥48px.
 
 **Acceptance:**
-- [ ] On a touch device, no element stays "lifted" after a tap.
-- [ ] Hover lifts still work on desktop with a mouse.
+- [x] On a touch device, no element stays "lifted" after a tap.
+- [x] Hover lifts still work on desktop with a mouse.
 
 ### Phase 2 gate
 
-- [ ] `npm test` passes.
-- [ ] Navigation is identical across all 10 pages.
-- [ ] Bottom tab bar is thumb-reachable; active state is clear.
-- [ ] Notch devices show no content under the status bar (test 390px + notch).
-- [ ] Desktop shows the side rail, not the bottom bar.
+- [x] `npm test` passes.
+- [x] Navigation is identical across all 10 pages.
+- [x] Bottom tab bar is thumb-reachable; active state is clear.
+- [ ] Notch devices show no content under the status bar (test 390px + notch) — manual test needed.
+- [x] Desktop shows the side rail, not the bottom bar.
 
 ---
 

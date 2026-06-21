@@ -1501,3 +1501,294 @@ mark.hl {
     scroll-behavior: auto !important;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Phase 2 — Shell (tabbar, siderail, footer, more sheet, page container)
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* Page container — shared wrapper for reading vs data surfaces. */
+.page {
+  width: 100%;
+  margin: 0 auto;
+  padding: var(--s-4);
+  max-width: 720px;
+}
+.page--reading { max-width: 720px; }
+.page--data { max-width: 1100px; }
+
+/* Reserved vertical space below the fixed tabbar to prevent content overlap. */
+.tabbar-spacer { height: calc(64px + env(safe-area-inset-bottom, 0px)); }
+
+/* Topbar — slim sticky page header. */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding: var(--s-3) var(--s-4);
+  background: color-mix(in oklch, var(--surface) 92%, transparent);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+}
+.topbar__actions { display: flex; gap: var(--s-2); }
+.topbar__back {
+  color: var(--accent);
+  text-decoration: none;
+  font-size: var(--fs-sm);
+  font-weight: 500;
+  padding: var(--s-1) 0;
+}
+.topbar__back:hover { text-decoration: underline; }
+
+/* Tabbar (mobile bottom nav). */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: stretch;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  background: color-mix(in oklch, var(--surface) 94%, transparent);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+}
+.tabbar__tab {
+  appearance: none;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: var(--text-muted);
+  text-decoration: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 56px;
+  padding: 6px 4px 8px;
+  position: relative;
+  cursor: pointer;
+  transition: color var(--dur-1) var(--ease-out);
+}
+.tabbar__tab:focus-visible {
+  outline: 3px solid var(--accent-soft);
+  outline-offset: -3px;
+  border-radius: var(--r-sm);
+}
+.tabbar__icon {
+  width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.tabbar__icon svg { width: 100%; height: 100%; }
+.tabbar__label {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+.tabbar__tab.is-active { color: var(--accent); }
+.tabbar__tab.is-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+}
+
+/* Siderail (desktop left rail). Hidden on mobile, replaces tabbar ≥1024px. */
+.siderail { display: none; }
+
+/* Footer — injected, shared. */
+.site-footer {
+  margin-top: var(--s-12);
+  border-top: 1px solid var(--border);
+  padding: var(--s-6) var(--s-4) calc(var(--s-6) + env(safe-area-inset-bottom, 0px));
+  background: color-mix(in oklch, var(--bg), var(--accent-soft) 30%);
+}
+.site-footer__inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--s-2) var(--s-4);
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+.site-footer__inner p { margin: 0; }
+.site-footer__sep { opacity: 0.6; }
+
+/* "More" sheet — driven by src/shell.js. */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: oklch(0% 0 0 / 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+}
+.sheet-overlay[hidden] { display: none; }
+.sheet {
+  width: min(560px, 100%);
+  background: var(--surface);
+  color: var(--text);
+  border-top-left-radius: var(--r-xl);
+  border-top-right-radius: var(--r-xl);
+  border: 1px solid var(--border);
+  border-bottom: 0;
+  padding: var(--s-5) var(--s-5) calc(var(--s-6) + env(safe-area-inset-bottom, 0px));
+  box-shadow: var(--shadow-3);
+  animation: sheet-enter var(--dur-3) var(--ease-out);
+}
+.sheet__handle {
+  width: 40px;
+  height: 4px;
+  border-radius: var(--r-pill);
+  background: var(--border-strong);
+  margin: 0 auto var(--s-4);
+}
+.sheet__title {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  margin: 0 0 var(--s-4);
+}
+.sheet__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-2);
+}
+.sheet__list a {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-md);
+  text-decoration: none;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+.sheet__list a:hover { background: var(--accent-soft); color: var(--accent); }
+.sheet__close {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 600;
+  padding: var(--s-3) var(--s-4);
+  border-radius: var(--r-sm);
+  margin-top: var(--s-4);
+  width: 100%;
+  cursor: pointer;
+}
+.sheet__close:hover { color: var(--text); border-color: var(--border-strong); }
+
+@keyframes sheet-enter {
+  from { transform: translateY(24px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+body.sheet-open { overflow: hidden; }
+
+/* Desktop: tabbar → siderail, sheet becomes centered dialog. */
+@media (min-width: 1024px) {
+  .tabbar { display: none; }
+  .tabbar-spacer { height: 0; }
+  .siderail {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    position: sticky;
+    top: var(--s-6);
+    align-self: start;
+    padding: var(--s-3);
+    min-width: 200px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1);
+  }
+  .siderail .tabbar__tab {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--s-3);
+    min-height: 44px;
+    padding: var(--s-3);
+    border-radius: var(--r-sm);
+    width: 100%;
+  }
+  .siderail .tabbar__tab.is-active {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+  .siderail .tabbar__tab.is-active::before { display: none; }
+  .siderail .tabbar__label {
+    font-size: var(--fs-sm);
+  }
+
+  .sheet-overlay { align-items: center; padding: var(--s-4); }
+  .sheet {
+    border-radius: var(--r-xl);
+    border: 1px solid var(--border);
+    animation: sheet-zoom var(--dur-2) var(--ease-out);
+  }
+  @keyframes sheet-zoom {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+
+  /* Two-column reading/data pages can opt-in via .has-rail on a parent. */
+  .has-rail {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: var(--s-8);
+    align-items: start;
+  }
+}
+
+/* Hover-capable (mouse) devices only — touch gets no transform feedback. */
+@media (hover: hover) and (pointer: fine) {
+  .tabbar__tab:hover { color: var(--accent); }
+}
+
+/* Touch-only devices — kill sticky hover lifts; ensure 48px hit areas. */
+@media (hover: none) and (pointer: coarse) {
+  .btn:hover,
+  .chip:hover,
+  .fund-card:hover,
+  .sector-tile:hover,
+  .nav-links a:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .tabbar__tab,
+  .sheet__list a {
+    min-height: 48px;
+  }
+}

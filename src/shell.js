@@ -1,0 +1,160 @@
+// Shared page shell: tabbar (mobile), siderail (desktop), footer, and "More" sheet.
+// Injects into placeholder mount points on each page so the shell is one source of truth.
+
+const PRIMARY_TABS = [
+  { id: 'glossary', href: './index.html',    label: 'Glossary', icon: 'book' },
+  { id: 'market',   href: './market.html',   label: 'Market',   icon: 'chart' },
+  { id: 'stocks',   href: './portfolio.html',label: 'Stocks',   icon: 'briefcase' },
+  { id: 'funds',    href: './funds.html',    label: 'Funds',    icon: 'coins' },
+  { id: 'ai',       href: './chat.html',     label: 'AI',       icon: 'sparkle' }
+];
+
+const MORE_ITEMS = [
+  { href: './settings.html',  label: 'Settings' },
+  { href: './guides.html',    label: 'Chart Playbook' },
+  { href: './analyzer.html',  label: 'Behavior Analyzer' },
+  { href: './privacy.html',   label: 'Privacy Policy' },
+  { href: 'https://github.com/astinaam-webtools/dse-toolkit', label: 'GitHub', external: true }
+];
+
+const ICONS = {
+  book: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 14l4-4 4 4 5-6"/></svg>',
+  briefcase: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="14" x="2" y="7" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>',
+  coins: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h2v4"/><path d="M16.71 13.88l.7.71-2.82 2.82"/></svg>',
+  sparkle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/></svg>',
+  more: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="12" cy="19" r="1.5"/></svg>'
+};
+
+function activeTabId() {
+  const path = (window.location.pathname || '').toLowerCase();
+  const file = path.split('/').pop() || 'index.html';
+  if (file === 'index.html' || file === '' || file === '/') return 'glossary';
+  if (file === 'market.html')   return 'market';
+  if (file === 'portfolio.html') return 'stocks';
+  if (file === 'funds.html')    return 'funds';
+  if (file === 'chat.html')     return 'ai';
+  return null;
+}
+
+function renderTab(tab, isActive) {
+  return `
+    <a href="${tab.href}" class="tabbar__tab${isActive ? ' is-active' : ''}" aria-current="${isActive ? 'page' : 'false'}">
+      <span class="tabbar__icon">${ICONS[tab.icon]}</span>
+      <span class="tabbar__label">${tab.label}</span>
+    </a>`;
+}
+
+function renderTabbar() {
+  const activeId = activeTabId();
+  const tabs = PRIMARY_TABS.map(t => renderTab(t, t.id === activeId)).join('');
+  const moreActive = activeId === null;
+  return `
+    <nav class="tabbar" aria-label="Primary">
+      ${tabs}
+      <button type="button" class="tabbar__tab tabbar__more${moreActive ? ' is-active' : ''}" data-shell-more aria-haspopup="dialog" aria-controls="shell-more-sheet">
+        <span class="tabbar__icon">${ICONS.more}</span>
+        <span class="tabbar__label">More</span>
+      </button>
+    </nav>`;
+}
+
+function renderSiderail() {
+  const activeId = activeTabId();
+  const tabs = PRIMARY_TABS.map(t => renderTab(t, t.id === activeId)).join('');
+  return `<nav class="siderail" aria-label="Primary">${tabs}</nav>`;
+}
+
+function renderMoreSheet() {
+  const items = MORE_ITEMS.map(item => {
+    const attrs = item.external ? ' target="_blank" rel="noopener"' : '';
+    return `<li><a href="${item.href}"${attrs}>${item.label}</a></li>`;
+  }).join('');
+  return `
+    <div class="sheet-overlay" id="shell-more-sheet" data-shell-sheet hidden>
+      <div class="sheet sheet--more" role="dialog" aria-modal="true" aria-label="More pages">
+        <div class="sheet__handle" aria-hidden="true"></div>
+        <h2 class="sheet__title">More</h2>
+        <ul class="sheet__list">${items}</ul>
+        <button type="button" class="sheet__close" data-shell-close>Close</button>
+      </div>
+    </div>`;
+}
+
+function renderFooter() {
+  return `
+    <footer class="site-footer">
+      <div class="site-footer__inner">
+        <p>Made with <span class="footer__heart">&#x2764;&#xFE0F;</span> in Bangladesh</p>
+        <p class="site-footer__sep" aria-hidden="true">•</p>
+        <p>Data is educational only — always do your own research</p>
+        <p class="site-footer__sep" aria-hidden="true">•</p>
+        <p>© 2025 DSE Toolkit</p>
+      </div>
+    </footer>`;
+}
+
+function closeSheet(sheet) {
+  if (!sheet) return;
+  sheet.hidden = true;
+  document.body.classList.remove('sheet-open');
+}
+
+function openSheet(sheet) {
+  if (!sheet) return;
+  sheet.hidden = false;
+  document.body.classList.add('sheet-open');
+}
+
+function wireMoreSheet(root) {
+  const sheet = root.querySelector('[data-shell-sheet]');
+  const opener = root.querySelector('[data-shell-more]');
+  if (!sheet || !opener) return;
+
+  opener.addEventListener('click', () => openSheet(sheet));
+  sheet.addEventListener('click', (e) => {
+    if (e.target === sheet || e.target.matches('[data-shell-close]')) {
+      closeSheet(sheet);
+    }
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !sheet.hidden) closeSheet(sheet);
+  });
+}
+
+export function initShell() {
+  const tabbarMount = document.getElementById('tabbar-mount');
+  if (tabbarMount) {
+    tabbarMount.innerHTML = renderTabbar();
+  }
+
+  const siderailMount = document.getElementById('siderail-mount');
+  if (siderailMount) {
+    siderailMount.innerHTML = renderSiderail();
+  }
+
+  const moreMount = document.getElementById('more-mount');
+  if (moreMount) {
+    moreMount.innerHTML = renderMoreSheet();
+    wireMoreSheet(moreMount);
+  }
+
+  const footerMount = document.getElementById('footer-mount');
+  if (footerMount) {
+    footerMount.innerHTML = renderFooter();
+  }
+
+  // Reserved space to avoid layout shift while the tabbar injects.
+  if (tabbarMount && !document.querySelector('.tabbar-spacer')) {
+    const spacer = document.createElement('div');
+    spacer.className = 'tabbar-spacer';
+    spacer.setAttribute('aria-hidden', 'true');
+    tabbarMount.parentNode?.insertBefore(spacer, tabbarMount.nextSibling);
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initShell, { once: true });
+} else {
+  initShell();
+}

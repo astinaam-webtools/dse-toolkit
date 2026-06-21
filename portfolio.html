@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>DSE Toolkit | My Portfolio</title>
   <meta name="description" content="Track your DSE stock holdings, monitor performance, and manage your investments." />
   <link rel="stylesheet" href="./styles.css" />
@@ -534,18 +534,7 @@
   </style>
 </head>
 <body>
-  <nav class="nav-bar">
-    <div class="nav-container">
-      <a href="./index.html" class="nav-logo">DSE Toolkit</a>
-      <div class="nav-links">
-        <a href="./market.html">Market</a>
-        <a href="./portfolio.html" class="active">Stocks</a>
-        <a href="./funds.html">Funds</a>
-        <a href="./chat.html">AI Analyst</a>
-        <a href="./settings.html">Settings</a>
-      </div>
-    </div>
-  </nav>
+  <div id="siderail-mount"></div>
   <div class="safe-top-spacer"></div>
   <header class="portfolio-header">
     <div class="header-top">
@@ -719,5 +708,9 @@
   <script type="module" src="./src/navStatus.js"></script>
   <script type="module" src="./src/swRegister.js"></script>
   <script type="module" src="./src/mobile-nav.js"></script>
+  <div id="more-mount"></div>
+  <div id="tabbar-mount"></div>
+  <div id="footer-mount"></div>
+  <script type="module" src="./src/shell.js"></script>
 </body>
 </html>

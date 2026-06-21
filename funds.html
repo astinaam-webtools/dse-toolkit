@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>DSE Toolkit | Mutual Funds</title>
   <meta name="description" content="Track your Mutual Fund investments, SIPs, and performance." />
   <link rel="stylesheet" href="./styles.css" />
@@ -397,19 +397,11 @@
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav class="nav-bar">
-    <div class="nav-container">
-      <a href="./index.html" class="nav-logo">DSE Toolkit</a>
-      <div class="nav-links">
-        <a href="./market.html">Market</a>
-        <a href="./portfolio.html">Stocks</a>
-        <a href="./funds.html" class="active">Funds</a>
-        <a href="./chat.html">AI Analyst</a>
-        <a href="./settings.html">Settings</a>
-      </div>
-    </div>
-  </nav>
+  <div id="siderail-mount"></div>
+  <div id="more-mount"></div>
+  <div id="tabbar-mount"></div>
+  <div id="footer-mount"></div>
+  <script type="module" src="./src/shell.js"></script>
 
   <!-- View: Portfolio List -->
   <div id="view-portfolio-list" class="view-section active">
