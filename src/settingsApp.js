@@ -202,7 +202,7 @@ const renderAuthModal = () => {
 const openAuthModal = (mode) => {
   authMode = mode;
   renderAuthModal();
-  els.authModal.classList.add('open');
+  els.authModal.setAttribute('open', '');
   els.authModal.setAttribute('aria-hidden', 'false');
 };
 

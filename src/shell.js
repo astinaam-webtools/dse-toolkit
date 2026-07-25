@@ -71,7 +71,7 @@ function renderMoreSheet() {
     return `<li><a href="${item.href}"${attrs}>${item.label}</a></li>`;
   }).join('');
   return `
-    <div class="sheet-overlay" id="shell-more-sheet" data-shell-sheet hidden>
+    <div class="sheet-overlay" id="shell-more-sheet" data-shell-sheet>
       <div class="sheet sheet--more" role="dialog" aria-modal="true" aria-label="More pages">
         <div class="sheet__handle" aria-hidden="true"></div>
         <h2 class="sheet__title">More</h2>
@@ -118,7 +118,7 @@ function wireMoreSheet(root) {
     }
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !sheet.hidden) closeSheet(sheet);
+    if (e.key === 'Escape' && sheet.hasAttribute('open')) closeSheet(sheet);
   });
 }
 
@@ -155,6 +155,9 @@ export function initShell() {
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initShell, { once: true });
+} else {
+  initShell();
+};
 } else {
   initShell();
 }

@@ -475,7 +475,7 @@ const openModal = (index = -1) => {
     return;
   }
 
-  els.modal.classList.add('active');
+  els.modal.setAttribute('open', '');
   els.editIndex.value = index;
 
   if (index === -1) {

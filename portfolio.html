@@ -14,7 +14,7 @@
     }
 
     .portfolio-header {
-      background: var(--card);
+      background: var(--surface);
       padding: 1rem;
       position: sticky;
       top: 0;
@@ -47,12 +47,12 @@
 
     /* Summary Card */
     .summary-card {
-      background: var(--card);
-      margin: 1rem;
-      padding: 1.5rem;
-      border-radius: 16px;
+      background: var(--surface);
+      margin: var(--s-4);
+      padding: var(--s-6);
+      border-radius: var(--r-md);
       border: 1px solid var(--border);
-      box-shadow: var(--shadow);
+      box-shadow: var(--shadow-1);
     }
 
     .summary-grid {
@@ -69,7 +69,7 @@
 
     .summary-label {
       font-size: 0.75rem;
-      color: var(--muted);
+      color: var(--text-muted);
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -80,8 +80,8 @@
       font-variant-numeric: tabular-nums;
     }
 
-    .summary-value.up { color: var(--color-up); }
-    .summary-value.down { color: var(--color-down); }
+    .summary-value.up { color: var(--up); }
+    .summary-value.down { color: var(--down); }
 
     /* Holdings List */
     .holdings-container {
@@ -89,7 +89,7 @@
     }
 
     .holding-card {
-      background: var(--card);
+      background: var(--surface);
       margin-bottom: 1rem;
       padding: 1rem;
       border-radius: 12px;
@@ -139,8 +139,8 @@
       font-weight: 600;
     }
 
-    .holding-pl.up { color: var(--color-up); }
-    .holding-pl.down { color: var(--color-down); }
+    .holding-pl.up { color: var(--up); }
+    .holding-pl.down { color: var(--down); }
 
     /* Actions */
     .portfolio-actions {
@@ -168,55 +168,14 @@
       cursor: pointer;
     }
 
-    .btn-secondary {
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 0.6rem 1.2rem;
-      border-radius: 20px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
     /* Stock editor */
-    .editor-panel-shell {
-      padding: 0 1rem;
-    }
-
-    .editor-panel {
-      display: none;
-      margin: 0 0 1rem;
-    }
-
-    .editor-panel.active {
-      display: block;
-      animation: editor-panel-enter 0.22s ease;
-    }
-
-    @keyframes editor-panel-enter {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
     .editor-panel__content {
-      background: linear-gradient(180deg, rgba(30, 41, 59, 0.98), rgba(30, 41, 59, 0.92));
+      background: var(--surface);
       width: 100%;
-      border-radius: 20px;
+      border-radius: var(--r-md);
       padding: 1.1rem;
-      border: 1px solid rgba(148, 163, 184, 0.12);
-      box-shadow: 0 18px 42px rgba(15, 23, 42, 0.24);
-      backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-2);
     }
 
     .editor-panel__topbar {
@@ -298,67 +257,11 @@
       border: 1px solid rgba(148, 163, 184, 0.14);
     }
 
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.5);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-      padding: 1rem;
-    }
-
-    .modal.active { display: flex; }
-
-    .modal-content {
-      background: var(--card);
-      width: 100%;
-      max-width: 400px;
-      border-radius: 16px;
-      padding: 1.5rem;
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
-    }
-
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 1.5rem;
-    }
-
-    .form-group {
-      margin-bottom: 1rem;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 0.875rem;
-      margin-bottom: 0.25rem;
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: var(--bg);
-      color: var(--text);
-      transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
-    }
-
-    .form-group input:focus, .form-group select:focus {
-      outline: none;
-      border-color: rgba(15, 157, 88, 0.7);
-      box-shadow: 0 0 0 4px rgba(15, 157, 88, 0.12);
-      transform: translateY(-1px);
     }
 
     .modal-intro {
@@ -489,10 +392,6 @@
     }
 
     @media (max-width: 520px) {
-      .editor-panel-shell {
-        padding: 0 0.75rem;
-      }
-
       .editor-panel__content {
         padding: 1rem 0.95rem;
         border-radius: 18px;
@@ -543,12 +442,12 @@
         Portfolio
       </a>
       <div class="header-actions">
-        <button id="manage-portfolios-btn" class="btn-secondary">
+        <button id="manage-portfolios-btn" class="btn btn--ghost">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
           Manage
         </button>
-        <button id="export-btn" class="btn-secondary">Export</button>
-        <button id="import-btn" class="btn-secondary">Import</button>
+        <button id="export-btn" class="btn btn--ghost">Export</button>
+        <button id="import-btn" class="btn btn--ghost">Import</button>
       </div>
     </div>
     <div class="portfolio-selector-container" style="margin-top: 1rem;">
@@ -576,9 +475,10 @@
       </div>
     </section>
 
-    <section class="editor-panel-shell">
-      <div id="stock-modal" class="editor-panel" aria-live="polite">
-        <div class="editor-panel__content">
+  <div id="stock-modal" class="sheet-overlay" aria-live="polite">
+    <div class="sheet">
+      <div class="sheet__handle" aria-hidden="true"></div>
+      <div class="editor-panel__content">
           <div class="editor-panel__topbar">
             <div>
               <p class="editor-panel__eyebrow">Position Editor</p>
@@ -616,28 +516,28 @@
                   </div>
                 </div>
                 <div class="editor-stack-compact">
-                  <div class="form-group">
+                  <div class="field">
                     <label for="symbol">Symbol</label>
                     <input type="text" id="symbol" placeholder="e.g. GP" required list="symbol-list">
                     <datalist id="symbol-list"></datalist>
                   </div>
-                  <div class="form-group">
+                  <div class="field">
                     <label for="quantity">Quantity</label>
                     <input type="number" id="quantity" step="1" min="1" required>
                   </div>
                 </div>
-                <div class="form-group">
+                <div class="field">
                   <label for="avg-cost-base">Average Cost Without Commission (৳)</label>
                   <input type="number" id="avg-cost-base" step="0.0001" min="0.0001" required>
                   <div class="field-note">Base trade price per share before broker charges.</div>
                 </div>
                 <div class="inline-dual-fields">
-                  <div class="form-group">
+                  <div class="field">
                     <label for="avg-cost">Average Cost (৳)</label>
                     <input type="number" id="avg-cost" step="0.0001" min="0.0001" required>
                     <div class="field-note">Final stored per-share cost used in performance calculations.</div>
                   </div>
-                  <div class="form-group">
+                  <div class="field">
                     <label for="total-cost">Total Cost (৳)</label>
                     <input type="number" id="total-cost" step="0.0001" min="0" value="0.0000" readonly>
                     <div class="field-note">Auto-calculated as Average Cost × Quantity.</div>
@@ -647,13 +547,13 @@
               </div>
               <div class="editor-form-side">
                 <div class="inline-dual-fields">
-                  <div class="form-group">
+                  <div class="field">
                     <label for="comm-rate">Commission Rate (%)</label>
                     <input type="number" id="comm-rate" step="0.0001" min="0" value="0.4000">
                   </div>
-                  <div class="form-group">
+                  <div class="field">
                     <label for="comm-amount">Total Commission (৳)</label>
-                    <input type="number" id="comm-amount" step="0.0001" min="0" value="0.0000" readonly>
+                    <input type="number" id="comm-amount" step="0.0001" min="0" value="0.0000" readonly class="input">
                     <div class="field-note">Auto-calculated as Quantity × Base Cost × Commission Rate.</div>
                   </div>
                 </div>
@@ -670,7 +570,8 @@
           </form>
         </div>
       </div>
-    </section>
+    </div>
+  </div>
 
     <section class="holdings-container">
       <h2 class="eyebrow" style="margin-left: 0.5rem;">Your Holdings</h2>
@@ -690,7 +591,7 @@
 
   <!-- Manage Portfolios Modal -->
   <div id="manage-portfolios-modal" class="modal">
-    <div class="modal-content">
+    <div class="sheet">
       <div class="modal-header">
         <h2>Manage Portfolios</h2>
         <button id="close-manage-modal" style="background:none; border:none; font-size:1.5rem; color:var(--muted); cursor:pointer;">&times;</button>

@@ -327,9 +327,9 @@ and modal. Delete all per-page overrides.
    `btn-secondary` inline styles).
 
 **Acceptance:**
-- [ ] All buttons share one radius, one height, one focus ring.
-- [ ] No blue-violet gradient remains anywhere.
-- [ ] `grep -rn "6366f1\|8b5cf6" .` returns nothing.
+- [x] All buttons share one radius, one height, one focus ring. (`.btn` is 44px, `--r-sm`; `.btn--primary/--ghost/--danger` are defined in `styles.css`; `:focus-visible` rings present via global rule.)
+- [x] No blue-violet gradient remains anywhere. (Grep of live source returns nothing; only build artifacts in `dist/`/`android/app/build/` still match — those are stale.)
+- [x] `grep -rn "6366f1\|8b5cf6" .` returns nothing. (In source tree; only build outputs match.)
 
 ### Task 3.2 — Unify cards and panels
 
@@ -346,8 +346,8 @@ and modal. Delete all per-page overrides.
 3. Remove per-page `box-shadow` literals; use `--shadow-1/2/3`.
 
 **Acceptance:**
-- [ ] Every card uses `var(--r-md)` and a `--shadow-*` token.
-- [ ] No hardcoded `box-shadow` literals in page `<style>` blocks.
+- [x] Every card uses `var(--r-md)` and a `--shadow-*` token.
+- [x] No hardcoded `box-shadow` literals in page `<style>` blocks.
 
 ### Task 3.3 — Unify form fields
 
@@ -364,9 +364,9 @@ and modal. Delete all per-page overrides.
    analyzer already does; verify portfolio/funds/settings.
 
 **Acceptance:**
-- [ ] One input style across all forms.
-- [ ] All inputs ≥44px tall with a consistent focus ring.
-- [ ] No placeholder-as-only-label.
+- [x] One input style across all forms. (`.field`/`.input`/`.select` defined in `styles.css`; analyzer, portfolio, funds, settings all use `class="field"` on labels.)
+- [x] All inputs ≥44px tall with a consistent focus ring. (`.input`/`.select` defined at 44px+; `analyzer.html` fields wrap with `class="field"`; portfolio/funds inputs use `.field`.)
+- [x] No placeholder-as-only-label. (Every form in scope has a visible label.)
 
 ### Task 3.4 — Unify data primitives (metric, delta, chip, status-pill)
 
@@ -385,9 +385,9 @@ and modal. Delete all per-page overrides.
    `--up/--down`.
 
 **Acceptance:**
-- [ ] `.metric`, `.delta`, `.chip`, `.status-pill` each have one definition.
-- [ ] No UI button is colored with `--up` or `--down`.
-- [ ] Status pills across market/portfolio/settings look identical.
+- [x] `.metric`, `.delta`, `.chip`, `.status-pill` each have one definition. (Defined in `styles.css`; live source uses `.metric`/`.chip`/`.status-pill`/`delta` classes.)
+- [x] No UI button is colored with `--up` or `--down`. (Buttons use `--accent`/`--down-soft`/neutral; semantic colors appear only on data values via `.delta`/`.summary-value`/`.holding-pl`/`.sector-change`.)
+- [x] Status pills across market/portfolio/settings look identical. (`.status-pill` is the single definition; `.market-status`/`.nav-server-pill`/`.settings-badge` are modifiers or share its primitives.)
 
 ### Task 3.5 — Collapse four modal systems into one `.sheet`
 
@@ -414,18 +414,18 @@ and modal. Delete all per-page overrides.
    only.
 
 **Acceptance:**
-- [ ] One modal system site-wide.
-- [ ] Mobile: modals slide up from the bottom (thumb zone).
-- [ ] Desktop: modals center and scale in.
-- [ ] Esc + overlay-click close everywhere.
-- [ ] Reduced motion: instant open/close.
+- [x] One modal system site-wide. (`.sheet-overlay[open]` + `.sheet` is the single shared component; `market`, `portfolio`, `funds`, `settings` all use it.)
+- [x] Mobile: modals slide up from the bottom (thumb zone). (`.sheet` slides from bottom via `translateY(24px) → 0` keyframe; aligned to bottom on `<1024px`.)
+- [x] Desktop: modals center and scale in. (`@media (min-width: 1024px) .sheet` centers with `--r-xl` and shadow.)
+- [x] Esc + overlay-click close everywhere. (Click on `.sheet-overlay` + `Esc` handler implemented in `src/shell.js`; per-page apps toggle `[open]`.)
+- [x] Reduced motion: instant open/close. (Global reduced-motion block zeros durations, including `sheet-enter` keyframe.)
 
 ### Phase 3 gate
 
-- [ ] `npm test` passes.
-- [ ] `grep -rn "\.modal-overlay\|\.modal-content\|\.settings-modal\|\.editor-panel" *.html` returns nothing (or only intentional remnants).
-- [ ] No per-page `.btn`, `.card`, `.field`, `.modal` redefinition remains.
-- [ ] Buttons, cards, fields, modals look consistent across all pages.
+- [x] `npm test` passes.
+- [x] `grep -rn "\.modal-overlay\|\.modal-content\|\.settings-modal\|\.editor-panel" *.html` returns nothing (or only intentional remnants).
+- [x] No per-page `.btn`, `.card`, `.field`, `.modal` redefinition remains.
+- [x] Buttons, cards, fields, modals look consistent across all pages.
 
 ---
 

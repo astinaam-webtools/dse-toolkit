@@ -56,12 +56,12 @@
 
     /* Summary Card */
     .summary-card {
-      background: linear-gradient(135deg, var(--card), var(--bg));
+      background: linear-gradient(135deg, var(--surface), var(--bg));
       margin-bottom: 2rem;
-      padding: 1.5rem;
-      border-radius: 16px;
+      padding: var(--s-6);
+      border-radius: var(--r-md);
       border: 1px solid var(--border);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      box-shadow: var(--shadow-1);
     }
 
     .summary-label {
@@ -93,8 +93,8 @@
       flex-direction: column;
     }
 
-    .summary-value.up { color: var(--color-up); }
-    .summary-value.down { color: var(--color-down); }
+    .summary-value.up { color: var(--up); }
+    .summary-value.down { color: var(--down); }
 
     /* List & Cards */
     .section-title {
@@ -177,8 +177,8 @@
     .gain-loss {
       font-weight: 700;
     }
-    .gain-loss.up { color: var(--color-up); }
-    .gain-loss.down { color: var(--color-down); }
+    .gain-loss.up { color: var(--up); }
+    .gain-loss.down { color: var(--down); }
 
     /* FAB */
     .fab {
@@ -205,99 +205,6 @@
       transform: scale(1.1);
     }
 
-    /* Modal */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.6);
-      backdrop-filter: blur(4px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s;
-    }
-    
-    .modal-overlay.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .modal {
-      background: var(--card);
-      width: 90%;
-      max-width: 450px;
-      border-radius: 20px;
-      padding: 2rem;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      transform: scale(0.95);
-      transition: transform 0.2s;
-    }
-
-    .modal-overlay.open .modal {
-      transform: scale(1);
-    }
-
-    .modal h3 { 
-      margin-top: 0; 
-      margin-bottom: 1.5rem;
-      font-size: 1.5rem;
-      color: var(--text);
-    }
-
-    .form-group {
-      margin-bottom: 1.25rem;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 0.5rem;
-      font-size: 0.9rem;
-      font-weight: 500;
-      color: var(--text);
-    }
-    
-    .form-group input, .form-group select {
-      width: 100%;
-      padding: 0.875rem;
-      border-radius: 10px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      font-size: 1rem;
-      transition: border-color 0.2s;
-    }
-
-    .form-group input:focus, .form-group select:focus {
-      outline: none;
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    }
-
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-
-    .btn {
-      padding: 0.75rem 1.5rem;
-      border-radius: 10px;
-      border: none;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 0.95rem;
-      transition: opacity 0.2s;
-    }
-    
-    .btn:hover { opacity: 0.9; }
-    
-    .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); }
-    .btn-primary { background: var(--accent); color: white; }
-    .btn-danger { background: #fee2e2; color: var(--danger); }
     .btn-icon { padding: 0.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
     /* Detail View Specifics */
@@ -409,8 +316,8 @@
       <div class="header-top">
         <h1>Mutual Funds</h1>
         <div class="header-actions">
-          <button id="btn-import" class="btn btn-secondary">Import</button>
-          <button id="btn-export" class="btn btn-secondary">Export</button>
+          <button id="btn-import" class="btn btn--ghost">Import</button>
+          <button id="btn-export" class="btn btn--ghost">Export</button>
         </div>
       </div>
       
@@ -463,7 +370,7 @@
           <h1 id="detail-portfolio-name" style="margin:0; font-size: 1.5rem;">My Portfolio</h1>
           <button id="btn-rename-portfolio" class="btn-icon" style="margin-left: 0.5rem; background: none; border: none; cursor: pointer;" title="Rename">✏️</button>
         </div>
-        <button id="btn-delete-portfolio" class="btn btn-danger" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Delete</button>
+        <button id="btn-delete-portfolio" class="btn btn--danger" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Delete</button>
       </div>
 
       <div class="summary-card">
@@ -563,33 +470,33 @@
   </div>
 
   <!-- Modals -->
-  <div id="modal-portfolio" class="modal-overlay">
+  <div id="modal-portfolio" class="sheet-overlay">
     <div class="modal">
       <h3>New Portfolio</h3>
-      <div class="form-group">
+      <div class="field">
         <label>Portfolio Name</label>
         <input type="text" id="inp-pf-name" placeholder="e.g. Retirement">
       </div>
       <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="app.closeModals()">Cancel</button>
-        <button class="btn btn-primary" id="btn-save-pf">Create</button>
+        <button class="btn btn--ghost" onclick="app.closeModals()">Cancel</button>
+        <button class="btn btn--primary" id="btn-save-pf">Create</button>
       </div>
     </div>
   </div>
 
-  <div id="modal-fund" class="modal-overlay">
+  <div id="modal-fund" class="sheet-overlay">
     <div class="modal">
       <h3>Add Fund</h3>
-      <div class="form-group">
+      <div class="field">
         <label>Fund Name</label>
         <input type="text" id="inp-fund-name" placeholder="e.g. 1st Mutual Fund">
       </div>
-      <div class="form-group">
+      <div class="field">
         <label>Symbol (Optional)</label>
         <input type="text" id="inp-fund-symbol" placeholder="e.g. 1STMF">
         <p style="font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem;">Used to group funds across portfolios.</p>
       </div>
-      <div class="form-group">
+      <div class="field">
         <label>Manager / AMC</label>
         <input type="text" id="inp-fund-amc" placeholder="e.g. ICB">
       </div>
@@ -600,14 +507,14 @@
     </div>
   </div>
 
-  <div id="modal-rename" class="modal-overlay">
+  <div id="modal-rename" class="sheet-overlay">
     <div class="modal">
       <h3 id="rename-modal-title">Rename</h3>
-      <div class="form-group">
+      <div class="field">
         <label>Name</label>
-        <input type="text" id="inp-rename-name">
+        <input type="text" id="inp-rename-name" class="input">
       </div>
-      <div class="form-group" id="grp-rename-symbol" style="display:none;">
+      <div class="field" id="grp-rename-symbol" style="display:none;">
         <label>Symbol</label>
         <input type="text" id="inp-rename-symbol">
       </div>
@@ -618,11 +525,11 @@
     </div>
   </div>
 
-  <div id="modal-tx" class="modal-overlay">
+  <div id="modal-tx" class="sheet-overlay">
     <div class="modal">
       <h3 id="tx-modal-title">Add Transaction</h3>
       <input type="hidden" id="inp-tx-id">
-      <div class="form-group">
+      <div class="field">
         <label>Type</label>
         <select id="inp-tx-type">
           <option value="BUY">Buy / SIP</option>
@@ -630,19 +537,19 @@
           <option value="DIVIDEND_REINVEST">Dividend Reinvest/CIP</option>
         </select>
       </div>
-      <div class="form-group">
+      <div class="field">
         <label>Date</label>
         <input type="date" id="inp-tx-date">
       </div>
-      <div class="form-group">
+      <div class="field">
         <label>Units</label>
         <input type="number" id="inp-tx-units" step="1">
       </div>
-      <div class="form-group">
+      <div class="field">
         <label>Price / NAV per Unit</label>
         <input type="number" id="inp-tx-price" step="0.01">
       </div>
-      <div class="form-group">
+      <div class="field">
         <label>Total Cost</label>
         <input type="number" id="inp-tx-total" step="0.01">
       </div>
@@ -666,3 +573,4 @@
   <script type="module" src="./src/mobile-nav.js"></script>
 </body>
 </html>
+

@@ -31,11 +31,11 @@
     }
 
     .settings-card {
-      background: var(--card);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 1.5rem;
-      box-shadow: var(--shadow);
+      border-radius: var(--r-md);
+      padding: var(--s-6);
+      box-shadow: var(--shadow-1);
     }
 
     .settings-card h2,
@@ -59,26 +59,6 @@
       margin-bottom: 0.4rem;
       font-size: 0.9rem;
       font-weight: 600;
-    }
-
-    .settings-form input {
-      width: 100%;
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 1rem;
-    }
-
-    .settings-form select {
-      width: 100%;
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 1rem;
     }
 
     .mode-toggle {
@@ -121,7 +101,7 @@
     }
 
     .settings-message[data-tone='success'] {
-      color: var(--color-up);
+      color: var(--up);
     }
 
     .settings-message[data-tone='error'] {
@@ -157,24 +137,24 @@
       width: 0.6rem;
       height: 0.6rem;
       border-radius: 999px;
-      background: var(--color-neutral);
+      background: var(--neutral);
     }
 
     .settings-badge.is-connected::before {
-      background: var(--color-up);
+      background: var(--up);
     }
 
     .settings-badge.is-login-required::before {
-      background: #f59e0b;
+      background: var(--warning);
     }
 
     .settings-badge.is-unavailable::before {
-      background: var(--danger);
+      background: var(--down);
     }
 
     .settings-badge.is-client-only::before,
     .settings-badge.is-checking::before {
-      background: var(--color-neutral);
+      background: var(--neutral);
     }
 
     .auth-stack {
@@ -204,64 +184,6 @@
       margin-top: 0;
     }
 
-    .settings-modal-overlay {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding: 1rem;
-      background: rgba(15, 23, 42, 0.62);
-      backdrop-filter: blur(8px);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-      z-index: 2100;
-    }
-
-    .settings-modal-overlay.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .settings-modal {
-      width: min(100%, 420px);
-      border-radius: 24px;
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
-      padding: 1.25rem;
-      transform: translateY(18px);
-      transition: transform 0.2s ease;
-    }
-
-    .settings-modal-overlay.open .settings-modal {
-      transform: translateY(0);
-    }
-
-    .settings-modal__header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .settings-modal__header h3 {
-      margin: 0 0 0.25rem;
-    }
-
-    .settings-modal__close {
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-size: 1.5rem;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0.1rem 0.25rem;
-    }
-
     .auth-switcher {
       display: inline-flex;
       gap: 0.35rem;
@@ -289,12 +211,6 @@
 
     .auth-modal-panel[hidden] {
       display: none;
-    }
-
-    @media (min-width: 720px) {
-      .settings-modal-overlay {
-        align-items: center;
-      }
     }
 
     .import-card {
@@ -437,14 +353,15 @@
     </section>
   </main>
 
-  <div id="auth-modal" class="settings-modal-overlay" aria-hidden="true">
-    <div class="settings-modal">
-      <div class="settings-modal__header">
+  <div id="auth-modal" class="sheet-overlay">
+    <div class="sheet" style="max-width: 420px;">
+      <div class="sheet__handle" aria-hidden="true"></div>
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem;">
         <div>
           <h3 id="auth-modal-title">Log In</h3>
           <p id="auth-modal-subtitle" class="muted-note" style="margin-top: 0;">Connect to your portfolio server account.</p>
         </div>
-        <button id="close-auth-modal" class="settings-modal__close" type="button" aria-label="Close auth modal">&times;</button>
+        <button id="close-auth-modal" class="sheet__close" type="button" aria-label="Close auth modal">Close</button>
       </div>
 
       <div class="auth-switcher" role="tablist" aria-label="Authentication">
@@ -456,7 +373,7 @@
         <div class="settings-form">
           <div>
             <label for="login-email">Email</label>
-            <input id="login-email" name="email" type="email" autocomplete="email" required />
+            <input id="login-email" name="email" type="email" autocomplete="email" required class="input" />
           </div>
           <div>
             <label for="login-password">Password</label>

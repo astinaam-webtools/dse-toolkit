@@ -59,11 +59,11 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: var(--color-neutral);
+      background-color: var(--neutral);
       margin-right: 6px;
     }
-    .status-dot.open { background-color: var(--color-up); }
-    .status-dot.closed { background-color: var(--color-down); }
+    .status-dot.open { background-color: var(--up); }
+    .status-dot.closed { background-color: var(--down); }
 
     /* Search */
     .search-bar {
@@ -89,23 +89,6 @@
       display: flex;
       flex-wrap: wrap;
       gap: 0.45rem;
-    }
-
-    .quick-filter-btn {
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 0.32rem 0.72rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .quick-filter-btn:hover {
-      border-color: rgba(15, 157, 88, 0.45);
-      transform: translateY(-1px);
     }
 
     .quick-filter-btn.active {
@@ -172,10 +155,10 @@
     }
 
     .bucket-card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 1.25rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      background: var(--surface);
+      border-radius: var(--r-md);
+      padding: var(--s-5);
+      box-shadow: var(--shadow-1);
       border: 1px solid var(--border);
     }
     .bucket-header {
@@ -235,8 +218,8 @@
     .stock-metrics { text-align: right; }
     .price { font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
     .change { font-size: 0.75rem; font-weight: 500; }
-    .change.up { color: var(--color-up); }
-    .change.down { color: var(--color-down); }
+    .change.up { color: var(--up); }
+    .change.down { color: var(--down); }
 
     /* Screener Table */
     .screener-table {
@@ -291,61 +274,10 @@
       stroke-width: 2;
       stroke-linecap: round;
     }
-    .sparkline.up { stroke: var(--color-up); }
-    .sparkline.down { stroke: var(--color-down); }
+    .sparkline.up { stroke: var(--up); }
+    .sparkline.down { stroke: var(--down); }
 
     /* Modal */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      align-items: flex-end; /* Bottom sheet on mobile */
-      z-index: 1000;
-    }
-    .modal-overlay.open { display: flex; }
-
-    .modal-content {
-      background: var(--card);
-      color: var(--text);
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      border-radius: 20px 20px 0 0;
-      padding: 1.5rem;
-      padding-top: 3rem; /* Added space for close button */
-      animation: slideUp 0.3s ease;
-      position: relative;
-    }
-    @media (min-width: 640px) {
-      .modal-overlay { align-items: center; justify-content: center; }
-      .modal-content { width: 500px; border-radius: 20px; }
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-
-    .close-modal {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: var(--bg);
-      border: none;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      z-index: 10; /* Ensure it's above content */
-    }
-    .close-modal:hover { background: var(--border); }
-
     /* Modal metric cards */
     .modal-metric-card {
       background: var(--bg);
@@ -364,11 +296,11 @@
     /* AI Button */
     .btn-ai {
       width: 100%;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      background: var(--accent);
       color: white;
       border: none;
       padding: 12px;
-      border-radius: 12px;
+      border-radius: var(--r-sm);
       font-weight: 600;
       margin-top: 1rem;
       cursor: pointer;
@@ -487,9 +419,9 @@
       margin: 0.25rem 0;
     }
 
-    .sector-change.up { color: var(--color-up); }
-    .sector-change.down { color: var(--color-down); }
-    .sector-change.neutral { color: var(--color-neutral); }
+    .sector-change.up { color: var(--up); }
+    .sector-change.down { color: var(--down); }
+    .sector-change.neutral { color: var(--neutral); }
 
     .sector-stats {
       display: flex;
@@ -512,7 +444,7 @@
       border-radius: 8px;
       font-size: 0.875rem;
       color: var(--muted);
-      border-left: 3px solid var(--color-up);
+      border-left: 3px solid var(--up);
     }
   </style>
 </head>
@@ -526,7 +458,7 @@
         <span>← Home</span>
       </a>
       <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <a href="./portfolio.html" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; gap: 0.4rem; padding: 4px 10px; font-size: 0.8rem;">
+        <a href="./portfolio.html" class="btn btn--ghost" style="padding: 4px 10px; font-size: 0.8rem;">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
           Portfolio
         </a>
@@ -535,7 +467,7 @@
           <span id="market-date">Loading...</span>
         </div>
       </div>
-      <a href="./settings.html" class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; padding: 4px 10px; font-size: 0.8rem;">Settings</a>
+      <a href="./settings.html" class="btn btn--ghost" style="padding: 4px 10px; font-size: 0.8rem;">Settings</a>
     </div>
     
     <div class="search-bar">
@@ -562,11 +494,11 @@
     <section id="view-screener" class="view-section">
       <div class="market-tools">
         <div class="quick-filters" id="quick-filters" aria-label="Quick market filters">
-          <button class="quick-filter-btn" type="button" data-quick-filter="gainers">Top Gainers</button>
-          <button class="quick-filter-btn" type="button" data-quick-filter="losers">Top Losers</button>
-          <button class="quick-filter-btn" type="button" data-quick-filter="volume">High Volume</button>
-          <button class="quick-filter-btn" type="button" data-quick-filter="value">Value Picks</button>
-          <button class="quick-filter-btn" type="button" data-quick-filter="clear">Clear</button>
+          <button class="chip" type="button" data-quick-filter="gainers">Top Gainers</button>
+          <button class="chip" type="button" data-quick-filter="losers">Top Losers</button>
+          <button class="chip" type="button" data-quick-filter="volume">High Volume</button>
+          <button class="chip" type="button" data-quick-filter="value">Value Picks</button>
+          <button class="chip" type="button" data-quick-filter="clear">Clear</button>
         </div>
         <p id="market-result-line" class="market-result-line">Showing full market snapshot.</p>
       </div>
@@ -608,10 +540,11 @@
     </section>
   </main>
 
-  <!-- Stock Detail Modal -->
-  <div class="modal-overlay" id="stock-modal">
-    <div class="modal-content">
-      <button class="close-modal" onclick="closeModal('stock-modal')">&times;</button>
+  <!-- Stock Detail Sheet -->
+  <div class="sheet-overlay" id="stock-modal">
+    <div class="sheet">
+      <div class="sheet__handle" aria-hidden="true"></div>
+      <button class="sheet__close" onclick="closeModal('stock-modal')">Close</button>
       <div id="modal-body">
         <!-- Dynamic Content -->
       </div>
@@ -625,7 +558,7 @@
   <script>
     // Global modal helpers
     window.closeModal = (id) => {
-      document.getElementById(id).classList.remove('open');
+      document.getElementById(id).removeAttribute('open');
     };
   </script>
 
@@ -633,5 +566,13 @@
   <div id="tabbar-mount"></div>
   <div id="footer-mount"></div>
   <script type="module" src="./src/shell.js"></script>
+</body>
+</html>
+ src="./src/shell.js"></script>
+</body>
+</html>
+dy>
+</html>
+ll.js"></script>
 </body>
 </html>

@@ -468,7 +468,7 @@ const renderSparkline = (data, isUp) => {
 // Close on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.sheet-overlay[open]').forEach(el => el.removeAttribute('open'));
   }
 });
 
