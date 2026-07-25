@@ -308,8 +308,8 @@
     }
     .chat-input {
       flex: 1; min-width: 0;
-      background: var(--bg); color: var(--text);
-      border: 1px solid var(--border);
+      background: var(--surface-sunk); color: var(--text);
+      border: 1px solid var(--border-strong);
       border-radius: 20px;
       padding: .45rem .7rem;
       font-size: .86rem; font-family: inherit;
@@ -321,8 +321,9 @@
       line-height: 1.45;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
+      transition: border-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
     }
-    .chat-input:focus { border-color: var(--accent); }
+    .chat-input:focus-visible { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
     .btn-send {
       flex-shrink: 0; width: 36px; height: 36px;
@@ -384,7 +385,7 @@
     }
   </style>
 </head>
-<body>
+<body data-page="ai">
   <div id="siderail-mount"></div>
 
   <!-- Hidden checkbox drives drawer open/close via CSS sibling selectors -->

@@ -232,7 +232,7 @@
     }
   </style>
 </head>
-<body>
+<body data-page="settings">
   <div id="siderail-mount"></div>
   <div class="safe-top-spacer"></div>
 
@@ -261,9 +261,14 @@
 
         <!-- Client Mode Form -->
         <div id="ai-client-settings" class="settings-form" style="margin-top: 1rem;">
-          <div>
+          <div class="field">
             <label for="ai-local-api-key">OpenRouter API Key</label>
-            <input id="ai-local-api-key" type="password" placeholder="sk-or-..." autocomplete="off" />
+            <div class="input-group">
+              <input id="ai-local-api-key" type="password" placeholder="sk-or-..." autocomplete="off" class="input" />
+              <button type="button" class="input-group__action" aria-label="Show OpenRouter API Key" data-toggle-password="ai-local-api-key">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <div>
             <label>Preferred Model</label>
@@ -291,9 +296,14 @@
             </div>
           </div>
 
-          <div id="ai-cursor-key-wrap" hidden>
+          <div id="ai-cursor-key-wrap" class="field" hidden>
             <label for="ai-server-cursor-key">Per-User Cursor API Key (Optional)</label>
-            <input id="ai-server-cursor-key" type="password" placeholder="cursor_..." autocomplete="off" />
+            <div class="input-group">
+              <input id="ai-server-cursor-key" type="password" placeholder="cursor_..." autocomplete="off" class="input" />
+              <button type="button" class="input-group__action" aria-label="Show Cursor API Key" data-toggle-password="ai-server-cursor-key">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
             <p class="muted-note">If left blank, the server-configured environment key is used.</p>
           </div>
 

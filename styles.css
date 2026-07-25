@@ -625,41 +625,147 @@ input[type='search']:focus {
   gap: 1rem;
 }
 
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-size: 0.9rem;
-}
-
-.field span,
-.field label {
-  font-weight: 600;
-  color: var(--text-muted);
-}
-
-.input,
-.select {
+/* Base element styling for all form controls */
+input[type='text'],
+input[type='password'],
+input[type='number'],
+input[type='email'],
+input[type='url'],
+input[type='search'],
+input[type='date'],
+select,
+textarea,
+.input {
   width: 100%;
   min-height: 44px;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border);
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--border-strong);
   border-radius: var(--r-sm);
-  background: var(--bg);
+  background: var(--surface-sunk);
   color: var(--text);
-  font-size: 1rem;
-  transition: border-color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: var(--lh-snug);
+  appearance: none;
+  transition: border-color var(--dur-2) var(--ease-out),
+              box-shadow var(--dur-2) var(--ease-out),
+              background-color var(--dur-2) var(--ease-out);
 }
 
-.input:focus,
-.select:focus {
+input::placeholder,
+textarea::placeholder,
+.input::placeholder {
+  color: var(--text-faint);
+  opacity: 1;
+}
+
+input:hover:not(:disabled),
+select:hover:not(:disabled),
+textarea:hover:not(:disabled),
+.input:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.input:focus-visible {
   outline: none;
   border-color: var(--accent);
+  background: var(--surface);
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.input::placeholder {
+input[aria-invalid='true'],
+.input--error {
+  border-color: var(--down) !important;
+}
+
+input[aria-invalid='true']:focus-visible,
+.input--error:focus-visible {
+  box-shadow: 0 0 0 3px var(--down-soft) !important;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled,
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  background: var(--bg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+  margin-bottom: var(--s-3);
+}
+
+.field label,
+.field__label,
+.field span {
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: var(--fs-sm);
   color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-group .input,
+.input-group input {
+  padding-right: 2.75rem;
+}
+
+.input-group--has-leading .input,
+.input-group--has-leading input {
+  padding-left: 2.5rem;
+}
+
+.input-group__icon {
+  position: absolute;
+  left: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input-group__action {
+  position: absolute;
+  right: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: color var(--dur-1) var(--ease-out), background-color var(--dur-1) var(--ease-out);
+}
+
+.input-group__action:hover {
+  color: var(--text);
+  background: var(--surface-2);
+}
+
+.input-group__action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 .form-hint {
@@ -1894,9 +2000,44 @@ mark.hl {
   gap: var(--s-2) var(--s-4);
   font-size: var(--fs-sm);
   color: var(--text-muted);
+  text-align: center;
+  line-height: var(--lh-base);
 }
 .site-footer__inner p { margin: 0; }
 .site-footer__sep { opacity: 0.6; }
+
+/* Responsive footer stacking on mobile phones */
+@media (max-width: 600px) {
+  .site-footer__inner {
+    flex-direction: column;
+    gap: var(--s-1.5);
+  }
+  .site-footer__sep {
+    display: none;
+  }
+}
+
+/* Mobile & AI Chat footer display rules:
+   1. AI Chat page (data-page="ai") never shows footer.
+   2. On mobile screens (<1024px), hide footer on all pages EXCEPT home page (glossary).
+   3. On home page on mobile, add bottom tabbar clearance so footer is shown full without half-cuts.
+*/
+body[data-page="ai"] .site-footer,
+body[data-page="ai"] #footer-mount {
+  display: none !important;
+}
+
+@media (max-width: 1023px) {
+  body:not([data-page="glossary"]) .site-footer,
+  body:not([data-page="glossary"]) #footer-mount {
+    display: none !important;
+  }
+
+  body[data-page="glossary"] .site-footer {
+    padding-bottom: calc(var(--s-6) + 76px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 
 /* "More" sheet — driven by src/shell.js. */
 .sheet-overlay {
@@ -2004,20 +2145,24 @@ body.sheet-open { overflow: hidden; }
   .tabbar { display: none; }
   .tabbar-spacer { height: 0; }
 
-  /* The siderail itself */
+  /* Body gets left padding to clear the fixed siderail */
+  body {
+    padding-left: 256px;
+  }
+
+  /* The siderail — fixed left column */
   .siderail {
     display: flex;
     flex-direction: column;
-    position: sticky;
-    top: var(--s-6);
-    align-self: start;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
     width: 240px;
-    min-height: calc(100vh - var(--s-12));
-    max-height: calc(100vh - var(--s-12));
+    z-index: 40;
     background: color-mix(in oklch, var(--surface) 96%, var(--accent-soft) 60%);
-    border: 1px solid var(--border);
-    border-radius: var(--r-xl);
-    box-shadow: var(--shadow-2);
+    border-right: 1px solid var(--border);
+    box-shadow: 4px 0 24px oklch(24% 0.02 160 / 0.06);
     overflow: hidden;
     padding: 0;
   }
@@ -2207,13 +2352,6 @@ body.sheet-open { overflow: hidden; }
     to   { transform: scale(1);    opacity: 1; }
   }
 
-  /* Two-column reading/data pages can opt-in via .has-rail on a parent. */
-  .has-rail {
-    display: grid;
-    grid-template-columns: 220px minmax(0, 1fr);
-    gap: var(--s-8);
-    align-items: start;
-  }
 }
 
 /* Hover-capable (mouse) devices only — touch gets no transform feedback. */
