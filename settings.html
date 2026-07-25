@@ -434,7 +434,12 @@
           </div>
           <div>
             <label for="login-password">Password</label>
-            <input id="login-password" name="password" type="password" autocomplete="current-password" minlength="8" required />
+            <div class="input-group">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" minlength="8" required class="input" />
+              <button type="button" class="input-group__action" aria-label="Show Password" data-toggle-password="login-password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <button class="btn btn--solid" type="submit">Log In</button>
           <div id="login-message" class="settings-message"></div>
@@ -445,11 +450,16 @@
         <div class="settings-form">
           <div>
             <label for="signup-email">Email</label>
-            <input id="signup-email" name="email" type="email" autocomplete="email" required />
+            <input id="signup-email" name="email" type="email" autocomplete="email" required class="input" />
           </div>
           <div>
             <label for="signup-password">Password</label>
-            <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required />
+            <div class="input-group">
+              <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required class="input" />
+              <button type="button" class="input-group__action" aria-label="Show Password" data-toggle-password="signup-password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <button class="btn btn--solid" type="submit">Create Account</button>
           <div id="signup-message" class="settings-message"></div>
