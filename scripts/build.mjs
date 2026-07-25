@@ -12,6 +12,7 @@ const assets = [
   'index.html',
   'analyzer.html',
   'guides.html',
+  'chat.html',
   'market.html',
   'stock.html',
   'portfolio.html',

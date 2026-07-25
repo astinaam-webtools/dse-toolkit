@@ -413,11 +413,12 @@
         <label for="drawer-toggle" class="topbar-menu" aria-label="Threads">&#9776;</label>
         <span class="topbar-title">AI Chat</span>
         <div class="chat-controls">
-          <select id="chat-model-select" aria-label="Model"></select>
+          <div id="chat-model-picker-mount" style="flex: 1; max-width: 280px; min-width: 140px;"></div>
           <button id="chat-clear-thread" class="btn-mini" type="button">Clear</button>
           <button id="chat-delete-thread" class="btn-mini btn-danger" type="button">Del</button>
         </div>
       </div>
+      <div id="chat-model-detail-mount" style="padding: 0 0.5rem;"></div>
       <div id="chat-feed" class="chat-feed"></div>
       <form id="chat-composer" class="composer" autocomplete="off">
         <div class="composer-options">

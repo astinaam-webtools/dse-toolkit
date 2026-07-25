@@ -70,17 +70,61 @@ npm start
 - `GET /api/ai/copilot-sdk/test/user`
 - `GET /api/ai/copilot-sdk/test/models`
 - `POST /api/ai/copilot-sdk/test/chat`
-- `POST /api/ai/copilot-sdk/test/session/reset`
-- `GET /api/ai/copilot/test/health`
-- `GET /api/ai/copilot/test/models`
-- `POST /api/ai/copilot/test/chat`
+- `GET /api/ai/models?provider=openrouter|cursor-sdk`
+- `GET /api/ai/settings`
+- `PUT /api/ai/settings`
+- `POST /api/ai/chat` (supports SSE streaming)
+- `POST /api/ai/cursor-sdk/session/reset`
+- `GET /api/ai/cursor-sdk/test/health`
+- `GET /api/ai/cursor-sdk/test/models`
+- `POST /api/ai/cursor-sdk/test/prompt`
+- `POST /api/ai/cursor-sdk/test/chat`
+- `POST /api/ai/cursor-sdk/test/session/reset`
 
 Portfolio and AI endpoints require `Authorization: Bearer <token>`.
 
 AI notes:
-- Initial provider support is `openrouter` only.
-- Save OpenRouter key via `PUT /api/ai/settings` before calling `POST /api/ai/chat`.
+- Providers supported: `openrouter` and `cursor-sdk`.
+- Cursor SDK runs local sandboxed agents per user session under `CURSOR_WORKSPACE_ROOT`.
+- SSE streaming is supported on `POST /api/ai/chat` for both providers.
 - Copilot test endpoints call GitHub Models APIs directly using server env credentials.
+
+## Cursor SDK test API examples
+
+```bash
+# 1) Health
+curl -s -H "Authorization: Bearer $JWT" \
+  http://127.0.0.1:3001/api/ai/cursor-sdk/test/health
+
+# 2) Models list
+curl -s -H "Authorization: Bearer $JWT" \
+  "http://127.0.0.1:3001/api/ai/models?provider=cursor-sdk"
+
+# 3) Test Prompt
+curl -s -X POST -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3001/api/ai/cursor-sdk/test/prompt \
+  -d '{"model":"composer-2.5","prompt":"Reply with exactly: cursor-sdk-ok"}'
+
+# 4) Streaming SSE Chat
+curl -s -N -X POST -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
+  http://127.0.0.1:3001/api/ai/chat \
+  -d '{
+    "provider":"cursor-sdk",
+    "model":"composer-2.5",
+    "stream":true,
+    "messages":[{"role":"user","content":"In one sentence, what is PE ratio?"}],
+    "cursor":{"sessionId":"smoke-thread-1"}
+  }'
+
+# 5) Reset Session
+curl -s -X POST -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3001/api/ai/cursor-sdk/session/reset \
+  -d '{"sessionId":"smoke-thread-1"}'
+```
 
 ## Copilot SDK OAuth flow (backend-only test)
 

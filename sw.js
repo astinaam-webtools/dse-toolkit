@@ -1,5 +1,5 @@
-const CACHE_NAME = 'stock-glossary-v40';
-const RUNTIME_CACHE = 'runtime-stock-glossary-v40';
+const CACHE_NAME = 'stock-glossary-v41';
+const RUNTIME_CACHE = 'runtime-stock-glossary-v41';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -39,6 +39,8 @@ const PRECACHE_URLS = [
   './src/lib/chatStore.js',
   './src/lib/portfolioStore.js',
   './src/lib/fundsStore.js',
+  './src/lib/modelPicker.js',
+  './src/lib/modelNormalize.js',
   'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
