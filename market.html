@@ -21,36 +21,47 @@
 
     /* Header */
     .lens-header {
-      background: var(--card);
-      padding: 1rem;
+      background: var(--surface);
+      padding: var(--s-3) var(--s-4);
       position: sticky;
       top: 0;
       z-index: 100;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
       border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
+      box-shadow: var(--shadow-1);
     }
 
-    .header-top {
+    .topbar-main {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1rem;
+      gap: var(--s-2);
+      width: 100%;
     }
 
-    .home-link {
-      text-decoration: none;
-      font-weight: 600;
+    .topbar-title {
+      font-family: var(--font-display);
+      font-size: var(--fs-lg);
+      font-weight: 700;
       color: var(--text);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      margin: 0;
+      line-height: var(--lh-tight);
     }
 
     .market-status {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      font-size: 0.875rem;
-      color: var(--muted);
+      gap: var(--s-1);
+      padding: var(--s-1) var(--s-3);
+      background: var(--surface-sunk);
+      border: 1px solid var(--border);
+      border-radius: var(--r-pill);
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      color: var(--text-muted);
+      white-space: nowrap;
     }
 
     .status-dot {
@@ -59,7 +70,6 @@
       height: 8px;
       border-radius: 50%;
       background-color: var(--neutral);
-      margin-right: 6px;
     }
     .status-dot.open { background-color: var(--up); }
     .status-dot.closed { background-color: var(--down); }
@@ -67,66 +77,98 @@
     /* Search */
     .search-bar {
       position: relative;
+      width: 100%;
     }
+
+    .search-icon {
+      position: absolute;
+      left: var(--s-3);
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-faint);
+      pointer-events: none;
+    }
+
     .search-bar input {
       width: 100%;
-      padding: 12px 16px;
+      min-height: 44px;
+      padding: 0 var(--s-4) 0 calc(var(--s-3) + 24px);
       border: 1px solid var(--border);
-      border-radius: 12px;
-      font-size: 1rem;
-      background: var(--bg);
-      color: var(--text); /* Ensure text is visible */
+      border-radius: var(--r-sm);
+      font-family: var(--font-body);
+      font-size: var(--fs-sm);
+      background: var(--surface-sunk);
+      color: var(--text);
+      transition: border-color var(--dur-1) var(--ease-out), box-shadow var(--dur-1) var(--ease-out);
+    }
+
+    .search-bar input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
     .market-tools {
-      margin-top: 0.9rem;
+      margin-top: var(--s-3);
       display: grid;
-      gap: 0.65rem;
+      gap: var(--s-2);
     }
 
     .quick-filters {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.45rem;
-    }
-
-    .quick-filter-btn.active {
-      background: var(--text);
-      color: var(--bg);
-      border-color: transparent;
+      gap: var(--s-2);
     }
 
     .market-result-line {
       margin: 0;
-      color: var(--muted);
-      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-size: var(--fs-xs);
       font-weight: 500;
     }
 
     /* Segmented Control Tabs */
     .tabs {
-      display: inline-flex;
-      gap: 0.25rem;
-      padding: 0.25rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--s-1);
+      padding: var(--s-1);
       margin: var(--s-3) var(--s-4) 0;
       background: var(--surface-2);
       border-radius: var(--r-pill);
       border: 1px solid var(--border);
     }
 
+    @media (min-width: 768px) {
+      .tabs {
+        display: inline-flex;
+        width: auto;
+        min-width: 360px;
+        margin: var(--s-4) auto 0;
+      }
+      .tab-btn {
+        flex: 1;
+      }
+    }
+
     .tab-btn {
-      padding: 0.5rem 1rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: var(--s-2) var(--s-4);
       border-radius: var(--r-pill);
       background: transparent;
       color: var(--text-muted);
+      font-family: var(--font-body);
       font-weight: 600;
       font-size: var(--fs-sm);
       white-space: nowrap;
       border: none;
       cursor: pointer;
-      min-height: 44px;
-      transition: background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
+      min-height: 40px;
+      transition: background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out), box-shadow var(--dur-2) var(--ease-out);
     }
+
     .tab-btn.active {
       background: var(--surface);
       color: var(--text);
@@ -136,23 +178,37 @@
     /* Views */
     .view-section {
       display: none;
-      padding: 1rem;
-      animation: fadeIn 0.3s ease;
+      padding: var(--s-4);
     }
     .view-section.active {
       display: block;
     }
 
+    @media (prefers-reduced-motion: no-preference) {
+      .view-section.active {
+        animation: fadeIn var(--dur-2) var(--ease-out);
+      }
+    }
+
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(5px); }
+      from { opacity: 0; transform: translateY(4px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     /* Bucket Cards */
     .bucket-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-      gap: 1rem;
+      grid-template-columns: 1fr;
+      gap: var(--s-4);
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 768px) {
+      .bucket-grid {
+        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+        gap: var(--s-5);
+      }
     }
 
     .bucket-card {
@@ -161,112 +217,226 @@
       padding: var(--s-5);
       box-shadow: var(--shadow-1);
       border: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-3);
     }
+
     .bucket-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.5rem;
+      gap: var(--s-2);
     }
+
     .bucket-title-group {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: var(--s-2);
     }
+
     .bucket-title {
+      font-family: var(--font-display);
       font-weight: 700;
-      font-size: 1.1rem;
+      font-size: var(--fs-md);
       color: var(--text);
     }
-    .info-icon {
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 0.9rem;
-    }
+
     .bucket-count {
-      background: var(--bg);
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.75rem;
-      font-weight: 600;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 2px 10px;
+      border-radius: var(--r-pill);
+      font-size: var(--fs-xs);
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
     }
 
     .bucket-description {
-      font-size: 0.85rem;
-      color: var(--muted);
-      margin: 0 0 0.75rem;
+      font-size: var(--fs-sm);
+      color: var(--text-muted);
+      margin: 0;
+      line-height: var(--lh-snug);
     }
 
-    .bucket-meta {
-      margin: 0 0 0.4rem;
-      font-size: 0.76rem;
-      color: var(--muted);
+    .bucket-tags {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-1);
+    }
+
+    .bucket-tag {
+      display: flex;
+      align-items: center;
+      gap: var(--s-2);
+      font-size: var(--fs-xs);
+      background: var(--surface-sunk);
+      padding: var(--s-1) var(--s-2);
+      border-radius: var(--r-sm);
+      border: 1px solid var(--border);
+    }
+
+    .bucket-tag-label {
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      font-size: 0.7rem;
+    }
+
+    .bucket-tag-value {
+      color: var(--text);
+      font-family: var(--font-mono);
+    }
+
+    .stock-list {
+      display: flex;
+      flex-direction: column;
+      gap: var(--s-1);
     }
 
     .stock-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.75rem 0;
+      padding: var(--s-2) var(--s-3);
+      border-radius: var(--r-sm);
       border-bottom: 1px solid var(--border);
       cursor: pointer;
+      min-height: 44px;
+      transition: background var(--dur-1) var(--ease-out);
     }
-    .stock-row:last-child { border-bottom: none; }
 
-    .stock-info h4 { margin: 0; font-size: 0.95rem; }
-    .stock-info p { margin: 0; font-size: 0.75rem; color: var(--muted); }
-    
-    .stock-metrics { text-align: right; }
-    .price { font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
-    .change { font-size: 0.75rem; font-weight: 500; }
-    .change.up { color: var(--up); }
-    .change.down { color: var(--down); }
+    .stock-row:last-child {
+      border-bottom: none;
+    }
 
-    /* Screener Table */
+    .stock-row:hover {
+      background: var(--surface-2);
+    }
+
+    .stock-row:active {
+      transform: scale(0.99);
+    }
+
+    .stock-info h4 {
+      margin: 0;
+      font-size: var(--fs-sm);
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .stock-info p {
+      margin: var(--s-1) 0 0;
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stock-metrics {
+      text-align: right;
+    }
+
+    .price {
+      font-weight: 700;
+      font-size: var(--fs-sm);
+      display: block;
+      color: var(--text);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .change {
+      font-size: var(--fs-xs);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .change.neutral { color: var(--text-muted); }
+
+    /* Screener Table & Toolbar */
+    .screener-table-container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
     .screener-table {
       width: 100%;
       border-collapse: collapse;
-      background: var(--card);
-      border-radius: 12px;
+      background: var(--surface);
+      border-radius: var(--r-md);
       overflow: hidden;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-1);
     }
+
     .screener-table th {
       text-align: left;
-      padding: 12px;
-      background: var(--bg);
-      font-size: 0.75rem;
-      color: var(--muted);
-      font-weight: 600;
-      position: sticky;
-      top: 0;
-    }
-    .screener-table td {
-      padding: 12px;
+      padding: var(--s-3);
+      background: var(--surface-2);
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
       border-bottom: 1px solid var(--border);
-      font-size: 0.875rem;
+    }
+
+    .screener-table td {
+      padding: var(--s-3);
+      border-bottom: 1px solid var(--border);
+      font-size: var(--fs-sm);
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    .screener-table tbody tr {
+      cursor: pointer;
+      transition: background var(--dur-1) var(--ease-out);
+    }
+
+    .screener-table tbody tr:hover {
+      background: var(--surface-2);
+    }
+
+    .screener-table tbody tr:last-child td {
+      border-bottom: none;
     }
 
     .screener-toolbar {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      gap: 0.5rem;
-      margin-bottom: 0.6rem;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: var(--s-2);
+      margin-bottom: var(--s-3);
     }
 
     .screener-toolbar label {
-      font-size: 0.78rem;
-      color: var(--muted);
+      font-size: var(--fs-xs);
+      color: var(--text-muted);
       font-weight: 600;
+      white-space: nowrap;
     }
 
     .screener-toolbar select {
-      border: 1px solid var(--border);
-      background: var(--card);
+      width: auto;
+      min-width: 180px;
+      max-width: 260px;
+      min-height: 38px;
+      padding: var(--s-1) var(--s-3);
+      border-radius: var(--r-sm);
+      background: var(--surface-sunk);
       color: var(--text);
-      border-radius: 8px;
-      padding: 0.35rem 0.55rem;
-      font-size: 0.8rem;
+      font-size: var(--fs-sm);
+      font-family: var(--font-body);
+      border: 1px solid var(--border);
+      transition: border-color var(--dur-1) var(--ease-out);
+    }
+
+    .screener-toolbar select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
     }
     
     /* Sparkline SVG */
@@ -278,12 +448,11 @@
     .sparkline.up { stroke: var(--up); }
     .sparkline.down { stroke: var(--down); }
 
-    /* Modal */
     /* Modal metric cards */
     .modal-metric-card {
-      background: var(--bg);
-      padding: 10px;
-      border-radius: 8px;
+      background: var(--surface-sunk);
+      padding: var(--s-3);
+      border-radius: var(--r-sm);
       border: 1px solid var(--border);
     }
 
@@ -454,25 +623,17 @@
   <div class="safe-top-spacer"></div>
 
   <header class="topbar lens-header">
-    <div class="header-top">
-      <a href="./index.html" class="home-link">
-        <span>← Home</span>
-      </a>
-      <div class="header-actions">
-        <a href="./portfolio.html" class="btn btn--ghost btn--sm">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
-          Portfolio
-        </a>
-        <div class="market-status">
-          <span class="status-dot closed" id="market-status-dot"></span>
-          <span id="market-date">Loading...</span>
-        </div>
+    <div class="topbar-main">
+      <h1 class="topbar-title">Market Lens</h1>
+      <div class="market-status">
+        <span class="status-dot closed" id="market-status-dot"></span>
+        <span id="market-date">Loading...</span>
       </div>
-      <a href="./settings.html" class="btn btn--ghost btn--sm">Settings</a>
     </div>
     
     <div class="search-bar">
-      <input type="text" id="stock-search" placeholder="Search Symbol, Sector..." />
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" id="stock-search" placeholder="Search symbol, sector, or keyword..." aria-label="Search stocks" />
     </div>
   </header>
 
@@ -496,40 +657,46 @@
 
     <!-- View: Screener -->
     <section id="view-screener" class="view-section">
-      <div class="market-tools">
-        <div class="quick-filters" id="quick-filters" aria-label="Quick market filters">
-          <button class="chip" type="button" data-quick-filter="gainers">Top Gainers</button>
-          <button class="chip" type="button" data-quick-filter="losers">Top Losers</button>
-          <button class="chip" type="button" data-quick-filter="volume">High Volume</button>
-          <button class="chip" type="button" data-quick-filter="value">Value Picks</button>
-          <button class="chip" type="button" data-quick-filter="clear">Clear</button>
+      <div class="screener-table-container">
+        <div class="market-tools">
+          <div class="quick-filters" id="quick-filters" aria-label="Quick market filters">
+            <button class="chip" type="button" data-quick-filter="gainers">Top Gainers</button>
+            <button class="chip" type="button" data-quick-filter="losers">Top Losers</button>
+            <button class="chip" type="button" data-quick-filter="volume">High Volume</button>
+            <button class="chip" type="button" data-quick-filter="value">Value Picks</button>
+            <button class="chip" type="button" data-quick-filter="clear">Clear</button>
+          </div>
         </div>
-        <p id="market-result-line" class="market-result-line">Showing full market snapshot.</p>
-      </div>
-      <div class="screener-toolbar">
-        <label for="screener-sort">Sort by</label>
-        <select id="screener-sort">
-          <option value="change-desc">Change % (High to Low)</option>
-          <option value="change-asc">Change % (Low to High)</option>
-          <option value="volume-desc">Volume (High to Low)</option>
-          <option value="pe-asc">P/E (Low to High)</option>
-          <option value="symbol-asc">Symbol (A to Z)</option>
-        </select>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="screener-table">
-          <thead>
-            <tr>
-              <th>Symbol</th>
-              <th class="u-text-right">Price</th>
-              <th class="u-text-right">Chg%</th>
-              <th class="u-text-center">Trend</th>
-            </tr>
-          </thead>
-          <tbody id="screener-body">
-            <!-- Rows injected here -->
-          </tbody>
-        </table>
+
+        <div class="screener-toolbar">
+          <p id="market-result-line" class="market-result-line">Showing full market snapshot.</p>
+          <div class="screener-sort-group" style="display:flex; align-items:center; gap:var(--s-2);">
+            <label for="screener-sort">Sort by</label>
+            <select id="screener-sort">
+              <option value="change-desc">Change % (High to Low)</option>
+              <option value="change-asc">Change % (Low to High)</option>
+              <option value="volume-desc">Volume (High to Low)</option>
+              <option value="pe-asc">P/E (Low to High)</option>
+              <option value="symbol-asc">Symbol (A to Z)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="screener-table">
+            <thead>
+              <tr>
+                <th>Symbol</th>
+                <th class="u-text-right">Price</th>
+                <th class="u-text-right">Chg%</th>
+                <th class="u-text-center">Trend</th>
+              </tr>
+            </thead>
+            <tbody id="screener-body">
+              <!-- Rows injected here -->
+            </tbody>
+          </table>
+        </div>
       </div>
     </section>
 

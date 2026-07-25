@@ -301,12 +301,20 @@ const renderBuckets = (stocks) => {
         <span class="bucket-count">${b.matches.length}</span>
       </div>
       <p class="bucket-description">${b.description}</p>
-      <p class="bucket-meta"><strong>Criteria:</strong> ${b.criteria}</p>
-      <p class="bucket-meta"><strong>Formula:</strong> ${b.formula}</p>
+      <div class="bucket-tags">
+        <div class="bucket-tag">
+          <span class="bucket-tag-label">Criteria</span>
+          <span class="bucket-tag-value">${b.criteria}</span>
+        </div>
+        <div class="bucket-tag">
+          <span class="bucket-tag-label">Formula</span>
+          <span class="bucket-tag-value">${b.formula}</span>
+        </div>
+      </div>
       <div class="stock-list">
         ${b.matches.slice(0, 5).map(stock => renderStockRow(stock)).join('')}
       </div>
-      ${b.matches.length > 5 ? `<button class="btn-more" onclick="window.filterScreenerByBucket('${b.id}')">See all ${b.matches.length}</button>` : ''}
+      ${b.matches.length > 5 ? `<button class="btn btn--ghost btn--sm btn-more" onclick="window.filterScreenerByBucket('${b.id}')">See all ${b.matches.length} stocks →</button>` : ''}
     </article>
   `).join('');
   
@@ -339,25 +347,32 @@ const renderScreener = (stocks) => {
   const sortedStocks = sortScreenerStocks(stocks);
   const displayStocks = sortedStocks.slice(0, 100);
   
-  els.screenerBody.innerHTML = displayStocks.map(stock => `
-    <tr onclick="window.openStock('${stock.symbol}')">
-      <td>
-        <div style="font-weight:600">${stock.symbol}</div>
-        <div style="font-size:0.75rem; color:#888">${stock.sector}</div>
-      </td>
-      <td style="text-align:right">
-        <span class="price">${stock.metrics.ltp}</span>
-      </td>
-      <td style="text-align:right">
-        <span class="change ${stock.deltas.price_1d >= 0 ? 'up' : 'down'}">
-          ${stock.deltas.price_1d ? (stock.deltas.price_1d > 0 ? '+' : '') + stock.deltas.price_1d.toFixed(2) + '%' : '-'}
-        </span>
-      </td>
-      <td style="text-align:center">
-        ${renderSparkline(stock.sparkline, stock.deltas.price_1d >= 0)}
-      </td>
-    </tr>
-  `).join('');
+  els.screenerBody.innerHTML = displayStocks.map(stock => {
+    const changeVal = stock.deltas?.price_1d;
+    const hasChange = changeVal !== undefined && changeVal !== null && !isNaN(changeVal);
+    const changeClass = hasChange ? (changeVal > 0 ? 'up' : (changeVal < 0 ? 'down' : 'neutral')) : 'neutral';
+    const changeText = hasChange ? (changeVal > 0 ? '+' : '') + changeVal.toFixed(2) + '%' : '0.00%';
+
+    return `
+      <tr onclick="window.openStock('${stock.symbol}')" role="button" tabindex="0" aria-label="View ${stock.symbol} details">
+        <td>
+          <div style="font-weight:700; color:var(--text);">${stock.symbol}</div>
+          <div style="font-size:var(--fs-xs); color:var(--text-muted);">${stock.sector}</div>
+        </td>
+        <td class="u-text-right">
+          <span class="price">${stock.metrics.ltp}</span>
+        </td>
+        <td class="u-text-right">
+          <span class="change ${changeClass}">
+            ${changeText}
+          </span>
+        </td>
+        <td class="u-text-center">
+          ${renderSparkline(stock.sparkline, changeVal >= 0)}
+        </td>
+      </tr>
+    `;
+  }).join('');
 };
 
 const renderHeatmap = (stocks) => {
@@ -434,7 +449,7 @@ window.filterBySector = (sectorName) => {
 };
 
 const renderStockRow = (stock) => `
-  <div class="stock-row" onclick="window.openStock('${stock.symbol}')">
+  <div class="stock-row" onclick="window.openStock('${stock.symbol}')" role="button" tabindex="0" aria-label="View ${stock.symbol} details">
     <div class="stock-info">
       <h4>${stock.symbol}</h4>
       <p>${stock.metrics.pe ? 'PE ' + stock.metrics.pe : 'N/A'}</p>
@@ -442,7 +457,7 @@ const renderStockRow = (stock) => `
     <div class="stock-metrics">
       <span class="price">${stock.metrics.ltp}</span>
       <span class="change ${stock.deltas.price_1d >= 0 ? 'up' : 'down'}">
-        ${stock.deltas.price_1d ? stock.deltas.price_1d.toFixed(1) + '%' : ''}
+        ${stock.deltas.price_1d !== undefined ? (stock.deltas.price_1d >= 0 ? '+' : '') + stock.deltas.price_1d.toFixed(1) + '%' : ''}
       </span>
     </div>
   </div>
@@ -484,52 +499,56 @@ window.openStock = (symbol) => {
   if (!stock) return;
 
   const m = stock.metrics;
-  
+  const changeVal = stock.deltas?.price_1d;
+  const hasChange = changeVal !== undefined && changeVal !== null && !isNaN(changeVal);
+  const changeClass = hasChange ? (changeVal > 0 ? 'up' : (changeVal < 0 ? 'down' : 'neutral')) : 'neutral';
+  const changeText = hasChange ? (changeVal > 0 ? '+' : '') + changeVal.toFixed(2) + '%' : '0.00%';
+
   els.modalBody.innerHTML = `
-    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:1rem;">
+    <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:var(--s-4);">
       <div>
-        <h2 style="margin:0; color:var(--text);">${stock.symbol}</h2>
-        <p style="margin:0; color:var(--muted); font-size:0.9rem;">${stock.name}</p>
-        <span style="background:rgba(148,163,184,0.2); padding:2px 6px; border-radius:4px; font-size:0.75rem; color:var(--text);">${stock.sector}</span>
+        <h2 style="margin:0; color:var(--text); font-family:var(--font-display); font-size:var(--fs-lg);">${stock.symbol}</h2>
+        <p style="margin:var(--s-1) 0; color:var(--text-muted); font-size:var(--fs-sm);">${stock.name || ''}</p>
+        <span class="bucket-count">${stock.sector}</span>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:1.5rem; font-weight:700; color:var(--text);">${m.ltp}</div>
-        <div style="color:${stock.deltas.price_1d >= 0 ? '#10b981' : '#ef4444'}">
-          ${stock.deltas.price_1d ? stock.deltas.price_1d.toFixed(2) + '%' : ''}
+        <div style="font-size:var(--fs-xl); font-weight:700; color:var(--text); font-variant-numeric:tabular-nums;">${m.ltp}</div>
+        <div class="change ${changeClass}" style="font-size:var(--fs-sm); font-weight:600;">
+          ${changeText}
         </div>
       </div>
     </div>
 
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1.5rem;">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--s-3); margin-bottom:var(--s-5);">
       <div class="modal-metric-card">
-        <div style="font-size:0.75rem; color:var(--muted);">PE Ratio</div>
-        <div style="font-weight:600; color:var(--text);">${m.pe || '-'}</div>
+        <div style="font-size:var(--fs-xs); color:var(--text-muted); font-weight:600;">PE Ratio</div>
+        <div style="font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin-top:4px;">${m.pe || '-'}</div>
       </div>
       <div class="modal-metric-card">
-        <div style="font-size:0.75rem; color:var(--muted);">RSI (14)</div>
-        <div style="font-weight:600; color:var(--text);">${m.rsi ? m.rsi.toFixed(1) : '-'}</div>
+        <div style="font-size:var(--fs-xs); color:var(--text-muted); font-weight:600;">RSI (14)</div>
+        <div style="font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin-top:4px;">${m.rsi ? m.rsi.toFixed(1) : '-'}</div>
       </div>
       <div class="modal-metric-card">
-        <div style="font-size:0.75rem; color:var(--muted);">NAV</div>
-        <div style="font-weight:600; color:var(--text);">${m.nav || '-'}</div>
+        <div style="font-size:var(--fs-xs); color:var(--text-muted); font-weight:600;">NAV</div>
+        <div style="font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin-top:4px;">${m.nav || '-'}</div>
       </div>
       <div class="modal-metric-card">
-        <div style="font-size:0.75rem; color:var(--muted);">Dividend Yield</div>
-        <div style="font-weight:600; color:var(--text);">${m.dividendYield ? m.dividendYield + '%' : '-'}</div>
+        <div style="font-size:var(--fs-xs); color:var(--text-muted); font-weight:600;">Dividend Yield</div>
+        <div style="font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin-top:4px;">${m.dividendYield ? m.dividendYield + '%' : '-'}</div>
       </div>
     </div>
     
-    <a href="./stock.html?symbol=${stock.symbol}" class="btn-more" style="display:block; text-align:center; text-decoration:none; margin-bottom:1rem;">
-      View Full Details →
+    <a href="./stock.html?symbol=${stock.symbol}" class="btn btn--primary" style="display:inline-flex; width:100%; justify-content:center; text-decoration:none; margin-bottom:var(--s-3);">
+      View Full Stock Details →
     </a>
 
-    <button class="btn-ai" id="btn-analyze" onclick="window.analyzeStock('${stock.symbol}')">
+    <button class="btn btn--ghost" id="btn-analyze" style="width:100%;" onclick="window.analyzeStock('${stock.symbol}')">
       ✨ Analyze with AI
     </button>
     <div id="ai-output" class="ai-result" style="display:none;"></div>
   `;
   
-  els.modal.classList.add('open');
+  els.modal.setAttribute('open', '');
 };
 
 const requestAiCompletion = async ({ aiSettings, messages, onDelta = null }) => {
