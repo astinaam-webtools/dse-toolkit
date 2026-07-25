@@ -1,4 +1,7 @@
 
+import { getAiSettings } from './lib/appSettings.js';
+import { requestServerAiChat, resetCursorSession } from './lib/serverClient.js';
+
 // State
 let marketData = null;
 
@@ -192,13 +195,27 @@ const renderChart = (data, isUp) => {
   `;
 };
 
-const requestAiCompletion = async ({ aiSettings, messages }) => {
+const requestAiCompletion = async ({ aiSettings, messages, onDelta = null }) => {
   if (aiSettings.mode === 'server') {
-    const response = await requestServerAiChat({
-      messages,
-      model: aiSettings.localOpenRouterModel
-    });
-    return response?.message || '';
+    const provider = aiSettings.serverAiProvider || 'openrouter';
+    const ephemeralId = `ephemeral-${crypto.randomUUID()}`;
+    try {
+      const response = await requestServerAiChat({
+        provider,
+        messages,
+        model: aiSettings.serverPreferredModel,
+        modelParams: aiSettings.serverModelParams,
+        mode: aiSettings.serverModelMode,
+        cursor: provider === 'cursor-sdk' ? { sessionId: ephemeralId } : null,
+        stream: true,
+        onDelta
+      });
+      return response?.message || '';
+    } finally {
+      if (provider === 'cursor-sdk') {
+        resetCursorSession(ephemeralId);
+      }
+    }
   }
 
   const apiKey = aiSettings.localOpenRouterApiKey;

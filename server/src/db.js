@@ -47,7 +47,9 @@ async function initDb() {
       user_id INTEGER NOT NULL UNIQUE,
       provider TEXT NOT NULL,
       api_key TEXT NOT NULL,
+      cursor_api_key TEXT,
       model TEXT,
+      model_params TEXT,
       created_at TEXT NOT NULL,
       updated_at TEXT NOT NULL,
       FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -76,6 +78,22 @@ async function initDb() {
     CREATE INDEX IF NOT EXISTS idx_user_ai_settings_user_id ON user_ai_settings(user_id);
     CREATE INDEX IF NOT EXISTS idx_user_github_oauth_user_id ON user_github_oauth(user_id);
   `);
+
+  // Migration helper for existing databases
+  try {
+    const columns = await db.all(`PRAGMA table_info(user_ai_settings);`);
+    const hasCursorKey = columns.some((c) => c.name === 'cursor_api_key');
+    const hasModelParams = columns.some((c) => c.name === 'model_params');
+
+    if (!hasCursorKey) {
+      await db.exec(`ALTER TABLE user_ai_settings ADD COLUMN cursor_api_key TEXT;`);
+    }
+    if (!hasModelParams) {
+      await db.exec(`ALTER TABLE user_ai_settings ADD COLUMN model_params TEXT;`);
+    }
+  } catch (err) {
+    console.warn('DB Migration warning:', err.message);
+  }
 
   return db;
 }

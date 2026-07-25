@@ -55,3 +55,7 @@ assets/finalized
 # Worktrees
 .worktrees/
 
+# Cursor workspace data
+data/cursor-workspaces/
+
+

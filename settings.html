@@ -245,8 +245,8 @@
 
     <section class="settings-grid">
       <article class="settings-card">
-        <h2>AI Analyst</h2>
-        <p>Choose where AI analysis runs. Client mode calls OpenRouter from this browser. Server mode uses your connected server account and server-side OpenRouter key.</p>
+        <h2>AI Analyst Provider & Model</h2>
+        <p>Choose where AI analysis runs. Client mode calls OpenRouter directly from this browser. Server mode uses your connected server account with OpenRouter or Cursor SDK.</p>
 
         <div class="mode-toggle">
           <label>
@@ -259,27 +259,59 @@
           </label>
         </div>
 
+        <!-- Client Mode Form -->
         <div id="ai-client-settings" class="settings-form" style="margin-top: 1rem;">
           <div>
             <label for="ai-local-api-key">OpenRouter API Key</label>
             <input id="ai-local-api-key" type="password" placeholder="sk-or-..." autocomplete="off" />
           </div>
           <div>
-            <label for="ai-model">Preferred Model</label>
-            <input id="ai-model" type="text" placeholder="openai/gpt-oss-20b:free" />
-            <p class="muted-note">Required for client-only AI mode.</p>
+            <label>Preferred Model</label>
+            <div id="ai-client-model-picker-mount"></div>
+            <div id="ai-client-model-detail-mount"></div>
           </div>
           <div class="settings-actions">
-            <button id="save-ai-local" class="btn btn--solid" type="button">Save Client AI Settings</button>
+            <button id="save-ai-local" class="btn btn--primary" type="button">Save Client AI Settings</button>
           </div>
         </div>
 
+        <!-- Server Mode Form -->
         <div id="ai-server-settings" class="settings-form" style="margin-top: 1rem;" hidden>
-          <p class="muted-note" style="margin: 0;">Server AI credentials and model are managed by your backend. No client-side setup is required here.</p>
-          <p id="ai-server-state" class="ai-mode-note"></p>
+          <div>
+            <label>Server AI Provider</label>
+            <div class="mode-toggle" style="margin-top: 0.2rem;">
+              <label>
+                <input id="ai-provider-openrouter" name="ai-server-provider" type="radio" value="openrouter" checked />
+                OpenRouter
+              </label>
+              <label>
+                <input id="ai-provider-cursor" name="ai-server-provider" type="radio" value="cursor-sdk" />
+                Cursor SDK (Local Agent Sandbox)
+              </label>
+            </div>
+          </div>
+
+          <div id="ai-cursor-key-wrap" hidden>
+            <label for="ai-server-cursor-key">Per-User Cursor API Key (Optional)</label>
+            <input id="ai-server-cursor-key" type="password" placeholder="cursor_..." autocomplete="off" />
+            <p class="muted-note">If left blank, the server-configured environment key is used.</p>
+          </div>
+
+          <div id="ai-server-status-info" class="muted-note" style="margin-top: 0.5rem;"></div>
+
+          <div>
+            <label>Server Preferred Model & Parameters</label>
+            <div id="ai-server-model-picker-mount"></div>
+            <div id="ai-server-model-detail-mount"></div>
+          </div>
+
+          <div class="settings-actions">
+            <button id="save-ai-server" class="btn btn--primary" type="button">Save Server AI Settings</button>
+          </div>
         </div>
 
         <div id="ai-message" class="settings-message"></div>
+      </article>
       <article class="settings-card">
         <h2>Price Display Colors</h2>
         <p>Choose your preferred color convention for market price increases and decreases.</p>

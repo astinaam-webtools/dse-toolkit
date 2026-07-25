@@ -32,7 +32,7 @@ export const createOpenRouterClient = ({ apiKey } = {}) => {
     throw new Error('OpenRouter API key is not configured on the server.');
   }
 
-  const completeChat = async ({ model, messages }) => {
+  const completeChat = async ({ model, messages, stream = false, onDelta = null }) => {
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new Error('At least one chat message is required.');
     }
@@ -41,7 +41,8 @@ export const createOpenRouterClient = ({ apiKey } = {}) => {
     const startedAt = Date.now();
     const requestPayload = {
       model: selectedModel,
-      messages
+      messages,
+      ...(stream ? { stream: true } : {})
     };
 
     await logOpenRouterEvent('request', {
@@ -75,19 +76,85 @@ export const createOpenRouterClient = ({ apiKey } = {}) => {
       throw error;
     }
 
+    if (!response.ok) {
+      const responseText = await response.text();
+      let data = null;
+      try { data = JSON.parse(responseText); } catch (_) {}
+      await logOpenRouterEvent('api_error', {
+        provider: 'openrouter',
+        model: selectedModel,
+        messageCount: messages.length,
+        latencyMs: Date.now() - startedAt,
+        status: response.status,
+        statusText: response.statusText,
+        responseBody: data || responseText
+      });
+      const message = resolveOpenRouterErrorMessage({
+        data,
+        responseText,
+        status: response.status
+      });
+      throw new Error(message);
+    }
+
+    if (stream && response.body) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
+      let fullMessage = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith(':')) continue;
+          if (trimmed === 'data: [DONE]') continue;
+          if (trimmed.startsWith('data: ')) {
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              const deltaContent = json.choices?.[0]?.delta?.content || '';
+              if (deltaContent) {
+                fullMessage += deltaContent;
+                if (typeof onDelta === 'function') {
+                  onDelta(deltaContent);
+                }
+              }
+            } catch (_) {}
+          }
+        }
+      }
+
+      const latencyMs = Date.now() - startedAt;
+      await logOpenRouterEvent('response', {
+        provider: 'openrouter',
+        model: selectedModel,
+        messageCount: messages.length,
+        latencyMs,
+        status: response.status,
+        statusText: response.statusText,
+        responseBody: '[Streamed response completed]'
+      });
+
+      return {
+        model: selectedModel,
+        message: fullMessage,
+        raw: null,
+        latencyMs
+      };
+    }
+
     const responseText = await response.text();
     const data = (() => {
-      if (!responseText) {
-        return null;
-      }
-      try {
-        return JSON.parse(responseText);
-      } catch {
-        return null;
-      }
+      if (!responseText) return null;
+      try { return JSON.parse(responseText); } catch { return null; }
     })();
 
-    await logOpenRouterEvent(response.ok ? 'response' : 'api_error', {
+    await logOpenRouterEvent('response', {
       provider: 'openrouter',
       model: selectedModel,
       messageCount: messages.length,
@@ -96,15 +163,6 @@ export const createOpenRouterClient = ({ apiKey } = {}) => {
       statusText: response.statusText,
       responseBody: data || responseText
     });
-
-    if (!response.ok) {
-      const message = resolveOpenRouterErrorMessage({
-        data,
-        responseText,
-        status: response.status
-      });
-      throw new Error(message);
-    }
 
     return {
       model: data?.model || selectedModel,

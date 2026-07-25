@@ -3,6 +3,11 @@
   "build": {
     "builder": "NIXPACKS",
     "buildCommand": "npm --prefix server install --omit=dev",
+    "nixpacksPlan": {
+      "variables": {
+        "NIXPACKS_NODE_VERSION": "22.13.0"
+      }
+    },
     "watchPatterns": [
       "server/**"
     ]

@@ -26,7 +26,19 @@ export const config = {
   openRouterApiKey: process.env.OPENROUTER_API_KEY || '',
   openRouterLogPath: process.env.OPENROUTER_LOG_PATH
     ? path.resolve(process.cwd(), process.env.OPENROUTER_LOG_PATH)
-    : defaultOpenRouterLogPath
+    : defaultOpenRouterLogPath,
+  cursorApiKey: process.env.CURSOR_API_KEY || '',
+  cursorDefaultModel: process.env.CURSOR_DEFAULT_MODEL || 'composer-2.5',
+  cursorWorkspaceRoot: process.env.CURSOR_WORKSPACE_ROOT
+    ? path.resolve(process.cwd(), process.env.CURSOR_WORKSPACE_ROOT)
+    : path.resolve(process.cwd(), 'data', 'cursor-workspaces'),
+  cursorSdkLogLevel: process.env.CURSOR_SDK_LOG_LEVEL || 'info',
+  cursorChatTimeoutMs: Number.parseInt(process.env.CURSOR_CHAT_TIMEOUT_MS || '300000', 10),
+  cursorRequireSandbox: process.env.CURSOR_REQUIRE_SANDBOX !== 'false',
+  cursorAgentCacheMax: Number.parseInt(process.env.CURSOR_AGENT_CACHE_MAX || '50', 10),
+  cursorAgentCacheTtlMs: Number.parseInt(process.env.CURSOR_AGENT_CACHE_TTL_MS || '1800000', 10),
+  cursorMaxConcurrentPerUser: Number.parseInt(process.env.CURSOR_MAX_CONCURRENT_PER_USER || '2', 10),
+  cursorMaxRequestsPerUserHour: Number.parseInt(process.env.CURSOR_MAX_REQUESTS_PER_USER_HOUR || '30', 10)
 };
 
 export function assertConfig() {

@@ -109,12 +109,17 @@ const normalizeAiSettings = (ai) => {
   const mode = ai?.mode === 'server' ? 'server' : 'client';
   const serverModelMode = ai?.serverModelMode === 'manual' ? 'manual' : 'auto';
   const serverPreferredModel = ai?.serverPreferredModel ? String(ai.serverPreferredModel) : 'auto';
+  const serverAiProvider = ai?.serverAiProvider === 'cursor-sdk' ? 'cursor-sdk' : 'openrouter';
+  const serverModelParams = Array.isArray(ai?.serverModelParams) ? ai.serverModelParams : [];
+
   return {
     mode,
     localOpenRouterApiKey: ai?.localOpenRouterApiKey ? String(ai.localOpenRouterApiKey) : '',
     localOpenRouterModel: ai?.localOpenRouterModel ? String(ai.localOpenRouterModel) : '',
+    serverAiProvider,
     serverPreferredModel,
-    serverModelMode
+    serverModelMode,
+    serverModelParams
   };
 };
 

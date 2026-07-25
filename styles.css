@@ -2293,3 +2293,290 @@ body.sheet-open { overflow: hidden; }
   max-width: 40ch;
 }
 
+/* ==========================================
+   Model Picker & Model Detail System
+   ========================================== */
+
+.model-picker {
+  position: relative;
+  width: 100%;
+}
+
+.model-picker__input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.model-picker__input {
+  width: 100%;
+  min-height: 44px;
+  padding: var(--s-2) var(--s-8) var(--s-2) var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: 500 var(--fs-sm)/1.4 var(--font-body);
+  transition: border-color var(--dur-1), box-shadow var(--dur-1);
+}
+
+.model-picker__input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.model-picker__toggle-icon {
+  position: absolute;
+  right: var(--s-3);
+  pointer-events: none;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  transition: transform var(--dur-1);
+}
+
+.model-picker[aria-expanded="true"] .model-picker__toggle-icon {
+  transform: rotate(180deg);
+}
+
+.model-picker__list {
+  position: absolute;
+  top: calc(100% + var(--s-1));
+  left: 0;
+  right: 0;
+  z-index: 900;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--s-1) 0;
+  list-style: none;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-3);
+  display: none;
+}
+
+.model-picker[aria-expanded="true"] .model-picker__list {
+  display: block;
+}
+
+.model-picker__option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+  padding: var(--s-2) var(--s-3);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border);
+  min-height: 44px;
+  transition: background var(--dur-1);
+}
+
+.model-picker__option:last-child {
+  border-bottom: 0;
+}
+
+.model-picker__option:hover,
+.model-picker__option.is-focused {
+  background: var(--accent-soft);
+}
+
+.model-picker__option.is-selected {
+  font-weight: 600;
+  background: color-mix(in oklch, var(--accent-soft) 80%, var(--surface));
+}
+
+.model-picker__option-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+}
+
+.model-picker__name {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-picker__badges {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.model-picker__badge {
+  font-size: var(--fs-xs);
+  padding: 1px 6px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+.model-picker__badge--reasoning {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+.model-picker__badge--pricing {
+  background: var(--surface-sunk);
+}
+
+.model-picker__desc-short {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.model-picker__truncated-hint {
+  padding: var(--s-2) var(--s-3);
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  text-align: center;
+  font-style: italic;
+  background: var(--surface-sunk);
+}
+
+/* Model Detail Panel */
+.model-detail {
+  margin-top: var(--s-3);
+  padding: var(--s-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+}
+
+.model-detail__title {
+  font-weight: 700;
+  font-size: var(--fs-sm);
+  color: var(--text);
+  margin-bottom: var(--s-1);
+}
+
+.model-detail__id {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--s-2);
+  word-break: break-all;
+}
+
+.model-detail__desc {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin-bottom: var(--s-3);
+}
+
+.model-detail__stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+  font-size: var(--fs-xs);
+}
+
+.model-detail__stat-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.model-detail__stat-label {
+  color: var(--text-faint);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.model-detail__stat-val {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Variant presets and Parameter controls */
+.model-detail__section-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: var(--s-2) 0 var(--s-1);
+  text-transform: uppercase;
+}
+
+.model-detail__variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-1);
+  margin-bottom: var(--s-3);
+}
+
+.model-detail__variant-chip {
+  appearance: none;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-pill);
+  padding: 3px 10px;
+  font-size: var(--fs-xs);
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: all var(--dur-1);
+}
+
+.model-detail__variant-chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.model-detail__variant-chip.is-active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: transparent;
+}
+
+.model-detail__params {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.model-detail__param-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  font-size: var(--fs-xs);
+}
+
+.model-detail__param-label {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.model-detail__param-control input[type="text"],
+.model-detail__param-control input[type="number"],
+.model-detail__param-control select {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-xs);
+}
+
+.model-detail__param-control input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--accent);
+}
+
+
