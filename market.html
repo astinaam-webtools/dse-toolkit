@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>DSE Toolkit | Smart Dashboard</title>
   <meta name="description" content="Mobile-first dashboard for Dhaka Stock Exchange. Analyze trends, find opportunities, and get AI insights." />
   <link rel="stylesheet" href="./styles.css" />
@@ -11,16 +11,12 @@
   <style>
     /* Market Lens Specific Styles */
     :root {
-      --color-up: #10b981;
-      --color-down: #ef4444;
-      --color-neutral: #6b7280;
-      --bg-card: var(--card);
+      --bg-card: var(--surface);
       --bg-app: var(--bg);
     }
 
     body {
       background-color: var(--bg-app);
-      padding-bottom: 80px; /* Space for bottom nav if we add one, or just breathing room */
     }
 
     /* Header */
@@ -62,11 +58,11 @@
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background-color: var(--color-neutral);
+      background-color: var(--neutral);
       margin-right: 6px;
     }
-    .status-dot.open { background-color: var(--color-up); }
-    .status-dot.closed { background-color: var(--color-down); }
+    .status-dot.open { background-color: var(--up); }
+    .status-dot.closed { background-color: var(--down); }
 
     /* Search */
     .search-bar {
@@ -94,23 +90,6 @@
       gap: 0.45rem;
     }
 
-    .quick-filter-btn {
-      border: 1px solid var(--border);
-      background: var(--bg);
-      color: var(--text);
-      border-radius: 999px;
-      padding: 0.32rem 0.72rem;
-      font-size: 0.78rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .quick-filter-btn:hover {
-      border-color: rgba(15, 157, 88, 0.45);
-      transform: translateY(-1px);
-    }
-
     .quick-filter-btn.active {
       background: var(--text);
       color: var(--bg);
@@ -124,32 +103,34 @@
       font-weight: 500;
     }
 
-    /* Tabs */
+    /* Segmented Control Tabs */
     .tabs {
-      display: flex;
-      gap: 1rem;
-      padding: 1rem;
-      overflow-x: auto;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      scrollbar-width: none; /* Firefox */
+      display: inline-flex;
+      gap: 0.25rem;
+      padding: 0.25rem;
+      margin: var(--s-3) var(--s-4) 0;
+      background: var(--surface-2);
+      border-radius: var(--r-pill);
+      border: 1px solid var(--border);
     }
-    .tabs::-webkit-scrollbar { display: none; } /* Chrome */
 
     .tab-btn {
-      padding: 8px 16px;
-      border-radius: 20px;
-      background: var(--bg);
-      color: var(--muted);
-      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: var(--r-pill);
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: var(--fs-sm);
       white-space: nowrap;
       border: none;
       cursor: pointer;
-      transition: all 0.2s;
+      min-height: 44px;
+      transition: background var(--dur-2) var(--ease-out), color var(--dur-2) var(--ease-out);
     }
     .tab-btn.active {
-      background: var(--text);
-      color: var(--bg);
+      background: var(--surface);
+      color: var(--text);
+      box-shadow: var(--shadow-1);
     }
 
     /* Views */
@@ -175,10 +156,10 @@
     }
 
     .bucket-card {
-      background: var(--card);
-      border-radius: 16px;
-      padding: 1.25rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      background: var(--surface);
+      border-radius: var(--r-md);
+      padding: var(--s-5);
+      box-shadow: var(--shadow-1);
       border: 1px solid var(--border);
     }
     .bucket-header {
@@ -236,10 +217,10 @@
     .stock-info p { margin: 0; font-size: 0.75rem; color: var(--muted); }
     
     .stock-metrics { text-align: right; }
-    .price { font-weight: 600; display: block; }
+    .price { font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
     .change { font-size: 0.75rem; font-weight: 500; }
-    .change.up { color: var(--color-up); }
-    .change.down { color: var(--color-down); }
+    .change.up { color: var(--up); }
+    .change.down { color: var(--down); }
 
     /* Screener Table */
     .screener-table {
@@ -294,61 +275,10 @@
       stroke-width: 2;
       stroke-linecap: round;
     }
-    .sparkline.up { stroke: var(--color-up); }
-    .sparkline.down { stroke: var(--color-down); }
+    .sparkline.up { stroke: var(--up); }
+    .sparkline.down { stroke: var(--down); }
 
     /* Modal */
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      align-items: flex-end; /* Bottom sheet on mobile */
-      z-index: 1000;
-    }
-    .modal-overlay.open { display: flex; }
-
-    .modal-content {
-      background: var(--card);
-      color: var(--text);
-      width: 100%;
-      max-height: 90vh;
-      overflow-y: auto;
-      border-radius: 20px 20px 0 0;
-      padding: 1.5rem;
-      padding-top: 3rem; /* Added space for close button */
-      animation: slideUp 0.3s ease;
-      position: relative;
-    }
-    @media (min-width: 640px) {
-      .modal-overlay { align-items: center; justify-content: center; }
-      .modal-content { width: 500px; border-radius: 20px; }
-    }
-
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-
-    .close-modal {
-      position: absolute;
-      top: 1rem;
-      right: 1rem;
-      background: var(--bg);
-      border: none;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      font-size: 1.2rem;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--muted);
-      z-index: 10; /* Ensure it's above content */
-    }
-    .close-modal:hover { background: var(--border); }
-
     /* Modal metric cards */
     .modal-metric-card {
       background: var(--bg);
@@ -367,11 +297,11 @@
     /* AI Button */
     .btn-ai {
       width: 100%;
-      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      background: var(--accent);
       color: white;
       border: none;
       padding: 12px;
-      border-radius: 12px;
+      border-radius: var(--r-sm);
       font-weight: 600;
       margin-top: 1rem;
       cursor: pointer;
@@ -490,9 +420,9 @@
       margin: 0.25rem 0;
     }
 
-    .sector-change.up { color: var(--color-up); }
-    .sector-change.down { color: var(--color-down); }
-    .sector-change.neutral { color: var(--color-neutral); }
+    .sector-change.up { color: var(--up); }
+    .sector-change.down { color: var(--down); }
+    .sector-change.neutral { color: var(--neutral); }
 
     .sector-stats {
       display: flex;
@@ -515,32 +445,21 @@
       border-radius: 8px;
       font-size: 0.875rem;
       color: var(--muted);
-      border-left: 3px solid var(--color-up);
+      border-left: 3px solid var(--up);
     }
   </style>
 </head>
-<body>
-  <nav class="nav-bar">
-    <div class="nav-container">
-      <a href="./index.html" class="nav-logo">DSE Toolkit</a>
-      <div class="nav-links">
-        <a href="./market.html" class="active">Market</a>
-        <a href="./portfolio.html">Stocks</a>
-        <a href="./funds.html">Funds</a>
-        <a href="./chat.html">AI Analyst</a>
-        <a href="./settings.html">Settings</a>
-      </div>
-    </div>
-  </nav>
+<body data-page="market">
+  <div id="siderail-mount"></div>
   <div class="safe-top-spacer"></div>
 
-  <header class="lens-header">
+  <header class="topbar lens-header">
     <div class="header-top">
       <a href="./index.html" class="home-link">
         <span>← Home</span>
       </a>
-      <div style="display: flex; gap: 0.5rem; align-items: center;">
-        <a href="./portfolio.html" class="btn-secondary" style="text-decoration: none; display: flex; align-items: center; gap: 0.4rem; padding: 4px 10px; font-size: 0.8rem;">
+      <div class="header-actions">
+        <a href="./portfolio.html" class="btn btn--ghost btn--sm">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
           Portfolio
         </a>
@@ -549,7 +468,7 @@
           <span id="market-date">Loading...</span>
         </div>
       </div>
-      <a href="./settings.html" class="btn-secondary" style="text-decoration: none; display: inline-flex; align-items: center; gap: 0.35rem; padding: 4px 10px; font-size: 0.8rem;">Settings</a>
+      <a href="./settings.html" class="btn btn--ghost btn--sm">Settings</a>
     </div>
     
     <div class="search-bar">
@@ -567,8 +486,11 @@
     <!-- View: Buckets -->
     <section id="view-buckets" class="view-section active">
       <div class="bucket-grid" id="bucket-container">
-        <!-- Buckets injected here -->
-        <p class="muted">Loading market data...</p>
+        <div class="skeleton-grid">
+          <div class="skeleton skeleton--lg"></div>
+          <div class="skeleton skeleton--lg"></div>
+          <div class="skeleton skeleton--lg"></div>
+        </div>
       </div>
     </section>
 
@@ -576,11 +498,11 @@
     <section id="view-screener" class="view-section">
       <div class="market-tools">
         <div class="quick-filters" id="quick-filters" aria-label="Quick market filters">
-          <button class="quick-filter-btn" type="button" data-quick-filter="gainers">Top Gainers</button>
-          <button class="quick-filter-btn" type="button" data-quick-filter="losers">Top Losers</button>
-          <button class="quick-filter-btn" type="button" data-quick-filter="volume">High Volume</button>
-          <button class="quick-filter-btn" type="button" data-quick-filter="value">Value Picks</button>
-          <button class="quick-filter-btn" type="button" data-quick-filter="clear">Clear</button>
+          <button class="chip" type="button" data-quick-filter="gainers">Top Gainers</button>
+          <button class="chip" type="button" data-quick-filter="losers">Top Losers</button>
+          <button class="chip" type="button" data-quick-filter="volume">High Volume</button>
+          <button class="chip" type="button" data-quick-filter="value">Value Picks</button>
+          <button class="chip" type="button" data-quick-filter="clear">Clear</button>
         </div>
         <p id="market-result-line" class="market-result-line">Showing full market snapshot.</p>
       </div>
@@ -594,14 +516,14 @@
           <option value="symbol-asc">Symbol (A to Z)</option>
         </select>
       </div>
-      <div style="overflow-x: auto;">
+      <div class="overflow-x-auto">
         <table class="screener-table">
           <thead>
             <tr>
               <th>Symbol</th>
-              <th style="text-align:right">Price</th>
-              <th style="text-align:right">Chg%</th>
-              <th style="text-align:center">Trend</th>
+              <th class="u-text-right">Price</th>
+              <th class="u-text-right">Chg%</th>
+              <th class="u-text-center">Trend</th>
             </tr>
           </thead>
           <tbody id="screener-body">
@@ -622,10 +544,11 @@
     </section>
   </main>
 
-  <!-- Stock Detail Modal -->
-  <div class="modal-overlay" id="stock-modal">
-    <div class="modal-content">
-      <button class="close-modal" onclick="closeModal('stock-modal')">&times;</button>
+  <!-- Stock Detail Sheet -->
+  <div class="sheet-overlay" id="stock-modal">
+    <div class="sheet">
+      <div class="sheet__handle" aria-hidden="true"></div>
+      <button class="sheet__close" onclick="closeModal('stock-modal')">Close</button>
       <div id="modal-body">
         <!-- Dynamic Content -->
       </div>
@@ -639,74 +562,13 @@
   <script>
     // Global modal helpers
     window.closeModal = (id) => {
-      document.getElementById(id).classList.remove('open');
+      document.getElementById(id).removeAttribute('open');
     };
   </script>
 
-  <footer class="footer">
-    <div class="footer__wave"></div>
-    <div class="footer__content">
-      <div class="footer__section">
-        <h4>DSE Toolkit</h4>
-        <p>Your companion for smarter investing in the Dhaka Stock Exchange. Built with 💚 for the Bangladeshi investor community.</p>
-        <div class="footer__badges">
-          <a href="https://github.com/astinaam-webtools/dse-toolkit" target="_blank" rel="noopener" class="footer__badge" title="View on GitHub">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-            Open Source
-          </a>
-          <span class="footer__badge">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-            PWA Ready
-          </span>
-        </div>
-      </div>
-      <div class="footer__section">
-        <h4>Explore</h4>
-        <ul>
-          <li><a href="./index.html">📖 Glossary</a></li>
-          <li><a href="./market.html">📊 Market Dashboard</a></li>
-          <li><a href="./portfolio.html">💼 My Portfolio</a></li>
-          <li><a href="./guides.html">📈 Chart Playbook</a></li>
-          <li><a href="./privacy.html">🛡️ Privacy Policy</a></li>
-        </ul>
-      </div>
-      <div class="footer__section">
-        <h4>Community</h4>
-        <ul>
-          <li>
-            <a href="https://github.com/astinaam-webtools/dse-toolkit/issues/new?template=feature_request.md" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 17h-2v-2h2v2zm2.07-7.75l-.9.92C13.45 12.9 13 13.5 13 15h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H8c0-2.21 1.79-4 4-4s4 1.79 4 4c0 .88-.36 1.68-.93 2.25z"/></svg>
-              Request a Feature
-            </a>
-          </li>
-          <li>
-            <a href="https://github.com/astinaam-webtools/dse-toolkit/issues/new?template=bug_report.md" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 8h-2.81c-.45-.78-1.07-1.45-1.82-1.96L17 4.41 15.59 3l-2.17 2.17C12.96 5.06 12.49 5 12 5s-.96.06-1.41.17L8.41 3 7 4.41l1.62 1.63C7.88 6.55 7.26 7.22 6.81 8H4v2h2.09c-.05.33-.09.66-.09 1v1H4v2h2v1c0 .34.04.67.09 1H4v2h2.81c1.04 1.79 2.97 3 5.19 3s4.15-1.21 5.19-3H20v-2h-2.09c.05-.33.09-.66.09-1v-1h2v-2h-2v-1c0-.34-.04-.67-.09-1H20V8zm-6 8h-4v-2h4v2zm0-4h-4v-2h4v2z"/></svg>
-              Report a Bug
-            </a>
-          </li>
-          <li>
-            <a href="https://github.com/astinaam-webtools/dse-toolkit" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2 0 1.9 1.2 1.9 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.2.5-2.3 1.3-3.1-.2-.4-.6-1.6 0-3.2 0 0 1-.3 3.4 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.6.2 2.8 0 3.2.9.8 1.3 1.9 1.3 3.2 0 4.6-2.8 5.6-5.5 5.9.5.4.9 1 .9 2.2v3.3c0 .3.1.7.8.6A12 12 0 0 0 12 .3"/></svg>
-              Star on GitHub
-            </a>
-          </li>
-          <li>
-            <a href="mailto:aamtechbd@gmail.com">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-              Contact Us
-            </a>
-          </li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer__bottom">
-      <p>Made with <span class="footer__heart">❤️</span> in Bangladesh</p>
-      <p>•</p>
-      <p>Data is educational only — always do your own research</p>
-      <p>•</p>
-      <p>© 2025 DSE Toolkit</p>
-    </div>
-  </footer>
+  <div id="more-mount"></div>
+  <div id="tabbar-mount"></div>
+  <div id="footer-mount"></div>
+  <script type="module" src="./src/shell.js"></script>
 </body>
 </html>

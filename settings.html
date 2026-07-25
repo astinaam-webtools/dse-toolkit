@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>DSE Toolkit | Settings</title>
   <meta name="description" content="Configure optional server mode for portfolio sync and account access." />
   <link rel="stylesheet" href="./styles.css" />
@@ -31,11 +31,11 @@
     }
 
     .settings-card {
-      background: var(--card);
+      background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 1.5rem;
-      box-shadow: var(--shadow);
+      border-radius: var(--r-md);
+      padding: var(--s-6);
+      box-shadow: var(--shadow-1);
     }
 
     .settings-card h2,
@@ -59,26 +59,6 @@
       margin-bottom: 0.4rem;
       font-size: 0.9rem;
       font-weight: 600;
-    }
-
-    .settings-form input {
-      width: 100%;
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 1rem;
-    }
-
-    .settings-form select {
-      width: 100%;
-      padding: 0.85rem 1rem;
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      background: var(--bg);
-      color: var(--text);
-      font-size: 1rem;
     }
 
     .mode-toggle {
@@ -121,7 +101,7 @@
     }
 
     .settings-message[data-tone='success'] {
-      color: var(--color-up);
+      color: var(--up);
     }
 
     .settings-message[data-tone='error'] {
@@ -157,24 +137,24 @@
       width: 0.6rem;
       height: 0.6rem;
       border-radius: 999px;
-      background: var(--color-neutral);
+      background: var(--neutral);
     }
 
     .settings-badge.is-connected::before {
-      background: var(--color-up);
+      background: var(--up);
     }
 
     .settings-badge.is-login-required::before {
-      background: #f59e0b;
+      background: var(--warning);
     }
 
     .settings-badge.is-unavailable::before {
-      background: var(--danger);
+      background: var(--down);
     }
 
     .settings-badge.is-client-only::before,
     .settings-badge.is-checking::before {
-      background: var(--color-neutral);
+      background: var(--neutral);
     }
 
     .auth-stack {
@@ -202,64 +182,6 @@
 
     .auth-panel p {
       margin-top: 0;
-    }
-
-    .settings-modal-overlay {
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
-      padding: 1rem;
-      background: rgba(15, 23, 42, 0.62);
-      backdrop-filter: blur(8px);
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.2s ease;
-      z-index: 2100;
-    }
-
-    .settings-modal-overlay.open {
-      opacity: 1;
-      pointer-events: auto;
-    }
-
-    .settings-modal {
-      width: min(100%, 420px);
-      border-radius: 24px;
-      background: var(--card);
-      color: var(--text);
-      border: 1px solid var(--border);
-      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
-      padding: 1.25rem;
-      transform: translateY(18px);
-      transition: transform 0.2s ease;
-    }
-
-    .settings-modal-overlay.open .settings-modal {
-      transform: translateY(0);
-    }
-
-    .settings-modal__header {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .settings-modal__header h3 {
-      margin: 0 0 0.25rem;
-    }
-
-    .settings-modal__close {
-      border: none;
-      background: transparent;
-      color: var(--muted);
-      font-size: 1.5rem;
-      line-height: 1;
-      cursor: pointer;
-      padding: 0.1rem 0.25rem;
     }
 
     .auth-switcher {
@@ -291,12 +213,6 @@
       display: none;
     }
 
-    @media (min-width: 720px) {
-      .settings-modal-overlay {
-        align-items: center;
-      }
-    }
-
     .import-card {
       margin-top: 1rem;
       padding: 1rem;
@@ -316,18 +232,8 @@
     }
   </style>
 </head>
-<body>
-  <nav class="nav-bar">
-    <div class="nav-container">
-      <a href="./index.html" class="nav-logo">DSE Toolkit</a>
-      <div class="nav-links">
-        <a href="./market.html">Market</a>
-        <a href="./portfolio.html">Stocks</a>
-        <a href="./funds.html">Funds</a>
-        <a href="./chat.html">AI Analyst</a>
-      </div>
-    </div>
-  </nav>
+<body data-page="settings">
+  <div id="siderail-mount"></div>
   <div class="safe-top-spacer"></div>
 
   <main class="settings-shell">
@@ -339,8 +245,8 @@
 
     <section class="settings-grid">
       <article class="settings-card">
-        <h2>AI Analyst</h2>
-        <p>Choose where AI analysis runs. Client mode calls OpenRouter from this browser. Server mode uses your connected server account and server-side OpenRouter key.</p>
+        <h2>AI Analyst Provider & Model</h2>
+        <p>Choose where AI analysis runs. Client mode calls OpenRouter directly from this browser. Server mode uses your connected server account with OpenRouter or Cursor SDK.</p>
 
         <div class="mode-toggle">
           <label>
@@ -353,27 +259,84 @@
           </label>
         </div>
 
+        <!-- Client Mode Form -->
         <div id="ai-client-settings" class="settings-form" style="margin-top: 1rem;">
-          <div>
+          <div class="field">
             <label for="ai-local-api-key">OpenRouter API Key</label>
-            <input id="ai-local-api-key" type="password" placeholder="sk-or-..." autocomplete="off" />
+            <div class="input-group">
+              <input id="ai-local-api-key" type="password" placeholder="sk-or-..." autocomplete="off" class="input" />
+              <button type="button" class="input-group__action" aria-label="Show OpenRouter API Key" data-toggle-password="ai-local-api-key">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <div>
-            <label for="ai-model">Preferred Model</label>
-            <input id="ai-model" type="text" placeholder="openai/gpt-oss-20b:free" />
-            <p class="muted-note">Required for client-only AI mode.</p>
+            <label>Preferred Model</label>
+            <div id="ai-client-model-picker-mount"></div>
+            <div id="ai-client-model-detail-mount"></div>
           </div>
           <div class="settings-actions">
-            <button id="save-ai-local" class="btn btn--solid" type="button">Save Client AI Settings</button>
+            <button id="save-ai-local" class="btn btn--primary" type="button">Save Client AI Settings</button>
           </div>
         </div>
 
+        <!-- Server Mode Form -->
         <div id="ai-server-settings" class="settings-form" style="margin-top: 1rem;" hidden>
-          <p class="muted-note" style="margin: 0;">Server AI credentials and model are managed by your backend. No client-side setup is required here.</p>
-          <p id="ai-server-state" class="ai-mode-note"></p>
+          <div>
+            <label>Server AI Provider</label>
+            <div class="mode-toggle" style="margin-top: 0.2rem;">
+              <label>
+                <input id="ai-provider-openrouter" name="ai-server-provider" type="radio" value="openrouter" checked />
+                OpenRouter
+              </label>
+              <label>
+                <input id="ai-provider-cursor" name="ai-server-provider" type="radio" value="cursor-sdk" />
+                Cursor SDK (Local Agent Sandbox)
+              </label>
+            </div>
+          </div>
+
+          <div id="ai-cursor-key-wrap" class="field" hidden>
+            <label for="ai-server-cursor-key">Per-User Cursor API Key (Optional)</label>
+            <div class="input-group">
+              <input id="ai-server-cursor-key" type="password" placeholder="cursor_..." autocomplete="off" class="input" />
+              <button type="button" class="input-group__action" aria-label="Show Cursor API Key" data-toggle-password="ai-server-cursor-key">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <p class="muted-note">If left blank, the server-configured environment key is used.</p>
+          </div>
+
+          <div id="ai-server-status-info" class="muted-note" style="margin-top: 0.5rem;"></div>
+
+          <div>
+            <label>Server Preferred Model & Parameters</label>
+            <div id="ai-server-model-picker-mount"></div>
+            <div id="ai-server-model-detail-mount"></div>
+          </div>
+
+          <div class="settings-actions">
+            <button id="save-ai-server" class="btn btn--primary" type="button">Save Server AI Settings</button>
+          </div>
         </div>
 
         <div id="ai-message" class="settings-message"></div>
+      </article>
+      <article class="settings-card">
+        <h2>Price Display Colors</h2>
+        <p>Choose your preferred color convention for market price increases and decreases.</p>
+
+        <div class="mode-toggle">
+          <label>
+            <input id="color-mode-standard" name="color-mode" type="radio" value="standard" checked />
+            Standard (Green Up / Red Down)
+          </label>
+          <label>
+            <input id="color-mode-east-asian" name="color-mode" type="radio" value="east-asian" />
+            East Asian (Red Up / Green Down)
+          </label>
+        </div>
+        <div id="color-mode-message" class="settings-message" style="margin-top: 0.5rem;"></div>
       </article>
 
       <article class="settings-card">
@@ -447,14 +410,15 @@
     </section>
   </main>
 
-  <div id="auth-modal" class="settings-modal-overlay" aria-hidden="true">
-    <div class="settings-modal">
-      <div class="settings-modal__header">
+  <div id="auth-modal" class="sheet-overlay">
+    <div class="sheet" style="max-width: 420px;">
+      <div class="sheet__handle" aria-hidden="true"></div>
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1rem;">
         <div>
           <h3 id="auth-modal-title">Log In</h3>
           <p id="auth-modal-subtitle" class="muted-note" style="margin-top: 0;">Connect to your portfolio server account.</p>
         </div>
-        <button id="close-auth-modal" class="settings-modal__close" type="button" aria-label="Close auth modal">&times;</button>
+        <button id="close-auth-modal" class="sheet__close" type="button" aria-label="Close auth modal">Close</button>
       </div>
 
       <div class="auth-switcher" role="tablist" aria-label="Authentication">
@@ -466,11 +430,16 @@
         <div class="settings-form">
           <div>
             <label for="login-email">Email</label>
-            <input id="login-email" name="email" type="email" autocomplete="email" required />
+            <input id="login-email" name="email" type="email" autocomplete="email" required class="input" />
           </div>
           <div>
             <label for="login-password">Password</label>
-            <input id="login-password" name="password" type="password" autocomplete="current-password" minlength="8" required />
+            <div class="input-group">
+              <input id="login-password" name="password" type="password" autocomplete="current-password" minlength="8" required class="input" />
+              <button type="button" class="input-group__action" aria-label="Show Password" data-toggle-password="login-password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <button class="btn btn--solid" type="submit">Log In</button>
           <div id="login-message" class="settings-message"></div>
@@ -481,11 +450,16 @@
         <div class="settings-form">
           <div>
             <label for="signup-email">Email</label>
-            <input id="signup-email" name="email" type="email" autocomplete="email" required />
+            <input id="signup-email" name="email" type="email" autocomplete="email" required class="input" />
           </div>
           <div>
             <label for="signup-password">Password</label>
-            <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required />
+            <div class="input-group">
+              <input id="signup-password" name="password" type="password" autocomplete="new-password" minlength="8" required class="input" />
+              <button type="button" class="input-group__action" aria-label="Show Password" data-toggle-password="signup-password">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <button class="btn btn--solid" type="submit">Create Account</button>
           <div id="signup-message" class="settings-message"></div>
@@ -498,5 +472,9 @@
   <script type="module" src="./src/navStatus.js"></script>
   <script type="module" src="./src/swRegister.js"></script>
   <script type="module" src="./src/mobile-nav.js"></script>
+  <div id="more-mount"></div>
+  <div id="tabbar-mount"></div>
+  <div id="footer-mount"></div>
+  <script type="module" src="./src/shell.js"></script>
 </body>
 </html>

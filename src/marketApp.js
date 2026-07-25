@@ -1,4 +1,6 @@
 import { getStockBuckets, filterStocks, getSectorHeatmap } from './lib/marketLogic.js';
+import { getAiSettings } from './lib/appSettings.js';
+import { requestServerAiChat, resetCursorSession } from './lib/serverClient.js';
 
 // State
 let marketData = null;
@@ -218,7 +220,12 @@ const init = async () => {
 
   } catch (err) {
     console.error(err);
-    els.buckets.innerHTML = `<p class="error">Error loading market data. Please try again later.</p>`;
+    els.buckets.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">⚠️</div>
+        <h3 class="empty-state__title">Error loading market data</h3>
+        <p class="empty-state__description">Unable to fetch latest market data snapshot. Please check your connection and try again.</p>
+      </div>`;
   }
 };
 
@@ -468,7 +475,7 @@ const renderSparkline = (data, isUp) => {
 // Close on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
-    document.querySelectorAll('.modal-overlay.open').forEach(el => el.classList.remove('open'));
+    document.querySelectorAll('.sheet-overlay[open]').forEach(el => el.removeAttribute('open'));
   }
 });
 
@@ -525,13 +532,27 @@ window.openStock = (symbol) => {
   els.modal.classList.add('open');
 };
 
-const requestAiCompletion = async ({ aiSettings, messages }) => {
+const requestAiCompletion = async ({ aiSettings, messages, onDelta = null }) => {
   if (aiSettings.mode === 'server') {
-    const response = await requestServerAiChat({
-      messages,
-      model: aiSettings.localOpenRouterModel
-    });
-    return response?.message || '';
+    const provider = aiSettings.serverAiProvider || 'openrouter';
+    const ephemeralId = `ephemeral-${crypto.randomUUID()}`;
+    try {
+      const response = await requestServerAiChat({
+        provider,
+        messages,
+        model: aiSettings.serverPreferredModel,
+        modelParams: aiSettings.serverModelParams,
+        mode: aiSettings.serverModelMode,
+        cursor: provider === 'cursor-sdk' ? { sessionId: ephemeralId } : null,
+        stream: true,
+        onDelta
+      });
+      return response?.message || '';
+    } finally {
+      if (provider === 'cursor-sdk') {
+        resetCursorSession(ephemeralId);
+      }
+    }
   }
 
   const apiKey = aiSettings.localOpenRouterApiKey;

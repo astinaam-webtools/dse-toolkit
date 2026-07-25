@@ -4,11 +4,15 @@
   "private": true,
   "type": "module",
   "description": "Optional Fastify + SQLite backend for DSE Toolkit portfolio sync.",
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --env-file=.env --watch src/server.js"
   },
   "dependencies": {
+    "@cursor/sdk": "1.0.24",
     "@fastify/cors": "^11.1.0",
     "@github/copilot-sdk": "^0.2.2",
     "bcryptjs": "^3.0.2",

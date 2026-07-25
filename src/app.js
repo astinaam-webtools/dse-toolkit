@@ -444,3 +444,15 @@ if (analyzerForm) {
     renderAnalysis(result);
   });
 }
+
+// Focus search input on pressing '/' when not inside another input
+document.addEventListener('keydown', (e) => {
+  if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+    const searchEl = document.getElementById('search');
+    if (searchEl) {
+      e.preventDefault();
+      searchEl.focus();
+    }
+  }
+});
+

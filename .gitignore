@@ -51,3 +51,11 @@ __pycache__/
 scripts/scraping-local/
 
 assets/finalized
+
+# Worktrees
+.worktrees/
+
+# Cursor workspace data
+data/cursor-workspaces/
+
+

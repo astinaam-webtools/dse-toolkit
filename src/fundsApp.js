@@ -510,11 +510,11 @@ function openModal(name) {
   if (pageState !== 'ready') {
     return;
   }
-  modals[name].classList.add('open');
+  modals[name].setAttribute('open', '');
 }
 
 function closeModals() {
-  Object.values(modals).forEach((modal) => modal.classList.remove('open'));
+  Object.values(modals).forEach((modal) => modal.removeAttribute('open'));
 }
 
 function handleCreatePortfolio() {

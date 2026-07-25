@@ -8,7 +8,7 @@ import {
   setServerUrl,
   updateAiSettings
 } from './lib/appSettings.js';
-import { ApiError, getServerAiSettings, probeServer } from './lib/serverClient.js';
+import { ApiError, getServerAiModels, getServerAiSettings, saveServerAiSettings, probeServer } from './lib/serverClient.js';
 import {
   getConnectionState,
   flushPendingSync,
@@ -28,6 +28,8 @@ import {
   hasLocalFundsState,
   uploadFundsDataDocument
 } from './lib/fundsStore.js';
+import { createModelPicker } from './lib/modelPicker.js';
+import { normalizeOpenRouterModels } from './lib/modelNormalize.js';
 
 const els = {
   serverUrl: document.getElementById('server-url'),
@@ -65,15 +67,26 @@ const els = {
   aiClientSettings: document.getElementById('ai-client-settings'),
   aiServerSettings: document.getElementById('ai-server-settings'),
   aiLocalApiKey: document.getElementById('ai-local-api-key'),
-  aiModel: document.getElementById('ai-model'),
   saveAiLocal: document.getElementById('save-ai-local'),
+  saveAiServer: document.getElementById('save-ai-server'),
+  aiProviderOpenRouter: document.getElementById('ai-provider-openrouter'),
+  aiProviderCursor: document.getElementById('ai-provider-cursor'),
+  aiCursorKeyWrap: document.getElementById('ai-cursor-key-wrap'),
+  aiServerCursorKey: document.getElementById('ai-server-cursor-key'),
+  aiServerStatusInfo: document.getElementById('ai-server-status-info'),
+  aiClientPickerMount: document.getElementById('ai-client-model-picker-mount'),
+  aiClientDetailMount: document.getElementById('ai-client-model-detail-mount'),
+  aiServerPickerMount: document.getElementById('ai-server-model-picker-mount'),
+  aiServerDetailMount: document.getElementById('ai-server-model-detail-mount'),
   aiMessage: document.getElementById('ai-message'),
-  aiServerState: document.getElementById('ai-server-state')
+  colorModeStandard: document.getElementById('color-mode-standard'),
+  colorModeEastAsian: document.getElementById('color-mode-east-asian'),
+  colorModeMessage: document.getElementById('color-mode-message')
 };
 
 let authMode = 'login';
-
-const DEFAULT_AI_MODEL = 'openai/gpt-oss-20b:free';
+let clientPicker = null;
+let serverPicker = null;
 
 const migrateLegacyAiKeys = () => {
   const oldKey = localStorage.getItem('openrouter_key');
@@ -94,10 +107,7 @@ const migrateLegacyAiKeys = () => {
 };
 
 const setMessage = (element, text, tone = '') => {
-  if (!element) {
-    return;
-  }
-
+  if (!element) return;
   element.textContent = text || '';
   element.dataset.tone = tone;
 };
@@ -113,33 +123,26 @@ const showImports = (isConnected) => {
 
 const getConnectionDetailText = (state, settings, session) => {
   const serverUrl = settings.serverUrl;
-
   if (!serverUrl || state.code === 'client-only') {
     return 'No server URL configured. Portfolio data stays in this browser.';
   }
-
   if (state.code === 'checking') {
     return `Checking ${serverUrl}...`;
   }
-
   if (state.code === 'connected') {
     const email = session.user?.email || state.user?.email;
     return email ? `Connected to ${serverUrl} as ${email}.` : `Connected to ${serverUrl}.`;
   }
-
   if (state.code === 'login-required') {
     return `Server reachable at ${serverUrl}. Log in to use synced portfolios.`;
   }
-
   if (state.code === 'pending-sync') {
     return `Connected to ${serverUrl}. Local changes are waiting to sync.`;
   }
-
   if (state.code === 'unavailable') {
     const reason = state.detail || 'Unable to reach the configured server.';
     return `${reason} (${serverUrl})`;
   }
-
   return state.detail || state.title || '';
 };
 
@@ -162,7 +165,6 @@ const renderConnectionState = async () => {
     };
   }
 
-  // Refresh from storage because auth/session calls can update settings mid-flight.
   settings = getAppSettings();
   els.serverUrl.value = settings.serverUrl;
   const session = getSession();
@@ -202,7 +204,7 @@ const renderAuthModal = () => {
 const openAuthModal = (mode) => {
   authMode = mode;
   renderAuthModal();
-  els.authModal.classList.add('open');
+  els.authModal.setAttribute('open', '');
   els.authModal.setAttribute('aria-hidden', 'false');
 };
 
@@ -213,7 +215,6 @@ const closeAuthModal = () => {
 
 const handleSaveServerUrl = async (event) => {
   event.preventDefault();
-
   const rawServerUrl = els.serverUrl.value.trim();
   if (!rawServerUrl) {
     setMessage(els.serverMessage, 'Enter a server URL or clear the configuration.', 'warning');
@@ -251,74 +252,193 @@ const handleClearServerUrl = async () => {
   await renderConnectionState();
 };
 
+const setupClientPicker = async () => {
+  const aiSettings = getAiSettings();
+  if (!clientPicker && els.aiClientPickerMount) {
+    clientPicker = createModelPicker({
+      mount: els.aiClientPickerMount,
+      detailMount: els.aiClientDetailMount,
+      provider: 'openrouter',
+      mode: 'manual',
+      onChange: (sel) => {
+        updateAiSettings({ localOpenRouterModel: sel.modelId });
+      }
+    });
+  }
+
+  const apiKey = aiSettings.localOpenRouterApiKey;
+  if (!apiKey) {
+    clientPicker?.setError('Client AI mode requires an OpenRouter API key.');
+    return;
+  }
+
+  clientPicker?.setLoading(true);
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/models', {
+      headers: { Authorization: `Bearer ${apiKey}` }
+    });
+    const data = await res.json();
+    const normalized = normalizeOpenRouterModels(data?.data || []);
+    clientPicker?.hydrate(normalized, {
+      selectedId: aiSettings.localOpenRouterModel || 'openrouter/free',
+      mode: 'manual',
+      provider: 'openrouter'
+    });
+  } catch (err) {
+    clientPicker?.setError(`Failed to fetch OpenRouter models: ${err.message}`);
+  } finally {
+    clientPicker?.setLoading(false);
+  }
+};
+
+const setupServerPicker = async (provider) => {
+  const aiSettings = getAiSettings();
+  if (!serverPicker && els.aiServerPickerMount) {
+    serverPicker = createModelPicker({
+      mount: els.aiServerPickerMount,
+      detailMount: els.aiServerDetailMount,
+      provider,
+      mode: aiSettings.serverModelMode,
+      onChange: (sel) => {
+        updateAiSettings({
+          serverPreferredModel: sel.modelId,
+          serverModelParams: sel.modelParams,
+          serverModelMode: sel.mode
+        });
+      }
+    });
+  }
+
+  serverPicker?.setLoading(true);
+  try {
+    const response = await getServerAiModels(provider);
+    const models = response?.models || [];
+    serverPicker?.hydrate(models, {
+      selectedId: aiSettings.serverPreferredModel,
+      selectedParams: aiSettings.serverModelParams,
+      mode: aiSettings.serverModelMode,
+      provider
+    });
+  } catch (err) {
+    serverPicker?.setError(`Failed to load server models for ${provider}: ${err.message}`);
+  } finally {
+    serverPicker?.setLoading(false);
+  }
+};
+
 const renderAiSettings = async () => {
   const aiSettings = getAiSettings();
-  els.aiModeClient.checked = aiSettings.mode !== 'server';
-  els.aiModeServer.checked = aiSettings.mode === 'server';
-  els.aiClientSettings.hidden = false;
-  els.aiServerSettings.hidden = false;
-  els.aiClientSettings.style.display = aiSettings.mode === 'server' ? 'none' : 'grid';
-  els.aiServerSettings.style.display = aiSettings.mode === 'server' ? 'grid' : 'none';
+  const isServer = aiSettings.mode === 'server';
+
+  els.aiModeClient.checked = !isServer;
+  els.aiModeServer.checked = isServer;
+  els.aiClientSettings.hidden = isServer;
+  els.aiServerSettings.hidden = !isServer;
   els.aiLocalApiKey.value = aiSettings.localOpenRouterApiKey || '';
-  els.aiModel.value = aiSettings.localOpenRouterModel || '';
+
+  if (!isServer) {
+    await setupClientPicker();
+    return;
+  }
+
+  // Server AI Mode setup
+  const provider = aiSettings.serverAiProvider || 'openrouter';
+  if (provider === 'cursor-sdk') {
+    els.aiProviderCursor.checked = true;
+    els.aiCursorKeyWrap.hidden = false;
+  } else {
+    els.aiProviderOpenRouter.checked = true;
+    els.aiCursorKeyWrap.hidden = true;
+  }
 
   const appSettings = getAppSettings();
-  const hasServerConnection = Boolean(appSettings.serverUrl && appSettings.authToken);
+  const hasServerConn = Boolean(appSettings.serverUrl && appSettings.authToken);
 
-  if (!hasServerConnection) {
-    els.aiServerState.textContent = 'Connect and log in to a server to use server AI mode.';
+  if (!hasServerConn) {
+    els.aiServerStatusInfo.textContent = 'Connect and log in to a server to configure server AI settings.';
     return;
   }
 
   try {
     const data = await getServerAiSettings();
-    const configured = data?.configured;
-    const model = data?.model || aiSettings.localOpenRouterModel || DEFAULT_AI_MODEL;
-    els.aiServerState.textContent = configured
-      ? `Server AI is configured (${data.provider || 'openrouter'}, model: ${model}).`
-      : 'Server AI is not configured on the backend yet. Contact your server administrator.';
-  } catch (error) {
-    els.aiServerState.textContent = `Could not load server AI settings: ${error.message}`;
+    const isConfigured = data?.configured;
+
+    if (provider === 'cursor-sdk') {
+      if (data.sandboxReady === false) {
+        els.aiServerStatusInfo.textContent = `Cursor SDK Disabled: ${data.cursorDisabledReason || 'Sandbox unavailable'}`;
+        els.aiServerStatusInfo.style.color = 'var(--down)';
+      } else {
+        els.aiServerStatusInfo.textContent = isConfigured
+          ? `Cursor SDK Agent Ready (Sandboxed). Preferred model: ${data.model || 'composer-2.5'}`
+          : 'Cursor SDK Key required (or backend env CURSOR_API_KEY).';
+        els.aiServerStatusInfo.style.color = 'var(--text-muted)';
+      }
+    } else {
+      els.aiServerStatusInfo.textContent = isConfigured
+        ? `OpenRouter Server AI Ready. Preferred model: ${data.model || 'openrouter/free'}`
+        : 'OpenRouter API Key required.';
+      els.aiServerStatusInfo.style.color = 'var(--text-muted)';
+    }
+
+    await setupServerPicker(provider);
+  } catch (err) {
+    els.aiServerStatusInfo.textContent = `Could not load server AI settings: ${err.message}`;
   }
 };
 
 const handleAiModeChange = async () => {
   const mode = els.aiModeServer.checked ? 'server' : 'client';
-
   updateAiSettings({ mode });
-  if (mode === 'client') {
-    const apiKey = els.aiLocalApiKey.value.trim();
-    const model = els.aiModel.value.trim();
-    if (!apiKey || !model) {
-      setMessage(els.aiMessage, 'Client-only AI selected. Add API key + model to run analysis.', 'warning');
-    } else {
-      setMessage(els.aiMessage, 'AI mode set to Client-only AI.', 'success');
-    }
-  } else {
-    setMessage(els.aiMessage, 'AI mode set to Server AI.', 'success');
-  }
+  setMessage(els.aiMessage, `AI mode set to ${mode === 'server' ? 'Server AI' : 'Client-only AI'}.`, 'success');
   await renderAiSettings();
 };
 
 const handleSaveAiLocal = () => {
   const apiKey = els.aiLocalApiKey.value.trim();
-  const model = els.aiModel.value.trim();
+  const selection = clientPicker ? clientPicker.getSelection() : { modelId: '' };
 
-  if (!apiKey || !model) {
-    setMessage(els.aiMessage, 'Client-only AI requires both OpenRouter API key and model name.', 'warning');
+  if (!apiKey || !selection.modelId) {
+    setMessage(els.aiMessage, 'Client-only AI requires both OpenRouter API key and model selection.', 'warning');
     return;
   }
 
   updateAiSettings({
     localOpenRouterApiKey: apiKey,
-    localOpenRouterModel: model
+    localOpenRouterModel: selection.modelId
   });
   setMessage(els.aiMessage, 'Client AI settings saved.', 'success');
+  setupClientPicker();
+};
+
+const handleSaveAiServer = async () => {
+  const provider = els.aiProviderCursor.checked ? 'cursor-sdk' : 'openrouter';
+  const apiKey = provider === 'cursor-sdk' ? els.aiServerCursorKey.value.trim() : '';
+  const selection = serverPicker ? serverPicker.getSelection() : { modelId: 'auto', modelParams: [], mode: 'auto' };
+
+  try {
+    const updated = await saveServerAiSettings({
+      provider,
+      apiKey,
+      model: selection.modelId,
+      modelParams: selection.modelParams
+    });
+
+    updateAiSettings({
+      serverAiProvider: provider,
+      serverPreferredModel: selection.modelId,
+      serverModelParams: selection.modelParams,
+      serverModelMode: selection.mode
+    });
+
+    setMessage(els.aiMessage, `Server AI settings saved for provider '${provider}'.`, 'success');
+    await renderAiSettings();
+  } catch (err) {
+    setMessage(els.aiMessage, err.message, 'error');
+  }
 };
 
 const handleAuthSubmit = async (event, mode) => {
   event.preventDefault();
-
   const form = event.currentTarget;
   const messageEl = mode === 'login' ? els.loginMessage : els.signupMessage;
   const email = form.elements.email.value.trim();
@@ -337,8 +457,6 @@ const handleAuthSubmit = async (event, mode) => {
 
     form.reset();
     closeAuthModal();
-
-    // Auto-upload any locally-queued changes after reconnecting
     flushPendingSync().catch((err) => console.warn('[offline-first] Post-login flush error:', err));
   } catch (error) {
     const message = error instanceof ApiError ? error.message : 'Unable to complete the request.';
@@ -348,90 +466,94 @@ const handleAuthSubmit = async (event, mode) => {
   }
 };
 
-const handleImport = async (type) => {
-  const button = type === 'stocks' ? els.importStocksBtn : els.importFundsBtn;
-  button.disabled = true;
+const handleImportClick = async (type) => {
+  const btn = type === 'stocks' ? els.importStocksBtn : els.importFundsBtn;
+  btn.disabled = true;
+  btn.textContent = 'Uploading...';
 
   try {
     if (type === 'stocks') {
-      await uploadPortfolioStateDocument(getLocalPortfolioState());
+      const doc = getLocalPortfolioState();
+      await uploadPortfolioStateDocument(doc);
     } else {
-      await uploadFundsDataDocument(getLocalFundsData());
+      const doc = getLocalFundsData();
+      await uploadFundsDataDocument(doc);
     }
 
     setImportDecision(type, 'imported');
-    const pendingSync = getPendingSync();
-    if (pendingSync[type]) {
-      setMessage(
-        els.serverMessage,
-        `${type === 'stocks' ? 'Stocks' : 'Funds'} saved locally. Server sync is queued and will retry automatically when reachable.`,
-        'warning'
-      );
-    } else {
-      setMessage(
-        els.serverMessage,
-        `${type === 'stocks' ? 'Stocks' : 'Funds'} imported to server successfully.`,
-        'success'
-      );
-    }
-  } catch (error) {
-    setMessage(els.serverMessage, error.message || 'Import failed.', 'error');
-  } finally {
-    button.disabled = false;
     showImports(true);
+    await renderConnectionState();
+  } catch (error) {
+    console.error(`Import failed for ${type}`, error);
+    btn.disabled = false;
+    btn.textContent = 'Retry Upload';
   }
 };
 
-const dismissImport = (type) => {
+const handleDismissImport = (type) => {
   setImportDecision(type, 'skipped');
   showImports(true);
 };
 
-const init = async () => {
-  migrateLegacyAiKeys();
-
-  els.serverSave.addEventListener('click', handleSaveServerUrl);
-  els.serverClear.addEventListener('click', handleClearServerUrl);
-  els.openLoginModal.addEventListener('click', () => openAuthModal('login'));
-  els.openSignupModal.addEventListener('click', () => openAuthModal('signup'));
-  els.closeAuthModal.addEventListener('click', closeAuthModal);
-  els.switchLogin.addEventListener('click', () => {
-    authMode = 'login';
-    renderAuthModal();
-  });
-  els.switchSignup.addEventListener('click', () => {
-    authMode = 'signup';
-    renderAuthModal();
-  });
-  els.loginForm.addEventListener('submit', (event) => handleAuthSubmit(event, 'login'));
-  els.signupForm.addEventListener('submit', (event) => handleAuthSubmit(event, 'signup'));
-  els.logoutBtn.addEventListener('click', async () => {
-    logout();
-    await renderConnectionState();
-  });
-  els.importStocksBtn.addEventListener('click', () => handleImport('stocks'));
-  els.importFundsBtn.addEventListener('click', () => handleImport('funds'));
-  els.dismissStocksBtn.addEventListener('click', () => dismissImport('stocks'));
-  els.dismissFundsBtn.addEventListener('click', () => dismissImport('funds'));
-  els.aiModeClient.addEventListener('change', handleAiModeChange);
-  els.aiModeServer.addEventListener('change', handleAiModeChange);
-  els.saveAiLocal.addEventListener('click', handleSaveAiLocal);
-
-  els.authModal.addEventListener('click', (event) => {
-    if (event.target === els.authModal) {
-      closeAuthModal();
-    }
-  });
-
-  window.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape') {
-      closeAuthModal();
-    }
-  });
-
-  renderAuthModal();
-  await renderConnectionState();
-  await renderAiSettings();
+const applyColorMode = (mode) => {
+  document.documentElement.dataset.colorMode = mode;
+  localStorage.setItem('dse_color_mode', mode);
+  if (els.colorModeMessage) {
+    setMessage(els.colorModeMessage, `Color convention set to ${mode === 'east-asian' ? 'East Asian (Red Up / Green Down)' : 'Standard (Green Up / Red Down)'}.`, 'success');
+  }
 };
 
-init();
+const initColorMode = () => {
+  const saved = localStorage.getItem('dse_color_mode') || 'standard';
+  if (saved === 'east-asian') {
+    if (els.colorModeEastAsian) els.colorModeEastAsian.checked = true;
+    document.documentElement.dataset.colorMode = 'east-asian';
+  } else {
+    if (els.colorModeStandard) els.colorModeStandard.checked = true;
+    document.documentElement.dataset.colorMode = 'standard';
+  }
+};
+
+// Listeners
+els.serverSave?.addEventListener('click', handleSaveServerUrl);
+els.serverClear?.addEventListener('click', handleClearServerUrl);
+els.openLoginModal?.addEventListener('click', () => openAuthModal('login'));
+els.openSignupModal?.addEventListener('click', () => openAuthModal('signup'));
+els.closeAuthModal?.addEventListener('click', closeAuthModal);
+els.switchLogin?.addEventListener('click', () => renderAuthModal(authMode = 'login'));
+els.switchSignup?.addEventListener('click', () => renderAuthModal(authMode = 'signup'));
+
+els.loginForm?.addEventListener('submit', (e) => handleAuthSubmit(e, 'login'));
+els.signupForm?.addEventListener('submit', (e) => handleAuthSubmit(e, 'signup'));
+
+els.logoutBtn?.addEventListener('click', async () => {
+  logout();
+  await renderConnectionState();
+});
+
+els.importStocksBtn?.addEventListener('click', () => handleImportClick('stocks'));
+els.importFundsBtn?.addEventListener('click', () => handleImportClick('funds'));
+els.dismissStocksBtn?.addEventListener('click', () => handleDismissImport('stocks'));
+els.dismissFundsBtn?.addEventListener('click', () => handleDismissImport('funds'));
+
+els.aiModeClient?.addEventListener('change', handleAiModeChange);
+els.aiModeServer?.addEventListener('change', handleAiModeChange);
+els.saveAiLocal?.addEventListener('click', handleSaveAiLocal);
+els.saveAiServer?.addEventListener('click', handleSaveAiServer);
+
+els.aiProviderOpenRouter?.addEventListener('change', () => {
+  els.aiCursorKeyWrap.hidden = true;
+  setupServerPicker('openrouter');
+});
+
+els.aiProviderCursor?.addEventListener('change', () => {
+  els.aiCursorKeyWrap.hidden = false;
+  setupServerPicker('cursor-sdk');
+});
+
+els.colorModeStandard?.addEventListener('change', () => applyColorMode('standard'));
+els.colorModeEastAsian?.addEventListener('change', () => applyColorMode('east-asian'));
+
+migrateLegacyAiKeys();
+initColorMode();
+renderConnectionState();
