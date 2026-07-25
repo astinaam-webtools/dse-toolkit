@@ -145,12 +145,18 @@
     /* Actions */
     .portfolio-actions {
       position: fixed;
-      bottom: 2rem;
+      bottom: calc(var(--s-16) + env(safe-area-inset-bottom, 0px));
       left: 50%;
       transform: translateX(-50%);
       display: flex;
       gap: 0.75rem;
       z-index: 100;
+    }
+
+    @media (min-width: 1024px) {
+      .portfolio-actions {
+        bottom: var(--s-8);
+      }
     }
 
     .fab {

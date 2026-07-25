@@ -218,7 +218,12 @@ const init = async () => {
 
   } catch (err) {
     console.error(err);
-    els.buckets.innerHTML = `<p class="error">Error loading market data. Please try again later.</p>`;
+    els.buckets.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">⚠️</div>
+        <h3 class="empty-state__title">Error loading market data</h3>
+        <p class="empty-state__description">Unable to fetch latest market data snapshot. Please check your connection and try again.</p>
+      </div>`;
   }
 };
 

@@ -1,5 +1,8 @@
 # Copilot SDK Integration Plan (Server)
 
+## Status
+**No longer relevant.** Frontend integration and further work on this plan are cancelled. Existing backend Copilot SDK / GitHub OAuth code is kept as-is and is not being removed.
+
 ## Objective
 Integrate GitHub Copilot SDK with GitHub OAuth in the backend so each authenticated app user can run Copilot-backed requests using their own GitHub account, while preserving existing OpenRouter and GitHub Models REST test paths.
 

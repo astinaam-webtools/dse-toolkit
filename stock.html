@@ -14,25 +14,28 @@
   </nav>
 
   <div id="app">
-    <div id="loading" style="padding: 2rem; text-align: center;">Loading stock details...</div>
+    <div id="loading" class="empty-state">
+      <div class="skeleton" style="height: 120px; max-width: 400px; margin-bottom: 1rem;"></div>
+      <p>Loading stock details...</p>
+    </div>
     
-    <div id="content" style="display: none;">
+    <div id="content" hidden>
       <header class="detail-header">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div class="detail-header__inner">
           <div>
-            <h1 id="stock-symbol" style="margin: 0; font-size: 2rem;"></h1>
-            <p id="stock-name" style="margin: 0.5rem 0 0; color: var(--muted);"></p>
-            <span id="stock-sector"></span>
+            <h1 id="stock-symbol" class="stock-title"></h1>
+            <p id="stock-name" class="stock-sub"></p>
+            <span id="stock-sector" class="status-pill"></span>
           </div>
-          <div style="text-align: right;">
-            <div id="stock-price" style="font-size: 2rem; font-weight: 700;"></div>
-            <div id="stock-change" style="font-size: 1.1rem; font-weight: 500;"></div>
+          <div class="stock-price-block">
+            <div id="stock-price" class="stock-price-val"></div>
+            <div id="stock-change" class="stock-price-change"></div>
           </div>
         </div>
       </header>
 
       <main>
-        <div style="padding: 1.5rem 1.5rem 0;">
+        <div class="detail-section" style="padding-bottom: 0;">
           <div id="chart-container">
             <!-- Chart will be injected here -->
           </div>
@@ -42,9 +45,9 @@
           <!-- Metrics will be populated here -->
         </div>
         
-        <div style="padding: 1.5rem;">
+        <div class="detail-section">
            <h3>AI Analysis</h3>
-           <button class="btn-ai" id="btn-analyze-page">
+           <button class="btn btn--ai" id="btn-analyze-page">
             ✨ Start AI Chat Analysis
           </button>
         </div>

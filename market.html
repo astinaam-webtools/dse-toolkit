@@ -17,7 +17,6 @@
 
     body {
       background-color: var(--bg-app);
-      padding-bottom: 80px; /* Space for bottom nav if we add one, or just breathing room */
     }
 
     /* Header */
@@ -485,8 +484,11 @@
     <!-- View: Buckets -->
     <section id="view-buckets" class="view-section active">
       <div class="bucket-grid" id="bucket-container">
-        <!-- Buckets injected here -->
-        <p class="muted">Loading market data...</p>
+        <div style="padding: var(--s-4); display: grid; gap: var(--s-4); width: 100%;">
+          <div class="skeleton" style="height: 80px;"></div>
+          <div class="skeleton" style="height: 80px;"></div>
+          <div class="skeleton" style="height: 80px;"></div>
+        </div>
       </div>
     </section>
 

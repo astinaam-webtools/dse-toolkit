@@ -68,7 +68,10 @@ const els = {
   aiModel: document.getElementById('ai-model'),
   saveAiLocal: document.getElementById('save-ai-local'),
   aiMessage: document.getElementById('ai-message'),
-  aiServerState: document.getElementById('ai-server-state')
+  aiServerState: document.getElementById('ai-server-state'),
+  colorModeStandard: document.getElementById('color-mode-standard'),
+  colorModeEastAsian: document.getElementById('color-mode-east-asian'),
+  colorModeMessage: document.getElementById('color-mode-message')
 };
 
 let authMode = 'login';
@@ -387,6 +390,27 @@ const dismissImport = (type) => {
   showImports(true);
 };
 
+const renderColorModeSettings = () => {
+  const currentMode = localStorage.getItem('dse_color_mode') || 'standard';
+  if (els.colorModeStandard && els.colorModeEastAsian) {
+    els.colorModeStandard.checked = currentMode !== 'east-asian';
+    els.colorModeEastAsian.checked = currentMode === 'east-asian';
+  }
+};
+
+const handleColorModeChange = () => {
+  const isEastAsian = els.colorModeEastAsian?.checked;
+  if (isEastAsian) {
+    localStorage.setItem('dse_color_mode', 'east-asian');
+    document.documentElement.dataset.colorMode = 'east-asian';
+    setMessage(els.colorModeMessage, 'Price colors set to East Asian (Red Up / Green Down).', 'success');
+  } else {
+    localStorage.setItem('dse_color_mode', 'standard');
+    delete document.documentElement.dataset.colorMode;
+    setMessage(els.colorModeMessage, 'Price colors set to Standard (Green Up / Red Down).', 'success');
+  }
+};
+
 const init = async () => {
   migrateLegacyAiKeys();
 
@@ -417,6 +441,11 @@ const init = async () => {
   els.aiModeServer.addEventListener('change', handleAiModeChange);
   els.saveAiLocal.addEventListener('click', handleSaveAiLocal);
 
+  if (els.colorModeStandard && els.colorModeEastAsian) {
+    els.colorModeStandard.addEventListener('change', handleColorModeChange);
+    els.colorModeEastAsian.addEventListener('change', handleColorModeChange);
+  }
+
   els.authModal.addEventListener('click', (event) => {
     if (event.target === els.authModal) {
       closeAuthModal();
@@ -430,6 +459,7 @@ const init = async () => {
   });
 
   renderAuthModal();
+  renderColorModeSettings();
   await renderConnectionState();
   await renderAiSettings();
 };

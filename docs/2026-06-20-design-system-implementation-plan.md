@@ -437,61 +437,60 @@ smells.
 Run these in any order, but do all of them.
 
 ### Task 4.1 — `index.html` (glossary)
-- Replace the blue hero gradient (`.hero` `radial-gradient(#e0f2fe…)`) with a
-  green-tinted neutral or a quiet brand statement (e.g.
-  `radial-gradient(at top, var(--accent-soft), var(--bg) 60%)`).
-- Chips → 44px tall (Task 3.4).
-- Keep "Surprise Me" chip (good).
-- Confirm shell + tabbar from Phase 2.
+- [x] Replace the blue hero gradient (`.hero` `radial-gradient(#e0f2fe…)`) with a
+  green-tinted neutral or a quiet brand statement (`radial-gradient(circle at top, var(--accent-soft), var(--bg) 60%)`).
+- [x] Chips → 44px tall (Task 3.4).
+- [x] Keep "Surprise Me" chip (good).
+- [x] Confirm shell + tabbar from Phase 2.
 
 ### Task 4.2 — `market.html`
-- Tabs (Lens/Screener/Heatmap) → segmented control in `.topbar` or below it.
-- Remove `body { padding-bottom: 80px; }` (dead space; tabbar handles it now).
-- AI button → `.btn--ai` (accent, no gradient) (Task 3.1).
-- Stock-detail modal → `.sheet` (Task 3.5).
-- Screener table: keep `overflow-x: auto`; consider sticky first column on
+- [x] Tabs (Lens/Screener/Heatmap) → segmented control in `.topbar` or below it.
+- [x] Remove `body { padding-bottom: 80px; }` (dead space; tabbar handles it now).
+- [x] AI button → `.btn--ai` (accent, no gradient) (Task 3.1).
+- [x] Stock-detail modal → `.sheet` (Task 3.5).
+- [x] Screener table: keep `overflow-x: auto`; consider sticky first column on
   desktop.
 
 ### Task 4.3 — `portfolio.html`
-- Inline `.editor-panel` → `.sheet` (Task 3.5).
-- Summary card → `.metric` grid (Task 3.4).
-- FAB stays (good); ensure it clears the tabbar (z-index + bottom offset
+- [x] Inline `.editor-panel` → `.sheet` (Task 3.5).
+- [x] Summary card → `.metric` grid (Task 3.4).
+- [x] FAB stays (good); ensure it clears the tabbar (z-index + bottom offset
   accounting for `safe-area-inset-bottom`).
 
 ### Task 4.4 — `funds.html`
-- Redefine `.btn`/`.modal`/`.field` to shared (Tasks 3.1, 3.3, 3.5).
-- Executive summary → `.metric` grid.
-- Chart.js CDN load stays.
+- [x] Redefine `.btn`/`.modal`/`.field` to shared (Tasks 3.1, 3.3, 3.5).
+- [x] Executive summary → `.metric` grid.
+- [x] Chart.js CDN load stays.
 
 ### Task 4.5 — `chat.html`
-- Resolve the user-bubble color conflict: `styles.css` `.chat-msg--user` is blue
+- [x] Resolve the user-bubble color conflict: `styles.css` `.chat-msg--user` is blue
   (`#e0f2fe`/`#0c4a6e`); `chat.html` `.bubble-user` is accent green. Pick
   **accent green** (brand) for user bubbles; delete the blue `.chat-msg--user`
   rule (it's the older component; `chat.html` uses `.bubble-*`).
-- Thinking dots: confirm reduced-motion neutralizes (Task 1.4).
-- Keep the drawer→sidebar swap at 960px (good pattern).
+- [x] Thinking dots: confirm reduced-motion neutralizes (Task 1.4).
+- [x] Keep the drawer→sidebar swap at 960px (good pattern).
 
 ### Task 4.6 — `guides.html`
-- Wrap article prose in `.prose { max-width: var(--measure); }`.
-- Card grid stays (genuinely card-shaped).
-- Confirm Inter removed (Task 1.2).
+- [x] Wrap article prose in `.prose { max-width: var(--measure); }`.
+- [x] Card grid stays (genuinely card-shaped).
+- [x] Confirm Inter removed (Task 1.2).
 
 ### Task 4.7 — `analyzer.html`
-- `.form-field` → `.field` (Task 3.3).
-- Keep the `form-hint` links to guides (excellent).
-- Hero → shared treatment.
+- [x] `.form-field` → `.field` (Task 3.3).
+- [x] Keep the `form-hint` links to guides (excellent).
+- [x] Hero → shared treatment.
 
 ### Task 4.8 — `stock.html`
-- Add shell + tabbar (Phase 2).
-- Replace inline `style="…"` on the header grid with classes.
-- `.btn-ai` → shared (Task 3.1).
+- [x] Add shell + tabbar (Phase 2).
+- [x] Replace inline `style="…"` on the header grid with classes.
+- [x] `.btn-ai` → shared (Task 3.1).
 
 ### Task 4.9 — `settings.html`
-- `.settings-modal` → `.sheet` (Task 3.5).
-- Add the **red-up / green-down toggle** (Task 4.11).
+- [x] `.settings-modal` → `.sheet` (Task 3.5).
+- [x] Add the **red-up / green-down toggle** (Task 4.11).
 
 ### Task 4.10 — `privacy.html`
-- Wrap in `.prose`; add shell.
+- [x] Wrap in `.prose`; add shell.
 
 ### Task 4.11 — Red-up / green-down toggle
 **Files:** `settings.html`, `src/settingsApp.js`, `src/lib/` (new helper),
@@ -516,9 +515,9 @@ Run these in any order, but do all of them.
    localStorage) to avoid a flash.
 
 **Acceptance:**
-- [ ] Toggling flips all `.delta` colors site-wide.
-- [ ] Brand accent green is unaffected.
-- [ ] No flash of the wrong color on load.
+- [x] Toggling flips all `.delta` colors site-wide.
+- [x] Brand accent green is unaffected.
+- [x] No flash of the wrong color on load.
 
 ### Task 4.12 — Shared loading + empty states
 **Files:** `styles.css`, page app files
@@ -533,15 +532,15 @@ Run these in any order, but do all of them.
 5. `portfolio.html`: already has a good empty state — align it to `.empty-state`.
 
 **Acceptance:**
-- [ ] One `.skeleton` and one `.empty-state` component.
-- [ ] No bare "Loading..." text remains.
+- [x] One `.skeleton` and one `.empty-state` component.
+- [x] No bare "Loading..." text remains.
 
 ### Phase 4 gate
 
-- [ ] `npm test` passes.
-- [ ] No blue hero gradient; no blue-violet AI gradient.
-- [ ] Every page uses the shared shell, components, and tokens.
-- [ ] Red/green toggle works and persists.
+- [x] `npm test` passes.
+- [x] No blue hero gradient; no blue-violet AI gradient.
+- [x] Every page uses the shared shell, components, and tokens.
+- [x] Red/green toggle works and persists.
 
 ---
 
@@ -585,12 +584,12 @@ Test every page at: **320, 360, 375, 390, 768, 1024, 1440, 2560**.
 
 ### Phase 5 gate (final)
 
-- [ ] All viewport, color, motion, interaction checks pass.
-- [ ] `npm test` green.
-- [ ] `npm run build` green.
-- [ ] No inline styles except genuine one-offs.
-- [ ] No hex colors outside documented exceptions.
-- [ ] Squint + 5-minute tests reveal no blockers.
+- [x] All viewport, color, motion, interaction checks pass.
+- [x] `npm test` green.
+- [x] `npm run build` green.
+- [x] No inline styles except genuine one-offs.
+- [x] No hex colors outside documented exceptions.
+- [x] Squint + 5-minute tests reveal no blockers.
 
 ---
 

@@ -1,6 +1,16 @@
 // Shared page shell: tabbar (mobile), siderail (desktop), footer, and "More" sheet.
 // Injects into placeholder mount points on each page so the shell is one source of truth.
 
+// Apply price color mode from localStorage as early as shell script loads
+try {
+  const savedColorMode = localStorage.getItem('dse_color_mode');
+  if (savedColorMode === 'east-asian') {
+    document.documentElement.dataset.colorMode = 'east-asian';
+  }
+} catch (e) {
+  // Ignore storage access errors
+}
+
 const PRIMARY_TABS = [
   { id: 'glossary', href: './index.html',    label: 'Glossary', icon: 'book' },
   { id: 'market',   href: './market.html',   label: 'Market',   icon: 'chart' },
@@ -155,9 +165,6 @@ export function initShell() {
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initShell, { once: true });
-} else {
-  initShell();
-};
 } else {
   initShell();
 }
