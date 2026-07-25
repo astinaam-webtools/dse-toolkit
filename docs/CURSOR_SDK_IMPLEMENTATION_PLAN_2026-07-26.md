@@ -1,370 +1,554 @@
-# Cursor SDK Integration Plan (Server → optional AI provider)
+# Cursor SDK + Live Model Picker Integration Plan
 
 **Date:** 2026-07-26  
 **Status:** Planned (not started)  
-**Package:** [`@cursor/sdk`](https://www.npmjs.com/package/@cursor/sdk) (TypeScript SDK, Node-first)  
+**Package:** [`@cursor/sdk`](https://www.npmjs.com/package/@cursor/sdk)  
 **Docs:** [cursor.com/docs/sdk/typescript](https://cursor.com/docs/sdk/typescript)  
-**Related:** `docs/COPILOT_SDK_IMPLEMENTATION_PLAN.md` (status: no longer relevant; backend code retained)
+**Related:** `docs/COPILOT_SDK_IMPLEMENTATION_PLAN.md` (no longer relevant; backend code retained)
+
+This document is the full build spec for the feature. Every decision below is locked. There is no phased “product slice,” no “later,” and no open assumptions left for implementers to invent.
 
 ---
 
 ## 1. Objective
 
-Add **Cursor** as an optional **server-side AI analyst provider** for DSE Toolkit, alongside the existing OpenRouter path, using the Cursor Agent SDK (`Agent` → `Run`).
+Ship **Cursor** as a selectable **server-side AI analyst provider** beside OpenRouter, plus a **shared searchable model picker** (context, pricing, description, reasoning/params) for **both** providers across Settings and Chat.
 
-Replace neither OpenRouter nor the retained Copilot SDK code. Cursor becomes a selectable provider when the app is in **server AI mode**.
+Do not remove OpenRouter. Do not delete Copilot SDK / GitHub OAuth backend code. Do not run `@cursor/sdk` in the browser.
 
-### What this is
+### Locked product behavior
 
-- Programmatic Cursor agents (`Agent.create` / `agent.send` / `Agent.prompt`).
-- Inference still uses Cursor-hosted models; “local” means the agent loop + filesystem run on our Node process, not that the model is local.
-- Auth via `CURSOR_API_KEY` (user key or team service-account key).
-
-### What this is not
-
-- Not a drop-in OpenRouter-style `/chat/completions` client.
-- Not cloud agents against arbitrary GitHub repos (out of scope for v1).
-- Not frontend-only; keys and agent execution stay on the server.
-- Not a reason to delete Copilot SDK / GitHub OAuth backend code.
+1. Server AI mode: provider = `openrouter` | `cursor-sdk`.
+2. Client AI mode: OpenRouter in the browser only (unchanged provider); uses the **same searchable picker** hydrated from OpenRouter’s models API with the local key.
+3. Chat and Settings show a searchable model combobox + selected-model detail panel (ctx, pricing, description, params/variants).
+4. Cursor runs are local agents with sandbox, per-session store/cwd, server-owned session mapping, SSE token streaming to the chat UI, and full dispose on reset/logout.
+5. OpenRouter server chat keeps request/response **and** gains SSE streaming parity so one chat client code path handles both providers.
 
 ---
 
-## 2. Fit with the current product
+## 2. Permanent exclusions
 
-| Surface today | Behavior | Cursor impact |
-|---|---|---|
-| Settings AI mode | `client` (browser → OpenRouter) or `server` (browser → `/api/ai/chat`) | Server mode gains provider `cursor-sdk` |
-| `POST /api/ai/chat` | OpenRouter only (`provider !== 'openrouter'` → 400) | Accept `provider: 'cursor-sdk'` and route to adapter |
-| `GET /api/ai/models` | Static OpenRouter list from `server/src/models.js` | For Cursor, call `Cursor.models.list({ apiKey })` (or cached) |
-| Chat / market / stock analyst | Message array → one assistant reply + meta | Map messages → agent prompt; return assistant text + meta (`agentId`, `runId`, latency, usage) |
-| Copilot SDK routes | Backend test APIs only | Leave untouched |
+These are **not** part of this feature (not deferred — excluded):
 
-**Product promise for v1:** authenticated users in server mode can choose Cursor, pick a model Cursor exposes for their key, send analyst prompts, and get a normal chat-shaped response the existing UI can render.
-
----
-
-## 3. Architecture decisions (locked for this plan)
-
-| Decision | Choice | Why |
-|---|---|---|
-| Language | Use `@cursor/sdk` from the existing **Node ESM** server (`server/`). No Python. | Server is already Node; matches Copilot adapter pattern. |
-| Runtime (v1) | **Local only** — always pass `local: { cwd, … }` explicitly. | Cloud needs a git repo + clone; portfolio/market context is not a PR workflow. |
-| Workspace | Per-request (or per-thread) **ephemeral context directory** under `server/data/cursor-workspaces/`, not the app repo root. | Avoids agents editing production source; injects market/portfolio JSON as files. |
-| Tool safety | Enable `local.sandboxOptions.enabled: true` where supported; add hooks to deny shell/write outside the workspace (deny-by-default for `beforeShellExecution` / write paths). | Default headless local agents auto-approve tools — unsafe on a multi-tenant API host. |
-| Invocation | Durable `Agent.create` + `agent.send` for chat threads; `Agent.prompt` only for smoke/health one-shots. | Chat needs follow-ups; must `wait()` and dispose. |
-| Auth (phase A) | Server env `CURSOR_API_KEY` (and optional `CURSOR_DEFAULT_MODEL`). | Mirrors OpenRouter env fallback; simplest Railway deploy. |
-| Auth (phase B) | Optional per-user Cursor API key in `user_ai_settings` when `provider = 'cursor-sdk'`. | Lets users bill their own Cursor plan; same pattern as OpenRouter user keys. |
-| Streaming (v1) | **Non-streaming** HTTP: run to completion, return final text. | Current `/api/ai/chat` and chat UI are request/response. SSE can be phase 2. |
-| Node version | **Node.js ≥ 22.13** for the server process. | Hard requirement of `@cursor/sdk`. Document + bump Railway/Nixpacks Node. |
-| Default provider | Keep OpenRouter as default. Cursor opt-in. | No surprise billing or breakage. |
-| Setting sources | `local.settingSources: []` (inline only). | Avoid loading IDE/user Cursor settings on the server. |
+- Cloud Cursor agents (`cloud: { repos }`), auto-PRs, agent kanban UIs.
+- MCP servers.
+- Cursor Canvas / IDE automations.
+- Browser-side `@cursor/sdk`.
+- Capacitor/Android packaging changes for the SDK.
+- Multi-replica / horizontally scaled API servers for Cursor agent cache (deploy **one** Railway service instance for the API).
+- Deleting or rewriting Copilot SDK OAuth/test routes.
+- Injecting `portfolio.json` / market snapshot files into agent workspaces (prompt context stays in `messages[]` + fixed `CONTEXT.md` instructions only).
 
 ---
 
-## 4. Scope
+## 3. Locked architecture decisions
 
-### In scope
-
-1. Dependency + config + Node 22.13+ requirement.
-2. `cursorSdkService.js` adapter (create/send/wait/dispose, model list, health).
-3. Ephemeral workspace builder (write context files from request or server-side portfolio/market snapshot).
-4. Test APIs under `/api/ai/cursor-sdk/…` (backend-only validation first).
-5. Wire `provider: 'cursor-sdk'` into `POST /api/ai/chat` and `GET /api/ai/models` (or a Cursor-specific models route).
-6. Persist optional `cursorAgentId` on chat thread meta for resume/follow-up.
-7. Settings UI: provider picker when server mode is on; Cursor key/model fields (phase B).
-8. Docs: `server/README.md`, `.env.example`, this plan’s checkboxes.
-9. Tests + smoke curls.
-
-### Out of scope (explicit)
-
-- Cloud agents (`cloud: { repos }`), auto-PRs, kanban-style agent UIs.
-- Replacing OpenRouter client mode.
-- Removing Copilot SDK / GitHub OAuth code.
-- Browser-side `@cursor/sdk` (Node-only package with native binaries).
-- MCP servers in v1 (can revisit later for market-data tools).
-- Cursor Canvas / IDE automations unrelated to the stock analyst.
-- Changing Capacitor/Android packaging for the SDK (server-only).
+| Topic | Locked choice |
+|---|---|
+| Language | `@cursor/sdk` from existing Node ESM `server/` |
+| Cursor runtime | Local only: always pass `local: { cwd, store, sandboxOptions, settingSources: [] }` |
+| `cwd` | `CURSOR_WORKSPACE_ROOT/<userId>/<sessionId>/cwd` |
+| `store` | `JsonlLocalAgentStore` at `CURSOR_WORKSPACE_ROOT/<userId>/<sessionId>/store` (per session, not shared across threads) |
+| Default home/SQLite store | Forbidden |
+| Sandbox | Always `sandboxOptions.enabled: true` when Cursor is enabled. If sandbox cannot start → `sandboxReady: false`, Cursor provider disabled, chat/settings show reason |
+| Hooks | Deny-by-default: reject `beforeShellExecution`; reject writes outside session `cwd` |
+| `settingSources` | Always `[]` |
+| Auth keys | Env `CURSOR_API_KEY` **and** per-user Cursor key in `user_ai_settings` (same pattern as OpenRouter). Effective key = user key if set, else env |
+| Default provider | `openrouter` |
+| Node | `>=22.13.0`; Railway pin `NIXPACKS_NODE_VERSION=22.13.0` in deploy config |
+| Response `message` | Always string |
+| Streaming | SSE from `POST /api/ai/chat` for **both** providers; final event carries the same JSON shape as today’s success body |
+| OpenRouter models | Live `GET https://openrouter.ai/api/v1/models` primary; `server/src/models.js` only if live fetch fails |
+| Cursor models | `Cursor.models.list({ apiKey })` only (plus single-model soft fallback if list fails and `CURSOR_DEFAULT_MODEL` is set) |
+| Models cache TTL | 10 minutes, keyed by `provider + apiKeyFingerprint` |
+| Picker filter | Client-side only; max **50** visible matches; show “Type to narrow…” when truncated |
+| Agent cache | In-memory `Map`, key `userId:sessionId`, max **50** entries, TTL **30 minutes** idle |
+| Cursor concurrency | Max **2** in-flight Cursor runs per user; max **30** Cursor chat requests per user per hour |
+| Cursor timeout | Server `CURSOR_CHAT_TIMEOUT_MS=300000`; client abort 300000 for Cursor; OpenRouter client stays 120000 |
+| `sessionId` | Required for `provider: "cursor-sdk"`. Chat uses thread id. Market/stock one-shots mint `ephemeral-<uuid>` per request and reset after completion |
+| Missing `sessionId` on Cursor | HTTP 400 |
+| Client-supplied `agentId` | Corroboration only; must match server map or HTTP 403 |
+| Deploy topology | Single Node process for API (no sticky-session design) |
 
 ---
 
-## 5. Target API contracts
+## 4. Environment & package
 
-### 5.1 Config (env)
-
-| Variable | Required | Notes |
+| Variable | Required | Default / value |
 |---|---|---|
-| `CURSOR_API_KEY` | For Cursor provider | User or service-account key (`cursor_…`) |
-| `CURSOR_DEFAULT_MODEL` | No | Default e.g. `composer-2.5`; always prefer `Cursor.models.list()` for picker |
-| `CURSOR_WORKSPACE_ROOT` | No | Default `./data/cursor-workspaces` |
-| `CURSOR_SDK_LOG_LEVEL` | No | Optional adapter logging |
-| `NODE_VERSION` / engine | Yes for deploy | Document `>=22.13.0` in `server/package.json` `engines` |
+| `CURSOR_API_KEY` | Yes to enable Cursor without per-user key | — |
+| `CURSOR_DEFAULT_MODEL` | No | `composer-2.5` |
+| `CURSOR_WORKSPACE_ROOT` | No | `./data/cursor-workspaces` |
+| `CURSOR_SDK_LOG_LEVEL` | No | `info` |
+| `CURSOR_CHAT_TIMEOUT_MS` | No | `300000` |
+| `CURSOR_REQUIRE_SANDBOX` | No | `true` |
+| `CURSOR_AGENT_CACHE_MAX` | No | `50` |
+| `CURSOR_AGENT_CACHE_TTL_MS` | No | `1800000` |
+| `CURSOR_MAX_CONCURRENT_PER_USER` | No | `2` |
+| `CURSOR_MAX_REQUESTS_PER_USER_HOUR` | No | `30` |
+| `NIXPACKS_NODE_VERSION` | Yes on Railway | `22.13.0` |
+| `engines.node` in `server/package.json` | Yes | `>=22.13.0` |
 
-### 5.2 Backend test routes (phase 1 — mirror Copilot test surface)
+Pin exact `@cursor/sdk` version in `server/package.json` at install time (no floating `latest`).
 
-All require `Authorization: Bearer <jwt>` unless noted.
+Update `server.railway.json` / Railway variables so Node **22.13.0** is pinned in config, not README-only.
 
-| Method | Path | Purpose |
-|---|---|---|
-| `GET` | `/api/ai/cursor-sdk/test/health` | Env configured? SDK importable? Node version OK? |
-| `GET` | `/api/ai/cursor-sdk/test/models` | `Cursor.models.list({ apiKey })` |
-| `POST` | `/api/ai/cursor-sdk/test/prompt` | One-shot `Agent.prompt` against ephemeral cwd |
-| `POST` | `/api/ai/cursor-sdk/test/chat` | Multi-turn style: create/send/wait; optional `agentId` resume |
-| `POST` | `/api/ai/cursor-sdk/test/session/reset` | Dispose cached agent for `sessionId` / `agentId` |
+---
 
-**Example `test/prompt` body:**
+## 5. API contracts
 
-```json
-{
-  "model": "composer-2.5",
-  "prompt": "Reply with exactly: cursor-sdk-ok"
-}
-```
-
-**Example success shape:**
+### 5.1 Success chat body (final SSE event and non-error completion)
 
 ```json
 {
   "provider": "cursor-sdk",
   "model": "composer-2.5",
-  "status": "finished",
-  "message": { "role": "assistant", "content": "cursor-sdk-ok" },
+  "modelParams": [{ "id": "fast", "value": "true" }],
+  "message": "assistant text here",
   "meta": {
+    "mode": "manual",
     "agentId": "agent-…",
     "runId": "…",
+    "sessionId": "thread-uuid",
     "latencyMs": 1234,
-    "usage": { "inputTokens": 10, "outputTokens": 5 }
+    "respondedAt": "2026-07-26T00:00:00.000Z",
+    "usage": {
+      "inputTokens": 10,
+      "outputTokens": 5,
+      "reasoningTokens": 0
+    }
   }
 }
 ```
 
-### 5.3 Production chat route (phase 2)
+- `message` is always a string.
+- Errors never use `message` as the assistant answer. Error JSON: `{ "error": "…", "retryable": true|false, "agentId": null|"…", "runId": null|"…" }`.
 
-Extend existing `POST /api/ai/chat`:
+### 5.2 SSE framing (`POST /api/ai/chat`)
+
+Request header: `Accept: text/event-stream` **or** body `"stream": true` (support both; if either present → SSE).
+
+Events:
+
+| `event` | `data` |
+|---|---|
+| `meta` | `{ "provider", "model", "modelParams", "sessionId", "agentId"? }` at start |
+| `delta` | `{ "text": "…" }` assistant text chunks |
+| `done` | full success body from §5.1 |
+| `error` | error JSON; then close |
+
+OpenRouter path: stream upstream tokens into the same `delta` events; `done` matches today’s fields plus `modelParams` when sent.
+
+If client does not request stream: buffer and return §5.1 JSON once (backward compatible).
+
+### 5.3 `POST /api/ai/chat` request
 
 ```json
 {
-  "provider": "cursor-sdk",
+  "provider": "openrouter" | "cursor-sdk",
   "model": "composer-2.5",
-  "mode": "manual",
+  "modelParams": [{ "id": "fast", "value": "true" }],
+  "mode": "manual" | "auto",
+  "stream": true,
   "messages": [
     { "role": "system", "content": "…" },
     { "role": "user", "content": "…" }
   ],
   "cursor": {
-    "agentId": null,
-    "sessionId": "thread-uuid",
-    "context": {
-      "symbol": "GP",
-      "includePortfolio": false
-    }
+    "sessionId": "thread-uuid"
   }
 }
 ```
 
 Rules:
 
-- `provider: 'openrouter'` — unchanged.
-- `provider: 'cursor-sdk'` — adapter path; reject if no API key.
-- Convert `messages[]` to a single user prompt string (roles labeled), or send only the latest user turn when `agentId` is present (follow-up).
-- Always `await run.wait()`; map `result.status === 'error'` to HTTP 502 with `runId`; map thrown `CursorAgentError` to 502/503 with `retryable` flag.
-- Always dispose agents that are not being retained for the thread; for retained agents, keep a bounded in-memory cache keyed by `userId:sessionId` with TTL + max size, and dispose on reset/logout.
+- `provider` default `openrouter`.
+- `cursor-sdk` requires configured key + `sandboxReady` + `cursor.sessionId`.
+- `modelParams` default `[]`. Cursor maps to `model: { id, params: modelParams }`. OpenRouter: ignore unknown params; do not fail.
+- On Cursor follow-up (server has mapping for `userId:sessionId`): send **only the latest user message** as the agent prompt; prior turns live in the agent checkpoint.
+- On first turn or after model/params change: create new agent; dispose previous for that session.
+- Always `await run.wait()` after streaming observation; distinguish `CursorAgentError` (startup) vs `result.status === "error"`.
+- Honor `error.isRetryable` in logs and error payload.
 
-### 5.4 Models
+### 5.4 Auto mode
 
-- Prefer `GET /api/ai/models?provider=cursor-sdk` or separate `GET /api/ai/cursor-sdk/models`.
-- Cache list in-process for ~5–15 minutes per apiKey fingerprint.
-- Do not hard-code model IDs beyond the documented default fallback `composer-2.5`.
-- Note: legacy `composer-2` / `composer-2-fast` IDs reroute to Composer 2.5 at auth time — prefer listing live IDs.
+- OpenRouter: `pickRandomModel` over the **live** list (fallback list if live failed).
+- Cursor: if `CURSOR_DEFAULT_MODEL` exists in live list, use it; else first model in live list; apply that model’s default variant params when `variants` marks `isDefault`, else first value of each parameter.
+
+### 5.5 Models list
+
+`GET /api/ai/models?provider=openrouter|cursor-sdk`  
+Default provider query: `openrouter`.
+
+```json
+{
+  "provider": "openrouter",
+  "defaultModel": "openrouter/free",
+  "source": "live",
+  "models": [
+    {
+      "model_id": "google/gemma-3-27b-it:free",
+      "model_name": "Google: Gemma 3 27B (free)",
+      "description": "",
+      "context_length": 131072,
+      "pricing": {
+        "prompt_per_million": 0,
+        "completion_per_million": 0,
+        "currency": "USD",
+        "display": "Free"
+      },
+      "capabilities": {
+        "reasoning": false,
+        "tools": false,
+        "modalities": ["text"]
+      },
+      "parameters": [],
+      "variants": []
+    }
+  ]
+}
+```
+
+Field rules:
+
+| Field | Rule |
+|---|---|
+| `description` | string; use `""` when absent |
+| `context_length` | number or `null` |
+| `pricing` | object or `null`. If `null`, UI shows `Billed on Cursor plan` for Cursor and `—` for OpenRouter |
+| `pricing.display` | preformatted for chips (`Free`, `$0.10 / $0.40`, etc.) |
+| `capabilities.reasoning` | boolean |
+| `capabilities.tools` | boolean |
+| `capabilities.modalities` | string array; default `["text"]` |
+| `parameters` | always array |
+| `variants` | always array |
+| `source` | `"live"` or `"fallback"` |
+
+**OpenRouter mapping** from `https://openrouter.ai/api/v1/models` `data[]`:
+
+- `id` → `model_id`
+- `name` \|\| `id` → `model_name`
+- `description` \|\| `""` → `description`
+- `context_length` → `context_length`
+- `pricing.prompt` / `pricing.completion` (per-token) × 1e6 → `prompt_per_million` / `completion_per_million`
+- `pricing.display`: `Free` if both rates are 0; else `$${prompt} / $${completion}` with sensible decimals
+- modalities from `architecture.modality` / input-output modalities when present
+- `capabilities.reasoning`: true if model id/name/description contains reasoning indicators OpenRouter exposes, or supported parameter names include reasoning; else false
+- Use effective OpenRouter API key when available; public fetch allowed without key
+
+**Cursor mapping** from `Cursor.models.list`:
+
+- `id` → `model_id`
+- `displayName` \|\| `id` → `model_name`
+- `description` \|\| `""` → `description`
+- `parameters` / `variants` copied fully
+- `context_length`: `null`
+- `pricing`: `null` (UI: `Billed on Cursor plan`)
+- `capabilities.reasoning`: true if any parameter `id` matches `/reason|effort|think/i` or any variant/description matches; else false
+- `capabilities.tools`: true (agents can use tools; sandbox still denies shell)
+
+### 5.6 Settings
+
+`GET /api/ai/settings`:
+
+```json
+{
+  "provider": "cursor-sdk",
+  "model": "composer-2.5",
+  "modelParams": [{ "id": "fast", "value": "true" }],
+  "configured": true,
+  "sandboxReady": true,
+  "cursorDisabledReason": null
+}
+```
+
+- Never return API keys.
+- `configured` for OpenRouter: env or user OpenRouter key present.
+- `configured` for Cursor: (env or user Cursor key) **and** `sandboxReady` when `CURSOR_REQUIRE_SANDBOX=true`.
+- `cursorDisabledReason`: string when Cursor cannot run (e.g. `Sandbox unavailable (bubblewrap)`), else `null`.
+
+`PUT /api/ai/settings` body:
+
+```json
+{
+  "provider": "openrouter" | "cursor-sdk",
+  "apiKey": "optional secret",
+  "model": "composer-2.5",
+  "modelParams": []
+}
+```
+
+- Provider `openrouter`: existing `sk-or-` validation when key sent.
+- Provider `cursor-sdk`: key must be non-empty; if it does not start with `cursor_`, reject with clear 400.
+- Empty `apiKey` means “keep existing user key.”
+- Persist `provider`, `model`, `modelParams`, encrypted/plain key same as today’s OpenRouter storage pattern.
+
+### 5.7 Cursor session routes
+
+| Method | Path | Body | Behavior |
+|---|---|---|---|
+| `POST` | `/api/ai/cursor-sdk/session/reset` | `{ "sessionId": "…" }` | Dispose that session’s agent; delete cwd+store |
+| `POST` | `/api/ai/cursor-sdk/session/reset` | `{ "all": true }` | Dispose all sessions for `request.user.id` |
+| `GET` | `/api/ai/cursor-sdk/test/health` | — | Diagnostics (Node, import, sandbox, configured) |
+| `GET` | `/api/ai/cursor-sdk/test/models` | — | Same normalize as production models |
+| `POST` | `/api/ai/cursor-sdk/test/prompt` | `{ model, modelParams?, prompt }` | One-shot `Agent.prompt`; dispose |
+| `POST` | `/api/ai/cursor-sdk/test/chat` | chat-like body with `sessionId` | Multi-turn test |
+| `POST` | `/api/ai/cursor-sdk/test/session/reset` | same as production reset | Alias to production reset handler |
+
+UI and `logout()` call **production** reset only (`/session/reset`), never `/test/`.
+
+On logout / clear auth: client calls `{ "all": true }` before clearing the token. Server also exposes internal `disconnectUser(userId)` used if a future account-delete path is added.
 
 ---
 
-## 6. Module design
+## 6. Modules & files
 
 ```
 server/src/
-  config.js                 # + Cursor env fields
-  cursorSdkService.js       # NEW — adapter
-  cursorWorkspace.js        # NEW — mkdir, write context files, cleanup
-  ai.js                     # + provider validation, resolve Cursor key/model
-  server.js                 # + routes + chat branch
-  db.js / ai settings       # + allow provider cursor-sdk + optional key shape
+  config.js
+  cursorSdkService.js      # NEW
+  cursorWorkspace.js       # NEW
+  openrouterModels.js      # NEW
+  openrouterClient.js      # stream support if missing
+  ai.js
+  server.js
+  db.js / settings helpers
+
+src/
+  lib/modelPicker.js       # NEW
+  lib/serverClient.js
+  lib/appSettings.js
+  chatApp.js
+  chat.html
+  settingsApp.js
+  settings.html
+  marketApp.js             # server AI uses settings model+params; stream-aware client helper
+  stockDetailApp.js        # same
+  styles.css               # .model-picker*, .model-detail*
 ```
 
-### 6.1 `cursorSdkService.js` responsibilities
+### 6.1 Workspace lifecycle
 
-- Resolve API key (env → per-user).
-- `listModels(apiKey)`.
-- `runPrompt({ apiKey, model, prompt, cwd })` via `Agent.prompt` (smoke).
-- `sendChat({ apiKey, model, prompt, agentId?, cwd, sessionId })`:
-  - `Agent.resume(agentId, …)` when id present and valid; else `Agent.create({ local: { cwd, sandboxOptions, settingSources: [] }, model: { id }, apiKey })`.
-  - `const run = await agent.send(prompt)`.
-  - Log `agent.agentId` + `run.id` immediately.
-  - Optionally consume `run.stream()` only to accumulate assistant text; still `await run.wait()`.
-  - Return `{ status, message, agentId, runId, usage, latencyMs }`.
-  - On non-retained runs: `await agent[Symbol.asyncDispose]()` (or `await using` in an async helper).
-- Distinguish:
-  - **Startup failure:** `CursorAgentError` → do not treat as model answer.
-  - **Run failure:** `result.status === 'error'` → return structured error with ids.
+```
+ensureSession(userId, sessionId)
+  cwd   = ROOT/userId/sessionId/cwd
+  store = ROOT/userId/sessionId/store
+  write CONTEXT.md (fixed analyst system instructions; no user PII)
+  return { cwd, storePath }
 
-### 6.2 `cursorWorkspace.js` responsibilities
+create agent → cache[userId:sessionId] = { agentId, cwd, storePath, model, modelParams, lastUsed }
 
-- `createWorkspace({ userId, sessionId })` → absolute path.
-- Write files such as:
-  - `CONTEXT.md` — analyst instructions (read-only guidance for the agent).
-  - `market.json` / `symbol.json` — optional snapshot from request context.
-  - `portfolio.json` — only if explicitly requested and owned by `userId`.
-- `destroyWorkspace(path)` after dispose (best-effort `rm -rf` under workspace root only; path-traversal guard).
-- Never set `cwd` to the git repo root of DSE Toolkit in production.
+send → authorize → resume or create with identical local options
+  stream deltas → wait → return
 
-### 6.3 Settings / DB
+on model or modelParams change → dispose old → create new → update cache
 
-Today `saveUserAiSettings` rejects non-`openrouter` providers and requires `sk-or-` keys.
+reset(sessionId) or reset(all) or TTL eviction or process shutdown
+  → asyncDispose → rm session dirs under ROOT only (path-guarded)
+```
 
-Extend carefully:
+Path rule: resolve with `path.resolve`; reject if not under realpath of `CURSOR_WORKSPACE_ROOT`.
 
-1. Allow `provider: 'openrouter' | 'cursor-sdk'`.
-2. Key validation:
-   - OpenRouter: existing `sk-or-` rule.
-   - Cursor: non-empty string; optionally require `cursor_` prefix if that remains stable in docs (treat as soft check + clear error message).
-3. `sanitizeAiSettings` must never return raw keys; only `configured: boolean`, `provider`, `model`.
-4. Env `CURSOR_API_KEY` counts as configured for Cursor even when the user row has no key (same pattern as OpenRouter env fallback).
+### 6.2 `CONTEXT.md` contents (fixed)
+
+Short analyst instructions only: DSE/Bangladesh market context, refuse shell/system probing, answer from provided messages, no financial advice disclaimer line. No portfolio or holdings data.
+
+### 6.3 Prompt mapping
+
+Same as Copilot adapter: join `messages` as `ROLE: content` blocks separated by blank lines for first turn / OpenRouter. Cursor follow-ups: latest user `content` only.
 
 ---
 
-## 7. Frontend integration (phase 3)
+## 7. Frontend (concrete)
 
-Files likely touched: `settings.html`, `src/settingsApp.js`, `src/lib/appSettings.js`, `src/lib/serverClient.js`, `src/chatApp.js` (and market/stock server-mode callers if they hard-code OpenRouter).
+### 7.1 Shared `modelPicker.js`
 
-### Settings UX
+Mounts into a container; API:
 
-- When AI mode = server:
-  - Provider select: OpenRouter | Cursor.
-  - If Cursor: show “Server uses CURSOR_API_KEY” status when env-configured; optional “Save my Cursor API key” for phase B.
-  - Model: load from Cursor models endpoint; include Auto if we define it as “server picks first/default from list” (not random OpenRouter auto unless we explicitly want parity).
+- `createModelPicker({ mount, detailMount, provider, mode, onChange })`
+- `hydrate(models, { selectedId, selectedParams, source })`
+- `getSelection()` → `{ modelId, modelParams, mode: 'manual'|'auto' }`
+- `setDisabled(boolean)` / `setError(message)` / `setLoading(boolean)`
 
-### Chat UX
+Combobox a11y: `role="combobox"`, `aria-expanded`, `aria-controls`, `aria-activedescendant`, visible label.
 
-- Pass `provider: 'cursor-sdk'` when selected.
-- Store `meta.agentId` / `meta.runId` on assistant messages; send `cursor.agentId` on follow-ups in the same thread.
-- Clear/delete thread → call session reset so the server disposes the agent.
-- Metadata panel: show provider, model, latency, optional token usage.
+Keyboard: ArrowUp/Down, Enter, Escape, Home/End, type-to-filter.
 
-### Client mode
+Styles in `styles.css` only: `.model-picker`, `.model-picker__input`, `.model-picker__list`, `.model-picker__option`, `.model-picker__meta`, `.model-detail`, `.model-detail__params`. Touch ≥44px. Respect `prefers-reduced-motion`.
 
-- No change: client mode stays OpenRouter-in-browser. Cursor SDK cannot run in the browser.
+**Each option row shows:** name; chips for ctx (`formatContext(context_length)` → `128K` or `—`); pricing (`pricing.display` or Cursor/`—` rules); reasoning badge if `capabilities.reasoning`; one-line truncated description; “Presets” hint if `variants.length > 0`.
 
----
+**Detail panel shows:** name, id, full description, ctx, pricing, variant chips (default marked), one control per `parameters[]` entry. Updates live on highlight/selection.
 
-## 8. Phased implementation
+Filter matches `model_name`, `model_id`, `description` (case-insensitive). Cap 50 rows.
 
-### Phase 0 — Preconditions
+Auto row:
 
-- [ ] Confirm deploy target can run **Node ≥ 22.13** (local + Railway).
-- [ ] Obtain a Cursor API key (user or service account) for staging.
-- [ ] Read current `@cursor/sdk` install notes; pin a specific version in `server/package.json`.
+- OpenRouter label: `Auto (random per message)`
+- Cursor label: `Auto (default / first available)`
 
-### Phase 1 — Foundation (backend only)
+### 7.2 Chat
 
-- [ ] `npm install @cursor/sdk` in `server/`.
-- [ ] Set `engines.node` to `>=22.13.0`; update README.
-- [ ] Extend `config.js` with Cursor env vars.
-- [ ] Add `cursorWorkspace.js` + `cursorSdkService.js`.
-- [ ] Add test routes (health / models / prompt / chat / reset).
-- [ ] Manual smoke via curl (see §10).
-- [ ] Update `server/README.md` + `.env.example`.
+- Replace `#chat-model-select` with picker mount + detail mount.
+- Server mode: `getServerAiModels(activeProvider)` then hydrate.
+- Client mode: fetch `https://openrouter.ai/api/v1/models` with local OpenRouter key (normalize with shared pure mapper in `src/lib/openrouterModelNormalize.js` duplicated logic **or** import-free copy of mapping rules — keep one shared normalize module under `src/lib/` used only for client; server keeps `openrouterModels.js`). Implement **one** normalize algorithm documented in §5.5; server and client each have a module implementing that algorithm (no bundler — duplicate file with identical exports is acceptable if ESM can’t share server code; prefer `src/lib/modelNormalize.js` browser-safe pure functions imported by server via relative path only if Node can import from `../src` — **locked:** put pure normalize in `src/lib/modelNormalize.js` and import it from `server/src/openrouterModels.js` and `server/src/cursorSdkService.js` via `../../src/lib/modelNormalize.js`).
+- Persist selection in `appSettings.ai`: `serverPreferredModel`, `serverModelMode`, `serverModelParams`, `serverAiProvider` (mirror of last known server provider for UI before GET returns).
+- Send `provider`, `model`, `modelParams`, `mode`, `stream: true`, `cursor.sessionId = thread.id`.
+- Render SSE deltas into the pending assistant bubble; on `done`, commit meta (model, params, latency, usage, agentId, runId).
+- Clear/delete thread → `POST /api/ai/cursor-sdk/session/reset` with that `sessionId` when provider is Cursor (and always safe no-op/404 ignore if OpenRouter).
+- Logout → `{ all: true }` reset then clear auth.
 
-**Phase 1 gate:** health + models + one-shot prompt succeed against staging key; workspace cleaned up; no writes outside workspace root.
+### 7.3 Settings
 
-### Phase 2 — Production chat wiring (backend)
+- Server mode: provider radios/select OpenRouter | Cursor.
+- Show `configured`, `sandboxReady`, `cursorDisabledReason`.
+- Cursor API key field (password) + save via PUT.
+- Preferred model: same `modelPicker` + detail panel; save model + modelParams via PUT.
+- Client mode: searchable OpenRouter picker (live) replacing free-text model input; key field unchanged.
 
-- [ ] Extend `ai.js` provider + key resolution for `cursor-sdk`.
-- [ ] Branch `POST /api/ai/chat` for Cursor.
-- [ ] Models endpoint supports Cursor list (cached).
-- [ ] Bounded agent cache + reset endpoint used by chat clear/delete.
-- [ ] Unit/integration tests for message→prompt mapping, error mapping, path guards.
+### 7.4 Market / stock server AI
 
-**Phase 2 gate:** authenticated chat with `provider: 'cursor-sdk'` returns assistant text compatible with existing response shape; OpenRouter path unchanged.
+- No inline model picker on those surfaces.
+- Use Settings-saved `provider`, `model`, `modelParams`, `mode`.
+- For Cursor: `sessionId = ephemeral-<uuid>`; after completion call session reset for that id.
+- Use shared `requestServerAiChat` streaming helper; show streamed text in existing AI UI surfaces.
 
-### Phase 3 — Frontend
+### 7.5 Service worker
 
-- [ ] Settings provider picker + Cursor status/fields.
-- [ ] `serverClient.js` helpers for Cursor models / chat payload.
-- [ ] Chat (+ market/stock server flows) send Cursor provider when selected.
-- [ ] Persist/resume `agentId` per thread; reset on clear/delete.
-- [ ] Bump service worker cache versions after asset changes.
-
-**Phase 3 gate:** full UI path works in server mode with Cursor selected; client/OpenRouter still work.
-
-### Phase 4 — Hardening
-
-- [ ] Sandbox + hooks verified (shell denied or jailed; no escape to `/`).
-- [ ] TTL/max-size eviction for agent cache; dispose on process shutdown.
-- [ ] Rate limits / concurrency cap per user (Cursor runs are heavier than OpenRouter HTTP).
-- [ ] Observability: log `agentId`, `runId`, `userId`, latency, `result.status` (never log API keys).
-- [ ] Respect `error.isRetryable` for transient failures.
-- [ ] Privacy review: what context files may contain; retention of workspaces.
-
-**Phase 4 gate:** load test a handful of concurrent Cursor chats without leaked child processes; `npm test` green.
-
-### Phase 5 — Optional follow-ons (separate plans)
-
-- SSE streaming of `run.stream()` assistant text.
-- Per-user Cursor keys only (disable shared env key).
-- MCP tools for live market JSON.
-- Cloud runtime for batch jobs (not interactive chat).
+Bump `src/swRegister.js` version tag and `sw.js` cache names after HTML/JS/CSS changes.
 
 ---
 
-## 9. Security & multi-tenant rules
+## 8. Implementation phases (build order only)
 
-1. **Never** run local agents with `cwd` = application source tree in production.
-2. **Never** pass `local.settingSources: 'all'`.
-3. **Sandbox + hooks** before exposing Cursor on a shared Railway instance.
-4. Workspace paths must be resolved with `path.resolve` and verified to stay under `CURSOR_WORKSPACE_ROOT`.
-5. Portfolio/context injection only for the authenticated `request.user.id`.
-6. Keys: env or DB only; sanitize all GET settings responses.
-7. Dispose agents; treat undisposed agents as a resource leak bug.
-8. Billing: shared `CURSOR_API_KEY` bills the key owner — document that clearly in Settings copy if using a server-wide key.
+Phases are **engineering order**, not reduced scope. The feature is incomplete until all phase gates pass.
+
+### Phase 0 — Host readiness
+
+- [ ] Local Node ≥ 22.13
+- [ ] Railway `NIXPACKS_NODE_VERSION=22.13.0` set in project/config
+- [ ] `engines.node` = `>=22.13.0`
+- [ ] Staging Cursor API key available
+- [ ] Confirm sandbox works on staging image **or** Cursor stays disabled with `cursorDisabledReason` until image includes `bubblewrap`/SDK helpers — Cursor must not run unsandboxed
+
+**Gate:** health design fields agreed; Node pin committed.
+
+### Phase 1 — Cursor foundation (no public chat yet)
+
+- [ ] Install pinned `@cursor/sdk`
+- [ ] Config env vars
+- [ ] `cursorWorkspace.js` + `cursorSdkService.js` (sandbox, hooks, per-session store/cwd)
+- [ ] Test + production reset routes
+- [ ] Health fail-closed without sandbox
+- [ ] README + `.env.example`
+
+**Gate:** health/models/prompt smoke OK; no default store; dirs cleaned after reset.
+
+### Phase 2 — Chat API + live models + streaming
+
+- [ ] `modelNormalize.js` + `openrouterModels.js` + Cursor `listModels`
+- [ ] `GET /api/ai/models?provider=`
+- [ ] Provider-aware settings GET/PUT with `modelParams`, `sandboxReady`, `cursorDisabledReason`
+- [ ] `POST /api/ai/chat` OpenRouter + Cursor branches, SSE + non-SSE
+- [ ] Agent cache, rate limits, timeouts, `disconnectUser`
+- [ ] Unit tests: normalize, path guards, agentId auth, auto mode, param pass-through
+
+**Gate:** curl SSE and JSON chat work for both providers; foreign agentId → 403; live models include required fields.
+
+### Phase 3 — Frontend picker + wiring
+
+- [ ] `styles.css` picker/detail components
+- [ ] `modelPicker.js`
+- [ ] Chat SSE + picker + detail + meta
+- [ ] Settings provider/key/picker/detail
+- [ ] Client-mode live OpenRouter picker
+- [ ] Market/stock use settings model+params + ephemeral Cursor sessions
+- [ ] Logout reset-all
+- [ ] SW bump
+
+**Gate:** manual QA checklist in §10 all checked.
+
+### Phase 4 — Proof
+
+- [ ] 20 sequential Cursor chats, 3 concurrent, no zombie processes
+- [ ] Workspace/store empty after resets
+- [ ] Rate limit returns 429 with clear error
+- [ ] `npm test` green
+- [ ] `npm run build` green
+
+**Gate:** metrics recorded; feature shippable.
 
 ---
 
-## 10. Validation / smoke checklist
+## 9. Security rules (enforced)
+
+1. Never use app repo root as `cwd`.
+2. Never `settingSources: 'all'`.
+3. Never enable Cursor chat without sandbox when `CURSOR_REQUIRE_SANDBOX=true`.
+4. All paths under `CURSOR_WORKSPACE_ROOT` only.
+5. `agentId` must match server map for `userId` + `sessionId`.
+6. No API keys in GET bodies or logs.
+7. Dispose on reset, logout, TTL, shutdown.
+8. Document in Settings that shared env `CURSOR_API_KEY` bills the key owner.
+9. Single API instance only for this feature’s agent cache.
+
+---
+
+## 10. Validation checklist
 
 ```bash
-# 0) Node
-node -v   # must be >= 22.13
+node -v   # >= 22.13
 
-# 1) Health
 curl -s -H "Authorization: Bearer $JWT" \
   http://127.0.0.1:3001/api/ai/cursor-sdk/test/health
 
-# 2) Models
 curl -s -H "Authorization: Bearer $JWT" \
-  http://127.0.0.1:3001/api/ai/cursor-sdk/test/models
+  "http://127.0.0.1:3001/api/ai/models?provider=openrouter"
 
-# 3) One-shot prompt
+curl -s -H "Authorization: Bearer $JWT" \
+  "http://127.0.0.1:3001/api/ai/models?provider=cursor-sdk"
+
 curl -s -X POST -H "Authorization: Bearer $JWT" \
   -H "Content-Type: application/json" \
   http://127.0.0.1:3001/api/ai/cursor-sdk/test/prompt \
   -d '{"model":"composer-2.5","prompt":"Reply with exactly: cursor-sdk-ok"}'
 
-# 4) Production-shaped chat
-curl -s -X POST -H "Authorization: Bearer $JWT" \
+curl -s -N -X POST -H "Authorization: Bearer $JWT" \
   -H "Content-Type: application/json" \
+  -H "Accept: text/event-stream" \
   http://127.0.0.1:3001/api/ai/chat \
   -d '{
     "provider":"cursor-sdk",
     "model":"composer-2.5",
-    "messages":[{"role":"user","content":"In one sentence, what is PE ratio?"}]
+    "stream":true,
+    "messages":[{"role":"user","content":"In one sentence, what is PE ratio?"}],
+    "cursor":{"sessionId":"smoke-thread-1"}
   }'
+
+curl -s -X POST -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3001/api/ai/cursor-sdk/session/reset \
+  -d '{"sessionId":"smoke-thread-1"}'
+
+curl -s -X POST -H "Authorization: Bearer $JWT" \
+  -H "Content-Type: application/json" \
+  http://127.0.0.1:3001/api/ai/cursor-sdk/session/reset \
+  -d '{"all":true}'
 ```
 
-Also verify:
+Manual UI:
 
-- [ ] OpenRouter chat still works with `provider: "openrouter"`.
-- [ ] Copilot SDK test routes still respond (untouched).
-- [ ] `npm test` (repo root) green after frontend phase.
-- [ ] Process does not accumulate zombie agent/executor processes after 20 sequential chats.
+- [ ] OpenRouter server: search models; see ctx/pricing/description; send streamed reply; meta shows model
+- [ ] Cursor server: search models; see params/variants; change param; streamed reply; meta shows model+params
+- [ ] Client OpenRouter: searchable live picker works with local key
+- [ ] Settings save provider/key/model/params survives reload
+- [ ] Cursor disabled copy appears when `sandboxReady` is false
+- [ ] Thread delete resets Cursor session
+- [ ] Logout resets all Cursor sessions
+- [ ] Foreign `agentId` cannot be resumed
+- [ ] Copilot test routes still respond
+- [ ] Combobox keyboard + focus rings + 360px layout OK
+- [ ] 20 sequential + 3 concurrent Cursor chats clean
 
 ---
 
@@ -372,45 +556,51 @@ Also verify:
 
 | Risk | Mitigation |
 |---|---|
-| SDK is in public beta; APIs evolve | Pin version; wrap behind `cursorSdkService.js`; keep OpenRouter default |
-| Node 22.13+ breaks current Node 20 assumption | Bump engines + Railway Node before coding features |
-| Local agent can run shell/edit by default | Sandbox + deny hooks + ephemeral cwd only |
-| Shared server key = shared billing / quota | Document; prefer per-user keys in phase B for multi-user |
-| Latency much higher than OpenRouter chat | UI already shows pending assistant; set honest timeouts; concurrency limits |
-| Platform native binaries fail on some hosts | Health check catches import/`acquire` failure early |
-| Confusing Cursor SDK with Copilot SDK | Separate routes `/api/ai/cursor-sdk/*`; do not reuse Copilot modules |
-| Resume without re-passing MCP/servers | v1 has no MCP; if added later, re-pass on `Agent.resume` |
+| SDK API churn | Pin version; adapter boundary |
+| Node 20 hosts | Engines + Railway 22.13.0 pin + health |
+| Unsandboxed agents | Fail closed |
+| Missing bubblewrap | Disable Cursor with explicit reason |
+| Cross-tenant store | Per-session store under userId/sessionId |
+| AgentId theft | Server map + 403 |
+| Billing surprise | Settings copy for shared env key; per-user keys supported |
+| Timeout | 300s Cursor server+client |
+| Large model lists | Search + 50-row cap |
+| Multi-instance cache | Single instance deploy constraint |
 
 ---
 
 ## 12. Deliverables
 
-1. This plan (living checklist).
-2. Backend adapter + workspace helper + test routes.
-3. `/api/ai/chat` Cursor branch + models listing.
-4. Settings + chat wiring for provider selection.
-5. README / `.env.example` updates.
-6. Smoke evidence (curl) and green `npm test` after UI phase.
+1. This plan (checklist).
+2. Server Cursor adapter, workspace, live OpenRouter+Cursor models, SSE chat, settings, reset.
+3. Shared searchable model picker + detail panel on Chat and Settings; client-mode OpenRouter picker.
+4. Market/stock wired to settings model+params with ephemeral Cursor sessions.
+5. README, `.env.example`, Railway Node pin.
+6. Tests + smoke + load proof green.
 
 ---
 
 ## 13. Definition of done
 
-1. Phases 1–3 gates pass; Phase 4 hardening complete enough for staging.
-2. OpenRouter (client + server) unchanged in behavior when selected.
-3. Copilot backend code still present and untouched in behavior.
-4. Cursor path: authenticated user can complete at least one analyst Q&A and one follow-up in the same thread via resumed `agentId`.
-5. No API keys in logs or GET responses; workspaces cleaned up after dispose/reset.
+All of the following are true:
+
+1. Phases 0–4 gates passed.
+2. Both providers work in server mode with searchable rich model picker, detail/params UI, and SSE streaming.
+3. Client OpenRouter mode uses the searchable live picker.
+4. Cursor never runs without sandbox when required; workspaces cleaned on reset; no zombie processes after load proof.
+5. OpenRouter non-Cursor behavior preserved when OpenRouter is selected.
+6. Copilot backend code retained and still responding on its routes.
+7. No API keys in logs or GET settings.
+8. `npm test` and `npm run build` green.
 
 ---
 
-## 14. Implementation order (cheat sheet)
+## 14. Build order
 
-1. Node/engine bump + install `@cursor/sdk`  
-2. Config + workspace + service + test routes  
-3. Smoke curls  
-4. Chat + models production wiring  
-5. Settings/UI + SW bump  
-6. Sandbox/hooks/cache/rate limits  
+1. Node/Railway pin + sandbox policy  
+2. Workspace + sandboxed Cursor adapter + health/reset  
+3. Live models normalize + settings + SSE chat both providers  
+4. Model picker UI + chat/settings/client/market/stock wiring + SW  
+5. Load/rate-limit/security proof  
 
-Start coding only after Phase 0 (Node + API key) is confirmed on the target host.
+Do not expose Cursor on `/api/ai/chat` or in the UI until Phase 1 gate passes.

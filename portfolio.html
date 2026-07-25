@@ -174,50 +174,7 @@
       cursor: pointer;
     }
 
-    /* Stock editor */
-    .editor-panel__content {
-      background: var(--surface);
-      width: 100%;
-      border-radius: var(--r-md);
-      padding: 1.1rem;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-2);
-    }
 
-    .editor-panel__topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      margin-bottom: 0.85rem;
-    }
-
-    .editor-panel__eyebrow {
-      margin: 0;
-      font-size: 0.7rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: rgba(148, 163, 184, 0.9);
-      font-weight: 700;
-    }
-
-    .editor-panel__title {
-      margin: 0.15rem 0 0;
-      font-size: 1.2rem;
-      line-height: 1.15;
-    }
-
-    .editor-panel__close {
-      flex-shrink: 0;
-      width: 40px;
-      height: 40px;
-      border-radius: 999px;
-      border: 1px solid rgba(148, 163, 184, 0.14);
-      background: rgba(15, 23, 42, 0.32);
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 1.3rem;
-    }
 
     .editor-form-grid {
       display: grid;
@@ -398,10 +355,7 @@
     }
 
     @media (max-width: 520px) {
-      .editor-panel__content {
-        padding: 1rem 0.95rem;
-        border-radius: 18px;
-      }
+
 
       .editor-stack-compact {
         grid-template-columns: 1fr;
@@ -441,7 +395,7 @@
 <body>
   <div id="siderail-mount"></div>
   <div class="safe-top-spacer"></div>
-  <header class="portfolio-header">
+  <header class="topbar portfolio-header">
     <div class="header-top">
       <a href="./index.html" class="home-link">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
@@ -458,7 +412,7 @@
     </div>
     <div class="portfolio-selector-container" style="margin-top: 1rem;">
       <label for="portfolio-selector" class="eyebrow" style="display: block; margin-bottom: 0.5rem; margin-left: 0.25rem;">Select Portfolio</label>
-      <select id="portfolio-selector" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-weight: 600; font-size: 1rem; appearance: none; background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E'); background-repeat: no-repeat; background-position: right 12px center; background-size: 16px;">
+      <select id="portfolio-selector" class="select">
         <!-- Portfolios will be injected here -->
       </select>
     </div>
@@ -482,100 +436,99 @@
     </section>
 
   <div id="stock-modal" class="sheet-overlay" aria-live="polite">
-    <div class="sheet">
+    <div class="sheet" style="max-width: 640px;">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <div class="editor-panel__content">
-          <div class="editor-panel__topbar">
-            <div>
-              <p class="editor-panel__eyebrow">Position Editor</p>
-              <h2 id="modal-title" class="editor-panel__title">Add Stock</h2>
-            </div>
-            <button id="close-modal" class="editor-panel__close" aria-label="Close editor">&times;</button>
-          </div>
-          <form id="stock-form">
-            <input type="hidden" id="edit-index" value="-1">
-            <input type="hidden" id="modal-mode" value="create">
-            <div class="modal-intro">
-              Add a position or top up an existing one without fighting a cramped popup. The form now opens inside the page and uses normal scrolling on mobile.
-            </div>
-            <div id="modal-mode-switch" class="modal-mode-switch" aria-label="Position action mode">
-              <button type="button" id="edit-position-mode" class="modal-mode-btn active">Edit Position</button>
-              <button type="button" id="add-shares-mode" class="modal-mode-btn">Add Shares</button>
-            </div>
-            <div class="editor-form-grid">
-              <div class="editor-form-main">
-                <div id="position-glance" class="position-glance" aria-live="polite">
-                  <h3>Current Position</h3>
-                  <div class="position-glance-grid">
-                    <div class="position-glance-item">
-                      <span>Shares</span>
-                      <strong id="glance-quantity">0</strong>
-                    </div>
-                    <div class="position-glance-item">
-                      <span>Avg Cost</span>
-                      <strong id="glance-average-cost">৳ 0.00</strong>
-                    </div>
-                    <div class="position-glance-item">
-                      <span>Total Basis</span>
-                      <strong id="glance-total-basis">৳ 0.00</strong>
-                    </div>
-                  </div>
-                </div>
-                <div class="editor-stack-compact">
-                  <div class="field">
-                    <label for="symbol">Symbol</label>
-                    <input type="text" id="symbol" placeholder="e.g. GP" required list="symbol-list">
-                    <datalist id="symbol-list"></datalist>
-                  </div>
-                  <div class="field">
-                    <label for="quantity">Quantity</label>
-                    <input type="number" id="quantity" step="1" min="1" required>
-                  </div>
-                </div>
-                <div class="field">
-                  <label for="avg-cost-base">Average Cost Without Commission (৳)</label>
-                  <input type="number" id="avg-cost-base" step="0.0001" min="0.0001" required>
-                  <div class="field-note">Base trade price per share before broker charges.</div>
-                </div>
-                <div class="inline-dual-fields">
-                  <div class="field">
-                    <label for="avg-cost">Average Cost (৳)</label>
-                    <input type="number" id="avg-cost" step="0.0001" min="0.0001" required>
-                    <div class="field-note">Final stored per-share cost used in performance calculations.</div>
-                  </div>
-                  <div class="field">
-                    <label for="total-cost">Total Cost (৳)</label>
-                    <input type="number" id="total-cost" step="0.0001" min="0" value="0.0000" readonly>
-                    <div class="field-note">Auto-calculated as Average Cost × Quantity.</div>
-                  </div>
-                </div>
-                <div id="comm-impact-note" class="impact-note" aria-live="polite">Commission impact: +৳0.00/share</div>
-              </div>
-              <div class="editor-form-side">
-                <div class="inline-dual-fields">
-                  <div class="field">
-                    <label for="comm-rate">Commission Rate (%)</label>
-                    <input type="number" id="comm-rate" step="0.0001" min="0" value="0.4000">
-                  </div>
-                  <div class="field">
-                    <label for="comm-amount">Total Commission (৳)</label>
-                    <input type="number" id="comm-amount" step="0.0001" min="0" value="0.0000" readonly class="input">
-                    <div class="field-note">Auto-calculated as Quantity × Base Cost × Commission Rate.</div>
-                  </div>
-                </div>
-                <p class="commission-note">Average Cost always includes commission. Average Cost Without Commission is the clean base trade price.</p>
-                <div class="editor-actions">
-                  <div class="modal-actions">
-                    <button type="button" id="delete-btn" class="btn" style="background: var(--danger); color: white; display: none;">Delete</button>
-                    <button type="button" id="cancel-position-btn" class="btn btn-cancel">Cancel</button>
-                    <button type="submit" id="save-position-btn" class="btn btn--solid">Save Position</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </form>
+      <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: var(--s-3);">
+        <div>
+          <p class="eyebrow" style="margin-bottom: 0.25rem;">Position Editor</p>
+          <h2 id="modal-title" style="margin: 0;">Add Stock</h2>
         </div>
+        <button id="close-modal" class="sheet__close" aria-label="Close editor">Close</button>
       </div>
+      <form id="stock-form">
+        <input type="hidden" id="edit-index" value="-1">
+        <input type="hidden" id="modal-mode" value="create">
+        <div class="modal-intro" style="margin-bottom: 1rem; color: var(--text-muted); font-size: 0.9rem;">
+          Add a position or top up an existing one. The form opens in a standard sheet.
+        </div>
+        <div id="modal-mode-switch" class="modal-mode-switch" aria-label="Position action mode">
+          <button type="button" id="edit-position-mode" class="modal-mode-btn active">Edit Position</button>
+          <button type="button" id="add-shares-mode" class="modal-mode-btn">Add Shares</button>
+        </div>
+        <div class="editor-form-grid">
+          <div class="editor-form-main">
+            <div id="position-glance" class="position-glance" aria-live="polite">
+              <h3>Current Position</h3>
+              <div class="position-glance-grid">
+                <div class="position-glance-item">
+                  <span>Shares</span>
+                  <strong id="glance-quantity">0</strong>
+                </div>
+                <div class="position-glance-item">
+                  <span>Avg Cost</span>
+                  <strong id="glance-average-cost">৳ 0.00</strong>
+                </div>
+                <div class="position-glance-item">
+                  <span>Total Basis</span>
+                  <strong id="glance-total-basis">৳ 0.00</strong>
+                </div>
+              </div>
+            </div>
+            <div class="editor-stack-compact">
+              <div class="field">
+                <label for="symbol">Symbol</label>
+                <input type="text" id="symbol" placeholder="e.g. GP" required list="symbol-list">
+                <datalist id="symbol-list"></datalist>
+              </div>
+              <div class="field">
+                <label for="quantity">Quantity</label>
+                <input type="number" id="quantity" step="1" min="1" required>
+              </div>
+            </div>
+            <div class="field">
+              <label for="avg-cost-base">Average Cost Without Commission (৳)</label>
+              <input type="number" id="avg-cost-base" step="0.0001" min="0.0001" required>
+              <div class="field-note">Base trade price per share before broker charges.</div>
+            </div>
+            <div class="inline-dual-fields">
+              <div class="field">
+                <label for="avg-cost">Average Cost (৳)</label>
+                <input type="number" id="avg-cost" step="0.0001" min="0.0001" required>
+                <div class="field-note">Final stored per-share cost used in performance calculations.</div>
+              </div>
+              <div class="field">
+                <label for="total-cost">Total Cost (৳)</label>
+                <input type="number" id="total-cost" step="0.0001" min="0" value="0.0000" readonly>
+                <div class="field-note">Auto-calculated as Average Cost × Quantity.</div>
+              </div>
+            </div>
+            <div id="comm-impact-note" class="impact-note" aria-live="polite">Commission impact: +৳0.00/share</div>
+          </div>
+          <div class="editor-form-side">
+            <div class="inline-dual-fields">
+              <div class="field">
+                <label for="comm-rate">Commission Rate (%)</label>
+                <input type="number" id="comm-rate" step="0.0001" min="0" value="0.4000">
+              </div>
+              <div class="field">
+                <label for="comm-amount">Total Commission (৳)</label>
+                <input type="number" id="comm-amount" step="0.0001" min="0" value="0.0000" readonly class="input">
+                <div class="field-note">Auto-calculated as Quantity × Base Cost × Commission Rate.</div>
+              </div>
+            </div>
+            <p class="commission-note">Average Cost always includes commission. Average Cost Without Commission is the clean base trade price.</p>
+            <div class="editor-actions">
+              <div class="modal-actions">
+                <button type="button" id="delete-btn" class="btn btn--danger" hidden>Delete</button>
+                <button type="button" id="cancel-position-btn" class="btn btn--ghost">Cancel</button>
+                <button type="submit" id="save-position-btn" class="btn btn--solid">Save Position</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
     </div>
   </div>
 

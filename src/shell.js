@@ -107,12 +107,14 @@ function renderFooter() {
 function closeSheet(sheet) {
   if (!sheet) return;
   sheet.hidden = true;
+  sheet.removeAttribute('open');
   document.body.classList.remove('sheet-open');
 }
 
 function openSheet(sheet) {
   if (!sheet) return;
   sheet.hidden = false;
+  sheet.setAttribute('open', '');
   document.body.classList.add('sheet-open');
 }
 
@@ -128,7 +130,7 @@ function wireMoreSheet(root) {
     }
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && sheet.hasAttribute('open')) closeSheet(sheet);
+    if (e.key === 'Escape' && (!sheet.hidden || sheet.hasAttribute('open'))) closeSheet(sheet);
   });
 }
 

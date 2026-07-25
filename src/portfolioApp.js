@@ -485,7 +485,6 @@ const openModal = (index = -1) => {
     lastCostEditedField = 'base';
     setModalMode(MODAL_MODE.CREATE);
     requestAnimationFrame(() => {
-      els.modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
       els.symbolInput.focus();
     });
     return;
@@ -496,13 +495,12 @@ const openModal = (index = -1) => {
   els.symbolInput.value = item.symbol;
   setModalMode(MODAL_MODE.EDIT);
   requestAnimationFrame(() => {
-    els.modal.scrollIntoView({ behavior: 'smooth', block: 'start' });
     els.quantityInput.focus();
   });
 };
 
 const closeModal = () => {
-  els.modal.classList.remove('active');
+  els.modal.removeAttribute('open');
   els.editIndex.value = '-1';
 };
 
@@ -511,12 +509,12 @@ const openManageModal = () => {
     return;
   }
 
-  els.manageModal.classList.add('active');
+  els.manageModal.setAttribute('open', '');
   renderManageList();
 };
 
 const closeManageModal = () => {
-  els.manageModal.classList.remove('active');
+  els.manageModal.removeAttribute('open');
 };
 
 const renderManageList = () => {
@@ -831,8 +829,21 @@ const bindEvents = () => {
     }
   });
 
-  window.addEventListener('click', (event) => {
+  els.modal.addEventListener('click', (event) => {
+    if (event.target === els.modal) {
+      closeModal();
+    }
+  });
+
+  els.manageModal.addEventListener('click', (event) => {
     if (event.target === els.manageModal) {
+      closeManageModal();
+    }
+  });
+
+  window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeModal();
       closeManageModal();
     }
   });

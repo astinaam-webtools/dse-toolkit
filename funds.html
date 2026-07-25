@@ -420,7 +420,7 @@
             <span id="detail-fund-amc" style="font-size: 0.9rem; color: var(--muted);">AMC</span>
           </div>
         </div>
-        <button id="btn-delete-fund" class="btn btn-danger" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Delete Fund</button>
+        <button id="btn-delete-fund" class="btn btn--danger">Delete Fund</button>
       </div>
 
       <div class="summary-card">
@@ -559,11 +559,11 @@
         <label>Total Cost</label>
         <input type="number" id="inp-tx-total" step="0.01">
       </div>
-      <div class="modal-actions" style="justify-content: space-between;">
-        <button class="btn btn-danger" id="btn-delete-tx" style="display:none;">Delete</button>
+      <div class="modal-actions">
+        <button class="btn btn--danger" id="btn-delete-tx" hidden>Delete</button>
         <div style="display:flex; gap:1rem; margin-left: auto;">
-          <button class="btn btn-secondary" onclick="app.closeModals()">Cancel</button>
-          <button class="btn btn-primary" id="btn-save-tx">Save</button>
+          <button class="btn btn--ghost" onclick="app.closeModals()">Cancel</button>
+          <button class="btn btn--primary" id="btn-save-tx">Save</button>
         </div>
       </div>
     </div>
