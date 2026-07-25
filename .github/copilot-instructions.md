@@ -35,6 +35,7 @@
 - Analyzer form (now on `analyzer.html`) collects key metrics and calls `analyzeStock` to output behaviour buckets with timing guidance.
 
 - Market pages (`market.html`, `stock.html`) render using `marketApp.js`/`stockDetailApp.js` and data from `src/data/dse-market.json`.
+- `dse-market.json` is a **minified** build artifact: null metric/delta keys are omitted, numbers are rounded. Treat missing keys as unavailable (`?.` / defaults). Do not pretty-print it back into the repo.
 - Market dashboard has three views: Lens (smart buckets), Screener (sortable table), and Heatmap (sector visualization).
 - Sector heatmap aggregates stocks by sector, calculates avg price change, total market cap, and displays color-coded tiles (green = positive, red = negative). Clicking a sector tile filters the screener to that sector.
 - PWA icons now use transparent backgrounds; Android icons use solid `#0f172a` background (adaptive icon foreground is generated via Capacitor).
@@ -65,7 +66,7 @@
 - For manual QA, serve with `python3 -m http.server 8000` and verify search/highlighting on real devices.
 - Validate PWA behavior with Chrome DevTools → Application tab (manifest + service worker) and toggle offline mode.
 
-- Market data QA: run `npm run build:data` after updating CSVs under `data/dse/` and inspect `src/data/dse-market.json`.
+- Market data QA: run `npm run build:data` after updating CSVs under `data/dse/` and inspect `src/data/dse-market.json` size/contents (expect compact single-line JSON; null fields absent).
 - Android asset QA: run `npx capacitor-assets generate --android` after updating `assets/icon.png` and `assets/splash.png`.
 
 ## Deployment Notes

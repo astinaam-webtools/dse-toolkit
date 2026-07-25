@@ -78,7 +78,7 @@ These fields are derived from the portfolio data and the latest market prices.
 *   **Add Stock**: A form to input symbol, quantity, cost, and commission.
 *   **Edit Stock**: Update existing positions.
 *   **Delete Stock**: Remove a position from the portfolio.
-*   **Real-time Valuation**: Automatically calculate the current value of the portfolio using the latest data from `dse-market.json`.
+*   **Real-time Valuation**: Automatically calculate the current value of the portfolio using the latest data from `dse-market.json` (compact build artifact — missing `metrics.ltp` means price unavailable; fall back to average cost).
 
 ### 4.3 Import/Export
 To ensure data portability and backup, users can import and export their portfolios.

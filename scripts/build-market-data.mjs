@@ -207,11 +207,61 @@ const listValidCsvFiles = async () => {
   return valid;
 };
 
+const toFiniteNumber = (value) => {
+  if (value == null || value === '' || value === '-') return null;
+  const n = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
 const calculateDelta = (current, previous) => {
-  if (current == null || previous == null) return null;
-  if (current === 0 && previous === 0) return 0;
-  if (previous === 0) return null; // Avoid division by zero
-  return ((current - previous) / previous) * 100;
+  const cur = toFiniteNumber(current);
+  const prev = toFiniteNumber(previous);
+  if (cur == null || prev == null) return null;
+  if (cur === 0 && prev === 0) return 0;
+  if (prev === 0) return null; // Avoid division by zero
+  const delta = ((cur - prev) / prev) * 100;
+  return Number.isFinite(delta) ? delta : null;
+};
+
+/** Round finite numbers for compact JSON; non-finite → omit. */
+const roundNumber = (value, digits = 4) => {
+  if (typeof value !== 'number') return value;
+  if (!Number.isFinite(value)) return undefined;
+  const factor = 10 ** digits;
+  return Math.round(value * factor) / factor;
+};
+
+/**
+ * Drop null/undefined/non-finite keys and round numbers for a smaller payload.
+ * Arrays (e.g. sparklines) keep length; non-finite points become 0.
+ */
+const compactValue = (value) => {
+  if (value == null) return undefined;
+  if (typeof value === 'number' && !Number.isFinite(value)) return undefined;
+  if (Array.isArray(value)) {
+    return value.map((item) => {
+      if (item == null || (typeof item === 'number' && !Number.isFinite(item))) return 0;
+      return roundNumber(item);
+    });
+  }
+  if (typeof value === 'object') {
+    const out = {};
+    for (const [key, child] of Object.entries(value)) {
+      if (child == null) continue;
+      const compacted = compactValue(child);
+      if (compacted !== undefined) out[key] = compacted;
+    }
+    return out;
+  }
+  return roundNumber(value);
+};
+
+const compactStock = (stock) => {
+  const out = compactValue(stock) || {};
+  if (out.deltas && Object.keys(out.deltas).length === 0) delete out.deltas;
+  if (out.metrics && Object.keys(out.metrics).length === 0) delete out.metrics;
+  if (Array.isArray(out.sparkline) && out.sparkline.length === 0) delete out.sparkline;
+  return out;
 };
 
 const buildMarketData = async () => {
@@ -331,10 +381,8 @@ const buildMarketData = async () => {
             ? Number(val)
             : null;
 
-        // Build deltas for all time periods
+        // Build deltas for all time periods (nulls omitted later by compactStock)
         const deltas = {};
-
-        // Add price and volume deltas for all time periods
         for (const period of Object.keys(timePeriods)) {
           const histStock = historicalMaps[period].get(symbol);
           deltas[`price_${period}`] = calculateDelta(row.Close, histStock?.Close);
@@ -344,7 +392,7 @@ const buildMarketData = async () => {
           );
         }
 
-        return {
+        return compactStock({
           symbol: row.Symbol,
           name: row.Company,
           sector: row.Sector,
@@ -367,8 +415,6 @@ const buildMarketData = async () => {
               row.LTP && row['NAV(Year End)']
                 ? parseFloat((row.LTP / row['NAV(Year End)']).toFixed(2))
                 : null,
-
-            // Additional fields requested
             williamsR: getNum(row['Willams %R [14]']),
             sma20: getNum(row['SMA [20]']),
             sma50: getNum(row['SMA [50]']),
@@ -401,7 +447,7 @@ const buildMarketData = async () => {
           },
           deltas,
           sparkline: sparklineHistory[symbol] || []
-        };
+        });
       });
 
     if (stocks.length === 0) {
@@ -418,12 +464,14 @@ const buildMarketData = async () => {
       stocks
     };
 
-    // 5. Write output
+    // 5. Write compact JSON (minified; nulls already omitted per stock)
     await fs.mkdir(path.dirname(OUTPUT_FILE), { recursive: true });
-    await fs.writeFile(OUTPUT_FILE, JSON.stringify(output, null, 2));
+    const payload = JSON.stringify(output);
+    await fs.writeFile(OUTPUT_FILE, payload);
 
     console.log(`Successfully generated ${OUTPUT_FILE}`);
     console.log(`Total stocks: ${stocks.length}`);
+    console.log(`Output size: ${(payload.length / 1024).toFixed(1)} KB (minified, nulls omitted)`);
   } catch (error) {
     console.error('Build failed:', error);
     process.exit(1);

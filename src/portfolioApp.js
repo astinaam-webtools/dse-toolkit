@@ -439,15 +439,18 @@ const render = () => {
   els.holdingsList.innerHTML = activePortfolio.items
     .map((item, index) => {
       const stock = marketData.stocks.find((entry) => entry.symbol === item.symbol);
-      const latestPrice = stock ? stock.metrics.ltp : item.average_cost;
+      const latestPrice = stock?.metrics?.ltp ?? item.average_cost;
       const metrics = calculateItemMetrics(item, latestPrice);
+      const ltpLabel = Number.isFinite(Number(latestPrice))
+        ? Number(latestPrice).toFixed(2)
+        : '—';
 
       return `
         <div class="holding-card" data-index="${index}">
           <div class="holding-info">
             <h3>${item.symbol}</h3>
             <p>${item.quantity} shares @ ৳${Number.parseFloat(item.average_cost).toFixed(2)}</p>
-            <p>LTP: ৳${latestPrice.toFixed(2)}</p>
+            <p>LTP: ৳${ltpLabel}</p>
           </div>
           <div class="holding-stats">
             <div class="holding-price">${formatMoney(metrics.totalCost)}</div>

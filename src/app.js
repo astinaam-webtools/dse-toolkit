@@ -117,7 +117,7 @@ const initMarketGlance = async () => {
     const stocks = data.stocks || [];
     const up = stocks.filter(s => s.deltas && s.deltas.price_1d > 0).length;
     const down = stocks.filter(s => s.deltas && s.deltas.price_1d < 0).length;
-    const totalValue = stocks.reduce((acc, s) => acc + (s.metrics.value || 0), 0);
+    const totalValue = stocks.reduce((acc, s) => acc + (s.metrics?.value || 0), 0);
     
     // Determine status
     let status = 'Neutral';

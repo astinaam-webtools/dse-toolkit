@@ -70,10 +70,10 @@ The project uses a static data generation approach:
 1.  **Raw Data**: Daily market data is dropped into `data/dse/` as CSV files (e.g., `2025-12-01.csv`).
 2.  **Processing**: Run `npm run build:data` to process these CSVs.
     -   Parses the latest CSV.
-    -   Calculates price/volume deltas (1-day, 1-week).
+    -   Calculates price/volume deltas for available history windows (1d…15y); omits nulls.
     -   Generates sparkline history from the last 30 files.
-    -   Outputs `src/data/dse-market.json`.
-3.  **Frontend**: The app fetches this JSON file to render the dashboard and stock pages.
+    -   Outputs compact `src/data/dse-market.json` (minified, rounded numbers, no null keys).
+3.  **Frontend**: The app fetches this JSON file to render the dashboard and stock pages. Missing metric/delta keys mean the value was unavailable.
 
 ## Local Development
 

@@ -361,15 +361,20 @@
       box-shadow: 0 0 0 3px var(--accent-soft);
     }
 
-    .chat-input {
+    .chat-input,
+    textarea.chat-input,
+    textarea.chat-input:hover,
+    textarea.chat-input:focus,
+    textarea.chat-input:focus-visible {
       width: 100%;
-      background: transparent;
+      background: transparent !important;
       color: var(--text);
-      border: none;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
       padding: 0 var(--s-1);
       font-size: var(--fs-sm);
       font-family: inherit;
-      outline: none;
       resize: none;
       min-height: 40px;
       max-height: 180px;

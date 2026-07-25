@@ -32,7 +32,12 @@ market.html         <-- New entry point
 
 ## 3. Data Schema (`dse-market.json`)
 
-The generated JSON will be an array of objects, optimized for size.
+Generated artifact is **minified JSON**, optimized for size:
+
+- Numbers rounded to 4 decimal places (sparklines / prices included).
+- `null` metric and delta keys are **omitted** (absence means unavailable).
+- All delta periods (`1d`…`15y`) are still computed; only non-null values are written.
+- Consumers must treat missing keys like `null` / `N/A` (optional chaining / defaults).
 
 ```json
 {
@@ -51,20 +56,22 @@ The generated JSON will be an array of objects, optimized for size.
         "ltp": 280.5,
         "pe": 12.5,
         "rsi": 45,
-        "macd": "Bullish",
+        "macd": 0.12,
         "volume": 500000,
         "mktCap": 380000
       },
       "deltas": {
-        "price_1d": 1.2,   // % change
+        "price_1d": 1.2,
         "price_1w": -0.5,
-        "vol_1d": 15.0     // % volume change
+        "vol_1d": 15.0
       },
-      "sparkline": [270, 272, 275, 271, 280] // Last 30 closing prices
+      "sparkline": [270, 272, 275, 271, 280]
     }
   ]
 }
 ```
+
+Rebuild with `npm run build:data` (`scripts/build-market-data.mjs`).
 
 ## 4. Features & UI Modules
 

@@ -349,18 +349,19 @@ const renderScreener = (stocks) => {
   
   els.screenerBody.innerHTML = displayStocks.map(stock => {
     const changeVal = stock.deltas?.price_1d;
-    const hasChange = changeVal !== undefined && changeVal !== null && !isNaN(changeVal);
+    const hasChange = Number.isFinite(changeVal);
     const changeClass = hasChange ? (changeVal > 0 ? 'up' : (changeVal < 0 ? 'down' : 'neutral')) : 'neutral';
-    const changeText = hasChange ? (changeVal > 0 ? '+' : '') + changeVal.toFixed(2) + '%' : '0.00%';
+    const changeText = hasChange ? (changeVal > 0 ? '+' : '') + changeVal.toFixed(2) + '%' : '—';
+    const ltp = stock.metrics?.ltp;
 
     return `
       <tr onclick="window.openStock('${stock.symbol}')" role="button" tabindex="0" aria-label="View ${stock.symbol} details">
         <td>
           <div style="font-weight:700; color:var(--text);">${stock.symbol}</div>
-          <div style="font-size:var(--fs-xs); color:var(--text-muted);">${stock.sector}</div>
+          <div style="font-size:var(--fs-xs); color:var(--text-muted);">${stock.sector || ''}</div>
         </td>
         <td class="u-text-right">
-          <span class="price">${stock.metrics.ltp}</span>
+          <span class="price">${ltp ?? '—'}</span>
         </td>
         <td class="u-text-right">
           <span class="change ${changeClass}">
@@ -368,7 +369,7 @@ const renderScreener = (stocks) => {
           </span>
         </td>
         <td class="u-text-center">
-          ${renderSparkline(stock.sparkline, changeVal >= 0)}
+          ${renderSparkline(stock.sparkline, !hasChange || changeVal >= 0)}
         </td>
       </tr>
     `;
@@ -448,21 +449,25 @@ window.filterBySector = (sectorName) => {
   renderView();
 };
 
-const renderStockRow = (stock) => `
+const renderStockRow = (stock) => {
+  const changeVal = stock.deltas?.price_1d;
+  const hasChange = Number.isFinite(changeVal);
+  const pe = stock.metrics?.pe;
+  return `
   <div class="stock-row" onclick="window.openStock('${stock.symbol}')" role="button" tabindex="0" aria-label="View ${stock.symbol} details">
     <div class="stock-info">
       <h4>${stock.symbol}</h4>
-      <p>${stock.metrics.pe ? 'PE ' + stock.metrics.pe : 'N/A'}</p>
+      <p>${pe ? 'PE ' + pe : 'N/A'}</p>
     </div>
     <div class="stock-metrics">
-      <span class="price">${stock.metrics.ltp}</span>
-      <span class="change ${stock.deltas.price_1d >= 0 ? 'up' : 'down'}">
-        ${stock.deltas.price_1d !== undefined ? (stock.deltas.price_1d >= 0 ? '+' : '') + stock.deltas.price_1d.toFixed(1) + '%' : ''}
+      <span class="price">${stock.metrics?.ltp ?? '—'}</span>
+      <span class="change ${!hasChange ? 'neutral' : changeVal >= 0 ? 'up' : 'down'}">
+        ${hasChange ? (changeVal >= 0 ? '+' : '') + changeVal.toFixed(1) + '%' : ''}
       </span>
     </div>
   </div>
 `;
-
+};
 const renderSparkline = (data, isUp) => {
   if (!data || data.length < 2) return '';
   
@@ -498,11 +503,11 @@ window.openStock = (symbol) => {
   const stock = marketData.stocks.find(s => s.symbol === symbol);
   if (!stock) return;
 
-  const m = stock.metrics;
+  const m = stock.metrics || {};
   const changeVal = stock.deltas?.price_1d;
   const hasChange = changeVal !== undefined && changeVal !== null && !isNaN(changeVal);
   const changeClass = hasChange ? (changeVal > 0 ? 'up' : (changeVal < 0 ? 'down' : 'neutral')) : 'neutral';
-  const changeText = hasChange ? (changeVal > 0 ? '+' : '') + changeVal.toFixed(2) + '%' : '0.00%';
+  const changeText = hasChange ? (changeVal > 0 ? '+' : '') + changeVal.toFixed(2) + '%' : '—';
 
   els.modalBody.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:var(--s-4);">
@@ -512,7 +517,7 @@ window.openStock = (symbol) => {
         <span class="bucket-count">${stock.sector}</span>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:var(--fs-xl); font-weight:700; color:var(--text); font-variant-numeric:tabular-nums;">${m.ltp}</div>
+        <div style="font-size:var(--fs-xl); font-weight:700; color:var(--text); font-variant-numeric:tabular-nums;">${m.ltp ?? '—'}</div>
         <div class="change ${changeClass}" style="font-size:var(--fs-sm); font-weight:600;">
           ${changeText}
         </div>
@@ -522,7 +527,7 @@ window.openStock = (symbol) => {
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:var(--s-3); margin-bottom:var(--s-5);">
       <div class="modal-metric-card">
         <div style="font-size:var(--fs-xs); color:var(--text-muted); font-weight:600;">PE Ratio</div>
-        <div style="font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin-top:4px;">${m.pe || '-'}</div>
+        <div style="font-weight:700; color:var(--text); font-variant-numeric:tabular-nums; margin-top:4px;">${m.pe ?? '-'}</div>
       </div>
       <div class="modal-metric-card">
         <div style="font-size:var(--fs-xs); color:var(--text-muted); font-weight:600;">RSI (14)</div>

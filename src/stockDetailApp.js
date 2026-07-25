@@ -115,29 +115,29 @@ const renderStock = (stock) => {
   els.symbol.textContent = stock.symbol;
   els.name.textContent = stock.name;
   els.sector.textContent = stock.sector;
-  els.price.textContent = stock.metrics.ltp;
+  els.price.textContent = stock.metrics?.ltp ?? '—';
   
-  const change = stock.deltas.price_1d;
-  els.change.textContent = change ? (change > 0 ? '+' : '') + change.toFixed(2) + '%' : '-';
-  els.change.style.color = change >= 0 ? '#10b981' : '#ef4444';
+  const change = stock.deltas?.price_1d;
+  const hasChange = Number.isFinite(change);
+  els.change.textContent = hasChange
+    ? `${change > 0 ? '+' : ''}${change.toFixed(2)}%`
+    : '—';
+  els.change.style.color = !hasChange ? '' : change >= 0 ? '#10b981' : '#ef4444';
   
   // Render Chart after layout is fully calculated
   // Use double requestAnimationFrame to ensure layout is complete
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      renderChart(stock.sparkline, change >= 0);
+      renderChart(stock.sparkline, !hasChange || change >= 0);
     });
   });
 
-  // Metrics Grid
-  // We'll iterate over all metrics and display them
-  // We can format keys to be more readable
-  
+  // Metrics Grid — absent keys mean null was omitted at build time
   const formatKey = (key) => {
     return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
   };
 
-  const metricsHtml = Object.entries(stock.metrics).map(([key, value]) => {
+  const metricsHtml = Object.entries(stock.metrics || {}).map(([key, value]) => {
     if (value === null || value === undefined) return '';
     
     let displayValue = value;

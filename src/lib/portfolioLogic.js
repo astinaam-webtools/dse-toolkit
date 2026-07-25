@@ -215,7 +215,7 @@ export const calculateSummary = (items, marketData) => {
 
   items.forEach((item) => {
     const stock = marketData.stocks.find((entry) => entry.symbol === item.symbol);
-    const latestPrice = stock ? stock.metrics.ltp : item.average_cost;
+    const latestPrice = stock?.metrics?.ltp ?? item.average_cost;
     const metrics = calculateItemMetrics(item, latestPrice);
 
     totalInvestment += metrics.totalCost;
