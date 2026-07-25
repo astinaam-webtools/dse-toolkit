@@ -10,7 +10,6 @@
   <link rel="icon" href="./icons/icon-192.png" />
   <style>
     body {
-      padding-bottom: 100px;
       background-color: var(--bg);
     }
 
@@ -211,8 +210,6 @@
       transform: scale(1.1);
     }
 
-    .btn-icon { padding: 0.5rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-
     /* Detail View Specifics */
     .chart-container {
       height: 300px;
@@ -329,11 +326,11 @@
       
       <!-- Executive Summary Card -->
       <div class="summary-card" id="executive-summary-card">
-        <div class="section-title" style="margin-bottom: 0.5rem;">
+        <div class="section-title section-title--summary">
           <span>Executive Summary</span>
-          <span style="font-size: 0.8rem; font-weight: 400; color: var(--muted);" id="summary-selection-text">All Portfolios</span>
+          <span class="fund-label--secondary" id="summary-selection-text">All Portfolios</span>
         </div>
-        <div class="summary-grid" style="margin-top: 0.5rem; padding-top: 0.5rem; border-top: none;">
+        <div class="summary-grid summary-grid--flush">
           <div class="summary-item">
             <div class="summary-label">Total Invested</div>
             <div class="summary-value" id="exec-invested">0.00</div>
@@ -355,8 +352,8 @@
 
       <div class="section-title">
         <span>Portfolios</span>
-        <label style="font-size: 0.9rem; font-weight: 400; display: flex; align-items: center; cursor: pointer;">
-          <input type="checkbox" id="chk-select-all" checked style="margin-right: 0.5rem;"> Select All
+        <label class="check-label">
+          <input type="checkbox" id="chk-select-all" checked> Select All
         </label>
       </div>
 
@@ -371,12 +368,12 @@
   <div id="view-portfolio-detail" class="view-section">
     <div class="container">
       <div class="header-top">
-        <div style="display:flex; align-items:center;">
+        <div class="detail-header-group">
           <button class="back-btn" onclick="app.showPortfolioList()">←</button>
-          <h1 id="detail-portfolio-name" style="margin:0; font-size: 1.5rem;">My Portfolio</h1>
-          <button id="btn-rename-portfolio" class="btn-icon" style="margin-left: 0.5rem; background: none; border: none; cursor: pointer;" title="Rename">✏️</button>
+          <h1 id="detail-portfolio-name" class="detail-title">My Portfolio</h1>
+          <button id="btn-rename-portfolio" class="btn-icon" title="Rename">✏️</button>
         </div>
-        <button id="btn-delete-portfolio" class="btn btn--danger" style="font-size: 0.85rem; padding: 0.5rem 1rem;">Delete</button>
+        <button id="btn-delete-portfolio" class="btn btn--danger btn--sm">Delete</button>
       </div>
 
       <div class="summary-card">

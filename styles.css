@@ -349,12 +349,12 @@ input[type='search']:focus {
 
 .chip:hover {
   transform: translateY(-1px);
-  border-color: rgba(15, 157, 88, 0.42);
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+  border-color: var(--accent-soft);
+  box-shadow: var(--shadow-2);
 }
 
 .chip--soft {
-  background: rgba(15, 157, 88, 0.08);
+  background: var(--accent-soft);
   color: var(--accent);
 }
 
@@ -371,7 +371,7 @@ input[type='search']:focus {
 }
 
 .chip:focus-visible {
-  outline: 3px solid rgba(15, 157, 88, 0.24);
+  outline: 3px solid var(--accent-soft);
   outline-offset: 2px;
 }
 
@@ -457,7 +457,7 @@ input[type='search']:focus {
 }
 
 .badge {
-  background: rgba(15, 157, 88, 0.12);
+  background: var(--accent-soft);
   color: var(--accent);
   padding: 0.15rem 0.65rem;
   border-radius: 999px;
@@ -466,7 +466,7 @@ input[type='search']:focus {
 }
 
 .badge.badge--caution {
-  background: rgba(220, 38, 38, 0.12);
+  background: var(--down-soft);
   color: var(--down);
 }
 
@@ -482,7 +482,7 @@ input[type='search']:focus {
   font-size: 0.85rem;
   color: var(--muted);
   border-top: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--bg) 0%, rgba(15, 157, 88, 0.03) 100%);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--accent-soft) 100%);
 }
 
 .footer__wave {
@@ -617,10 +617,6 @@ input[type='search']:focus {
 
 .analyzer-form {
   margin-top: 1.25rem;
-  /* border: 1px solid rgba(15, 23, 42, 0.08);
-  border-radius: 18px;
-  padding: clamp(1rem, 2vw, 1.5rem);
-  background: rgba(248, 250, 252, 0.6); */
 }
 
 .form-grid {
@@ -693,10 +689,10 @@ input[type='search']:focus {
 }
 
 .analysis-summary {
-  background: rgba(15, 157, 88, 0.08);
-  border-radius: 14px;
-  padding: 1rem;
-  border: 1px solid rgba(15, 157, 88, 0.2);
+  background: var(--up-soft);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  border: 1px solid var(--up);
   margin-bottom: 1rem;
 }
 
@@ -938,26 +934,22 @@ mark.hl {
   font-weight: 500;
 }
 
-/* Modal styles */
+/* Fullscreen AI modal overlay — used by chat.html #ai-modal */
 .modal-overlay {
   display: none;
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: oklch(0% 0 0 / 0.5);
   z-index: 1000;
   align-items: center;
   justify-content: center;
 }
+.modal-overlay.open { display: flex; }
 
 .modal-content {
   background: var(--surface);
   width: 100%;
-  max-width: 100%;
   height: 100%;
-  border-radius: 0;
   display: flex;
   flex-direction: column;
   padding: 1.5rem;
@@ -966,13 +958,8 @@ mark.hl {
   color: var(--text);
 }
 
-/* AI Modal fullscreen override */
 #ai-modal .modal-content {
-  width: 100%;
-  max-width: 100%;
-  height: 100%;
-  border-radius: 0;
-  padding: .5rem;
+  padding: 0.5rem;
   padding-top: 1rem;
 }
 
@@ -993,10 +980,7 @@ mark.hl {
   color: var(--muted);
   font-size: 1.2rem;
 }
-
-.close-modal:hover {
-  background: var(--border);
-}
+.close-modal:hover { background: var(--border); }
 
 #ai-chat-container {
   flex: 1;
@@ -1279,9 +1263,9 @@ mark.hl {
     color: var(--text);
   }
 
-  /* Dark mode modal fixes */
+  /* Dark mode modal overlay */
   .modal-overlay {
-    background: rgba(0, 0, 0, 0.7);
+    background: oklch(0% 0 0 / 0.7);
   }
 
   .modal-content {
@@ -1294,9 +1278,8 @@ mark.hl {
     background: var(--bg);
   }
 
-  /* Dark mode chat messages */
   .chat-msg--user {
-    background: rgba(15, 157, 88, 0.2);
+    background: var(--accent-soft);
     color: var(--text);
   }
 
@@ -1716,8 +1699,101 @@ mark.hl {
 
 .u-text-right { text-align: right; }
 .u-text-center { text-align: center; }
+.u-mt-hero { margin: var(--s-12) 0 var(--s-4); }
 
-/* Tabbar (mobile bottom nav). */
+/* Small button modifier — compact size for toolbars */
+.btn--sm {
+  min-height: 36px;
+  padding: 0.35rem 0.75rem;
+  font-size: var(--fs-sm);
+}
+
+/* Header action group */
+.header-actions {
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+}
+
+/* Skeleton size modifiers */
+.skeleton--lg { min-height: 80px; }
+.skeleton--md { min-height: 48px; }
+
+/* Skeleton loading container */
+.skeleton-grid {
+  padding: var(--s-4);
+  display: grid;
+  gap: var(--s-4);
+  width: 100%;
+}
+
+/* Overflow utility */
+.overflow-x-auto { overflow-x: auto; }
+
+/* Icon-only button — circular, neutral */
+.btn-icon {
+  appearance: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: var(--s-2);
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  font-size: var(--fs-base);
+  transition: background var(--dur-1) var(--ease-out);
+}
+.btn-icon:hover { background: var(--surface-2); }
+.btn-icon:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* Detail page header row */
+.detail-header-group {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-width: 0;
+}
+.detail-title {
+  margin: 0;
+  font-size: var(--fs-xl);
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Section title modifier for inside a card (tighter spacing) */
+.section-title--summary { margin-bottom: var(--s-2); }
+
+/* Secondary label — small muted inline text beside a title */
+.fund-label--secondary {
+  font-size: var(--fs-xs);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* Summary grid variant with no top border/padding (used inside card header) */
+.summary-grid--flush {
+  margin-top: var(--s-2);
+  padding-top: var(--s-2);
+  border-top: none;
+}
+
+/* Checkbox label row */
+.check-label {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  font-size: var(--fs-sm);
+  font-weight: 400;
+  cursor: pointer;
+}
+
+/* ═══════════════════════════════════════════════════
+   MOBILE TABBAR — bottom thumb-zone navigation
+   ═══════════════════════════════════════════════════ */
 .tabbar {
   position: fixed;
   left: 0;
@@ -1728,60 +1804,77 @@ mark.hl {
   grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: stretch;
   padding-bottom: env(safe-area-inset-bottom, 0px);
-  background: color-mix(in oklch, var(--surface) 94%, transparent);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
+  background: color-mix(in oklch, var(--surface) 88%, transparent);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  backdrop-filter: blur(20px) saturate(1.6);
   border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 24px oklch(24% 0.02 160 / 0.06);
 }
+
 .tabbar__tab {
   appearance: none;
   background: none;
   border: 0;
   font: inherit;
-  color: var(--text-muted);
+  color: var(--text-faint);
   text-decoration: none;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  min-height: 56px;
-  padding: 6px 4px 8px;
+  gap: 3px;
+  min-height: 60px;
+  padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px) * 0.1);
   position: relative;
   cursor: pointer;
-  transition: color var(--dur-1) var(--ease-out);
+  transition:
+    color var(--dur-2) var(--ease-out),
+    transform var(--dur-1) var(--ease-spring);
 }
+
 .tabbar__tab:focus-visible {
   outline: 3px solid var(--accent-soft);
   outline-offset: -3px;
   border-radius: var(--r-sm);
 }
+
+/* Icon wrapper — carries the pill background on active */
 .tabbar__icon {
-  width: 24px;
-  height: 24px;
+  width: 44px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: var(--r-pill);
+  transition:
+    background var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-spring);
+  flex-shrink: 0;
 }
-.tabbar__icon svg { width: 100%; height: 100%; }
-.tabbar__label {
-  font-size: var(--fs-xs);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-}
-.tabbar__tab.is-active { color: var(--accent); }
-.tabbar__tab.is-active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 25%;
-  right: 25%;
-  height: 3px;
-  background: var(--accent);
-  border-radius: 0 0 var(--r-sm) var(--r-sm);
+.tabbar__icon svg {
+  width: 20px;
+  height: 20px;
+  transition: stroke var(--dur-2) var(--ease-out);
 }
 
-/* Siderail (desktop left rail). Hidden on mobile, replaces tabbar ≥1024px. */
+.tabbar__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: color var(--dur-2) var(--ease-out);
+}
+
+/* Active state — pill on icon + accent label */
+.tabbar__tab.is-active { color: var(--accent); }
+.tabbar__tab.is-active .tabbar__icon {
+  background: var(--accent-soft);
+  transform: translateY(-2px);
+}
+
+/* Remove the old top-line indicator — pill replaces it */
+.tabbar__tab.is-active::before { display: none; }
+
+/* Siderail (desktop left rail). Hidden on mobile by default. */
 .siderail { display: none; }
 
 /* Footer — injected, shared. */
@@ -1883,42 +1976,226 @@ mark.hl {
 
 body.sheet-open { overflow: hidden; }
 
-/* Desktop: tabbar → siderail, sheet becomes centered dialog. */
+/* ═══════════════════════════════════════════════════
+   TOUCH DEVICES — disable sticky hover lifts
+   ═══════════════════════════════════════════════════ */
+@media (hover: none) and (pointer: coarse) {
+  .btn:hover,
+  .chip:hover,
+  .fund-card:hover,
+  .sector-tile:hover,
+  .nav-links a:hover {
+    transform: none;
+    box-shadow: none;
+  }
+  .tabbar__tab.is-active .tabbar__icon {
+    transform: none;
+  }
+  .tabbar__tab,
+  .sheet__list a {
+    min-height: 48px;
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   DESKTOP ≥1024px — siderail replaces tabbar
+   ═══════════════════════════════════════════════════ */
 @media (min-width: 1024px) {
   .tabbar { display: none; }
   .tabbar-spacer { height: 0; }
+
+  /* The siderail itself */
   .siderail {
     display: flex;
     flex-direction: column;
-    gap: var(--s-1);
     position: sticky;
     top: var(--s-6);
     align-self: start;
-    padding: var(--s-3);
-    min-width: 200px;
-    background: var(--surface);
+    width: 240px;
+    min-height: calc(100vh - var(--s-12));
+    max-height: calc(100vh - var(--s-12));
+    background: color-mix(in oklch, var(--surface) 96%, var(--accent-soft) 60%);
     border: 1px solid var(--border);
-    border-radius: var(--r-lg);
-    box-shadow: var(--shadow-1);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-2);
+    overflow: hidden;
+    padding: 0;
   }
+
+  /* Brand header at the top of the rail */
+  .siderail__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-5) var(--s-4) var(--s-4);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: var(--s-2);
+    flex-shrink: 0;
+  }
+  .siderail__logo {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--r-sm);
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 2px 8px oklch(55% 0.118 158 / 0.35);
+  }
+  .siderail__logo svg {
+    width: 18px;
+    height: 18px;
+    color: var(--accent-contrast);
+    stroke: var(--accent-contrast);
+  }
+  .siderail__wordmark {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .siderail__name {
+    font-family: var(--font-display);
+    font-size: var(--fs-sm);
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .siderail__tagline {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  /* Primary nav section label */
+  .siderail__section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: var(--s-3) var(--s-4) var(--s-1);
+    flex-shrink: 0;
+    margin: 0;
+  }
+  .siderail__section-label--footer {
+    padding-top: var(--s-2);
+    padding-bottom: var(--s-2);
+  }
+
+  /* Nav links area — scrollable if content overflows */
+  .siderail__nav {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0 var(--s-2);
+    flex: 1;
+    overflow-y: auto;
+  }
+
+  /* Bottom utilities section */
+  .siderail__footer {
+    border-top: 1px solid var(--border);
+    padding: var(--s-2);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex-shrink: 0;
+  }
+  .siderail__footer-link {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-md);
+    text-decoration: none;
+    font-size: var(--fs-sm);
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: background var(--dur-1) var(--ease-out), color var(--dur-1) var(--ease-out);
+  }
+  .siderail__footer-link:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .siderail__footer-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .siderail__footer-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  /* Override tabbar__tab styles inside siderail */
   .siderail .tabbar__tab {
     flex-direction: row;
     justify-content: flex-start;
     gap: var(--s-3);
     min-height: 44px;
-    padding: var(--s-3);
-    border-radius: var(--r-sm);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-md);
     width: 100%;
+    font-size: var(--fs-sm);
+    color: var(--text-muted);
+    position: relative;
+    transition:
+      background var(--dur-2) var(--ease-out),
+      color var(--dur-2) var(--ease-out);
   }
+  .siderail .tabbar__tab:hover {
+    background: var(--surface-2);
+    color: var(--text);
+  }
+  .siderail .tabbar__icon {
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border-radius: var(--r-sm);
+    transition: background var(--dur-2) var(--ease-out);
+    flex-shrink: 0;
+  }
+  .siderail .tabbar__icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  .siderail .tabbar__label {
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    flex: 1;
+    text-align: left;
+  }
+
+  /* Active state — full-width pill with left accent bar */
   .siderail .tabbar__tab.is-active {
     background: var(--accent-soft);
     color: var(--accent);
+    font-weight: 700;
   }
-  .siderail .tabbar__tab.is-active::before { display: none; }
-  .siderail .tabbar__label {
-    font-size: var(--fs-sm);
+  .siderail .tabbar__tab.is-active::before {
+    display: block;
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 25%;
+    bottom: 25%;
+    width: 3px;
+    height: auto;
+    background: var(--accent);
+    border-radius: 0 var(--r-pill) var(--r-pill) 0;
+  }
+  .siderail .tabbar__tab.is-active .tabbar__icon {
+    background: color-mix(in oklch, var(--accent) 18%, transparent);
+    transform: none;
   }
 
+  /* Sheet becomes centered dialog on desktop */
   .sheet-overlay { align-items: center; padding: var(--s-4); }
   .sheet {
     border-radius: var(--r-xl);
