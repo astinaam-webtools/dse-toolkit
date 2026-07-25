@@ -197,7 +197,27 @@ const renderFeed = () => {
   }
 
   if (!thread.messages.length) {
-    els.feed.innerHTML = '<div class="bubble bubble-system">No messages yet. Ask your first question.</div>';
+    els.feed.innerHTML = `
+      <div class="chat-welcome">
+        <div class="chat-welcome__icon">✨</div>
+        <h3>DSE AI Analyst</h3>
+        <p>Ask anything about Dhaka Stock Exchange stocks, financial ratios, or market trends.</p>
+        <div class="quick-prompts">
+          <button class="quick-prompt-btn" type="button" data-prompt="What are the key financial ratios to evaluate a DSE value stock?">
+            <span>📈 Key ratios for DSE value stocks</span>
+            <span>→</span>
+          </button>
+          <button class="quick-prompt-btn" type="button" data-prompt="How do I read P/E ratio and EPS for DSE stocks?">
+            <span>📊 How to read P/E and EPS</span>
+            <span>→</span>
+          </button>
+          <button class="quick-prompt-btn" type="button" data-prompt="Which DSE sectors are considered defensive during market volatility?">
+            <span>🛡️ Defensive sectors on DSE</span>
+            <span>→</span>
+          </button>
+        </div>
+      </div>
+    `;
     return;
   }
 
@@ -544,6 +564,15 @@ els.feed?.addEventListener('click', async (e) => {
       state.expandedMetaMessageIds.add(id);
     }
     renderFeed();
+    return;
+  const promptBtn = e.target.closest('.quick-prompt-btn');
+  if (promptBtn && els.input) {
+    const promptText = promptBtn.getAttribute('data-prompt');
+    if (promptText) {
+      els.input.value = promptText;
+      autoResizeComposer();
+      els.input.focus();
+    }
     return;
   }
 
