@@ -369,6 +369,13 @@ const buildMarketData = async () => {
 
     console.log(`  Sparkline days used: ${sparklineUsed}/${sparklineFiles.length}`);
 
+    const sparklineFrom = sparklineFiles[0]
+      ? sparklineFiles[0].replace(/\.csv$/i, '')
+      : null;
+    const sparklineTo = sparklineFiles.length
+      ? sparklineFiles[sparklineFiles.length - 1].replace(/\.csv$/i, '')
+      : latestDate;
+
     // 4. Transform to final JSON schema
     const stocks = currentData
       .filter((row) => row && row.Symbol)
@@ -459,6 +466,8 @@ const buildMarketData = async () => {
       metadata: {
         generatedAt: new Date().toISOString(),
         marketDate: latestDate,
+        sparklineFrom,
+        sparklineTo,
         totalStocks: stocks.length
       },
       stocks

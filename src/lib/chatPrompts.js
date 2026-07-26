@@ -153,6 +153,27 @@ export const buildTermAnalysisPrompt = (term) => {
   return `Explain "${term.title}"${shortStr} with real-world examples from the Dhaka Stock Exchange (DSE) market. How can DSE investors use this to evaluate stocks?`;
 };
 
+export const buildGuideAnalysisPrompt = (title, tag, bodyText) => {
+  if (!title) return '';
+  const tagCtx = tag ? ` (Category: ${tag})` : '';
+  return [
+    DSE_CONTEXT,
+    '',
+    `I'm studying "${title}"${tagCtx} from a chart-reading playbook. Here is what I already know:`,
+    '',
+    bodyText || '',
+    '',
+    'Please help me understand this better in the context of the Dhaka Stock Exchange (DSE). Cover:',
+    '1. **Beginner Explanation** — What this metric/indicator really means in simple terms.',
+    '2. **DSE-Specific Usage** — How to read and interpret this on DSE platforms (StockNow, DSE website, broker terminals).',
+    '3. **Practical Example** — Walk through a realistic scenario using a DSE-listed stock.',
+    '4. **Common Mistakes** — What beginners get wrong when reading this.',
+    '5. **Combining with Other Metrics** — Which other indicators pair well with this for better decisions.',
+    '',
+    'Use practical language for retail investors in Bangladesh. Format the response in Markdown.'
+  ].join('\n');
+};
+
 export const buildBootstrapSystemPrompt = (stock) => {
   if (!stock) {
     return 'You are a DSE-focused market assistant. Help the user with concise, evidence-based analysis.';

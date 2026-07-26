@@ -58,6 +58,69 @@ export const sparklineRange = (sparkline) => {
   };
 };
 
+/** Parse YYYY-MM-DD as UTC midnight. */
+const parseIsoDate = (value) => {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [y, m, d] = value.split('-').map(Number);
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return Number.isNaN(date.getTime()) ? null : date;
+};
+
+/** Floored whole calendar months between two UTC dates (0 if under one month). */
+const flooredMonthsBetween = (start, end) => {
+  let months = (end.getUTCFullYear() - start.getUTCFullYear()) * 12
+    + (end.getUTCMonth() - start.getUTCMonth());
+  if (end.getUTCDate() < start.getUTCDate()) months -= 1;
+  return Math.max(0, months);
+};
+
+const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'}`;
+
+/**
+ * Relative chart window label.
+ * - &lt; 1 month → days
+ * - &lt; 1 year → floored months +
+ * - ≥ 1 year → floored years + months +
+ */
+export const formatSparklinePeriod = (from, to) => {
+  const start = parseIsoDate(from);
+  const end = parseIsoDate(to);
+  if (!start || !end || end < start) return null;
+
+  const months = flooredMonthsBetween(start, end);
+
+  if (months < 1) {
+    const days = Math.max(1, Math.round((end - start) / 86400000));
+    return plural(days, 'day');
+  }
+
+  if (months < 12) {
+    return `${plural(months, 'month')}+`;
+  }
+
+  const years = Math.floor(months / 12);
+  const remMonths = months % 12;
+  if (remMonths === 0) return `${plural(years, 'year')}+`;
+  return `${plural(years, 'year')} ${plural(remMonths, 'month')}+`;
+};
+
+/** Absolute range with year for tooltips, e.g. "4 May 2026 – 26 Jul 2026". */
+export const formatSparklinePeriodDetail = (from, to) => {
+  const start = parseIsoDate(from);
+  const end = parseIsoDate(to);
+  if (!start || !end) return null;
+
+  const fmt = (date) =>
+    date.toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      timeZone: 'UTC'
+    });
+
+  return `${fmt(start)} – ${fmt(end)}`;
+};
+
 export const metricLabel = (key) => {
   if (LABELS[key]) return LABELS[key];
   return String(key)

@@ -3,6 +3,8 @@ import { requestServerAiChat, resetCursorSession } from './lib/serverClient.js';
 import { analyzeStock as profileStock, dseSectorMap } from './lib/behaviorProfiler.js';
 import {
   sparklineRange,
+  formatSparklinePeriod,
+  formatSparklinePeriodDetail,
   buildTradingStrip,
   buildMetricGroups
 } from './lib/stockMetricsLayout.js';
@@ -90,18 +92,41 @@ const init = async () => {
       return;
     }
 
-    // Fetch Data (Network-first)
-    let res;
-    try {
-      res = await fetch('https://astinaam-webtools.github.io/dse-toolkit/src/data/dse-market.json');
-      if (!res.ok) throw new Error('Network fetch failed');
-    } catch (e) {
-      console.warn('Fetching live data failed, falling back to local:', e);
-      res = await fetch('./src/data/dse-market.json');
+    // Network-first stocks; merge local sparkline period metadata when remote lacks it
+    const remoteUrl = 'https://astinaam-webtools.github.io/dse-toolkit/src/data/dse-market.json';
+    const localUrl = './src/data/dse-market.json';
+    const [remoteResult, localResult] = await Promise.allSettled([
+      fetch(remoteUrl).then((r) => {
+        if (!r.ok) throw new Error('Network fetch failed');
+        return r.json();
+      }),
+      fetch(localUrl).then((r) => {
+        if (!r.ok) throw new Error('Local fetch failed');
+        return r.json();
+      })
+    ]);
+
+    if (remoteResult.status === 'fulfilled') {
+      marketData = remoteResult.value;
+    } else if (localResult.status === 'fulfilled') {
+      console.warn('Fetching live data failed, falling back to local:', remoteResult.reason);
+      marketData = localResult.value;
+    } else {
+      throw new Error('Failed to load data');
     }
 
-    if (!res.ok) throw new Error('Failed to load data');
-    marketData = await res.json();
+    const localMeta = localResult.status === 'fulfilled' ? localResult.value?.metadata : null;
+    if (
+      localMeta?.sparklineFrom &&
+      localMeta?.sparklineTo &&
+      (!marketData.metadata?.sparklineFrom || !marketData.metadata?.sparklineTo)
+    ) {
+      marketData.metadata = {
+        ...(marketData.metadata || {}),
+        sparklineFrom: localMeta.sparklineFrom,
+        sparklineTo: localMeta.sparklineTo
+      };
+    }
     
     const stock = marketData.stocks.find(s => s.symbol === symbol);
     
@@ -155,8 +180,14 @@ const renderStock = (stock) => {
     els.chartContainer.classList.remove('is-empty');
     els.chartLow.textContent = range.low.toLocaleString(undefined, { maximumFractionDigits: 2 });
     els.chartHigh.textContent = range.high.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    els.chartSessions.textContent = `${range.sessions} sessions`;
-    els.chartSpan.textContent = range.span.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const meta = marketData?.metadata || {};
+    const period = formatSparklinePeriod(meta.sparklineFrom, meta.sparklineTo);
+    const detail = formatSparklinePeriodDetail(meta.sparklineFrom, meta.sparklineTo);
+    els.chartSessions.textContent = period || `${range.sessions} sessions`;
+    els.chartSpan.textContent = `Δ ${range.span.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+    els.chartRange.title = detail
+      ? `${detail} · ${range.sessions} sessions`
+      : `${range.sessions} sessions`;
   } else {
     els.chartRange.hidden = true;
     els.chartContainer.classList.add('is-empty');

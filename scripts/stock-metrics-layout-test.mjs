@@ -1,6 +1,8 @@
 import {
   isPresentMetric,
   sparklineRange,
+  formatSparklinePeriod,
+  formatSparklinePeriodDetail,
   formatMetricValue,
   buildTradingStrip,
   buildMetricGroups
@@ -62,6 +64,16 @@ const run = () => {
   assert(range.high === 258.2, 'high');
   assert(range.sessions === 3, 'sessions');
   assert(range.span === 20.5, 'span');
+
+  assert(formatSparklinePeriod('2026-07-10', '2026-07-26') === '16 days', 'under one month → days');
+  assert(formatSparklinePeriod('2026-05-04', '2026-07-26') === '2 months+', 'under one year → floored months+');
+  assert(formatSparklinePeriod('2025-05-04', '2026-05-04') === '1 year+', 'exact years+');
+  assert(formatSparklinePeriod('2024-05-04', '2026-07-26') === '2 years 2 months+', 'years + months+');
+  assert(formatSparklinePeriod(null, '2026-07-26') === null, 'period needs both');
+  assert(
+    formatSparklinePeriodDetail('2026-05-04', '2026-07-26') === '4 May 2026 – 26 Jul 2026',
+    'detail includes year'
+  );
 
   assert(formatMetricValue('pe', null) === null, 'format null');
   assert(typeof formatMetricValue('mktCap', 348647.47) === 'string', 'format mktCap');

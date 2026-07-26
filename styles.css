@@ -966,6 +966,10 @@ textarea:disabled,
   color: var(--muted);
 }
 
+.guide-card .term-ai-cta {
+  margin-top: var(--s-3);
+}
+
 .screenshot-note {
   font-size: 0.85rem;
   color: var(--muted);
@@ -1062,8 +1066,7 @@ mark.hl {
 
 /* Stock detail — chart + range + strip + groups */
 .stock-chart {
-  margin: 0 var(--s-6);
-  margin-bottom: var(--s-4);
+  margin: var(--s-4) var(--s-6) var(--s-4);
 }
 
 .stock-chart__canvas {
