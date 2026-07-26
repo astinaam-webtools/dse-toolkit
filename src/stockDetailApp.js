@@ -118,13 +118,15 @@ const init = async () => {
 
   } catch (err) {
     console.error(err);
+    els.loading.hidden = false;
+    els.content.hidden = true;
     els.loading.textContent = 'Error loading market data.';
   }
 };
 
 const renderStock = (stock) => {
-  els.loading.style.display = 'none';
-  els.content.style.display = 'block';
+  els.loading.hidden = true;
+  els.content.hidden = false;
   
   // Header
   els.symbol.textContent = stock.symbol;
