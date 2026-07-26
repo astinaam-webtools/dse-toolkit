@@ -278,7 +278,7 @@ const renderFeed = () => {
           ? `<button class="bubble-retry" type="button" data-retry-message-id="${message.id}">Retry</button>`
           : '';
 
-      return `<div class="bubble ${cls} ${isPendingAssistant ? 'bubble-thinking' : ''}">${body}${detailsToggle}${meta}${retry}</div>`;
+      return `<div class="bubble ${cls}${isPendingAssistant ? ' bubble-thinking' : ''}${isFailedAssistant ? ' bubble-failed' : ''}">${body}${detailsToggle}${meta}${retry}</div>`;
     })
     .join('');
 
@@ -441,37 +441,50 @@ const sendMessage = async (rawText) => {
   const text = String(rawText || '').trim();
   if (!text || state.loading) return;
 
-  const thread = getActiveThread();
-  if (!thread) return;
+  let thread = getActiveThread();
+  if (!thread) {
+    const created = createThread(state.chat, { title: 'New Chat' });
+    state.chat = created.state;
+    thread = created.thread;
+  }
 
+  const threadId = thread.id;
   const includeStockContext = shouldIncludeStockDataForSend(thread);
-  appendThreadMessage(thread, { role: 'user', content: text });
+
+  state.chat = appendThreadMessage(state.chat, threadId, { role: 'user', content: text });
 
   const pendingMsgId = `pending-${Date.now()}`;
-  appendThreadMessage(thread, {
+  state.chat = appendThreadMessage(state.chat, threadId, {
     id: pendingMsgId,
     role: 'assistant',
     content: '',
-    meta: { pending: true }
+    meta: {
+      pending: true,
+      requestForContent: text,
+      includeStockData: includeStockContext
+    }
   });
-
-  renderFeed();
-  renderThreadList();
-  await persist();
 
   els.input.value = '';
   autoResizeComposer();
+  renderFeed();
+  renderThreadList();
   setLoading(true);
+  // Persist optimistically; never block the conversation turn on sync errors.
+  persist().catch(() => {});
 
   try {
-    const requestMessages = buildRequestMessages(thread, includeStockContext);
-    const completion = await requestCompletion(requestMessages, thread, pendingMsgId);
+    const activeThread = getActiveThread();
+    const requestMessages = buildRequestMessages(activeThread, includeStockContext);
+    const completion = await requestCompletion(requestMessages, activeThread, pendingMsgId);
 
-    updateThreadMessage(thread, pendingMsgId, {
+    state.chat = updateThreadMessage(state.chat, threadId, pendingMsgId, {
       content: completion.text,
       meta: {
         pending: false,
         failed: false,
+        requestForContent: text,
+        includeStockData: includeStockContext,
         ...completion.meta
       }
     });
@@ -479,12 +492,14 @@ const sendMessage = async (rawText) => {
     state.lastMeta = completion.meta;
     state.expandedMetaMessageIds.add(pendingMsgId);
   } catch (error) {
-    updateThreadMessage(thread, pendingMsgId, {
+    state.chat = updateThreadMessage(state.chat, threadId, pendingMsgId, {
       content: `Failed to generate AI response: ${error.message}`,
       meta: {
         pending: false,
         failed: true,
-        error: error.message
+        error: error.message,
+        requestForContent: text,
+        includeStockData: includeStockContext
       }
     });
   } finally {
@@ -492,7 +507,7 @@ const sendMessage = async (rawText) => {
     syncIncludeStockDataControl();
     renderFeed();
     renderThreadList();
-    await persist();
+    await persist().catch(() => {});
   }
 };
 
@@ -501,15 +516,15 @@ const init = async () => {
   state.bootstrap = await parseBootstrapContext();
 
   if (state.bootstrap) {
-    const thread = createThread({
+    const created = createThread(state.chat, {
       title: state.bootstrap.title,
       context: state.bootstrap.context || {},
       systemPrompt: state.bootstrap.systemPrompt
     });
-    state.chat.threads.unshift(thread);
-    setActiveThread(state.chat, thread.id);
+    state.chat = created.state;
   } else {
-    ensureThread(state.chat);
+    const ensured = ensureThread(state.chat);
+    state.chat = ensured.state;
   }
 
   await setupModelPicker();
@@ -517,13 +532,14 @@ const init = async () => {
   renderThreadList();
   renderFeed();
   await renderSyncState();
+  persist().catch(() => {});
 
+  // Glossary / stock entry: send immediately so the prompt appears as a conversation turn
+  // (success or failed assistant reply), not as parked composer text.
   if (state.bootstrap?.seedMessage) {
     await sendMessage(state.bootstrap.seedMessage);
-  } else if (state.bootstrap?.prefilledPrompt && els.input) {
-    els.input.value = state.bootstrap.prefilledPrompt;
-    autoResizeComposer();
-    els.input.focus();
+  } else if (state.bootstrap?.prefilledPrompt) {
+    await sendMessage(state.bootstrap.prefilledPrompt);
   }
 };
 
@@ -533,9 +549,8 @@ els.back?.addEventListener('click', () => {
 });
 
 const createNewThread = async () => {
-  const thread = createThread({ title: 'New Chat' });
-  state.chat.threads.unshift(thread);
-  setActiveThread(state.chat, thread.id);
+  const created = createThread(state.chat, { title: 'New Chat' });
+  state.chat = created.state;
   syncIncludeStockDataControl();
   renderThreadList();
   renderFeed();
@@ -552,7 +567,7 @@ els.clearThread?.addEventListener('click', async () => {
   if (aiSettings.mode === 'server' && aiSettings.serverAiProvider === 'cursor-sdk') {
     resetCursorSession(thread.id);
   }
-  clearThreadMessages(thread);
+  state.chat = clearThreadMessages(state.chat, thread.id);
   syncIncludeStockDataControl();
   renderFeed();
   renderThreadList();
@@ -566,22 +581,26 @@ els.deleteThread?.addEventListener('click', async () => {
   if (aiSettings.mode === 'server' && aiSettings.serverAiProvider === 'cursor-sdk') {
     resetCursorSession(thread.id);
   }
-  deleteThread(state.chat, thread.id);
-  ensureThread(state.chat);
+  state.chat = deleteThread(state.chat, thread.id);
+  if (!state.chat.threads.length) {
+    const ensured = ensureThread(state.chat);
+    state.chat = ensured.state;
+  }
   syncIncludeStockDataControl();
   renderThreadList();
   renderFeed();
   await persist();
 });
 
-els.threadList?.addEventListener('click', (e) => {
+els.threadList?.addEventListener('click', async (e) => {
   const btn = e.target.closest('[data-thread-id]');
   if (!btn) return;
   const threadId = btn.getAttribute('data-thread-id');
-  setActiveThread(state.chat, threadId);
+  state.chat = setActiveThread(state.chat, threadId);
   syncIncludeStockDataControl();
   renderThreadList();
   renderFeed();
+  await persist();
 });
 
 els.feed?.addEventListener('click', async (e) => {
@@ -613,45 +632,62 @@ els.feed?.addEventListener('click', async (e) => {
     const thread = getActiveThread();
     if (!thread || state.loading) return;
 
-    const userMsgs = thread.messages.filter((m) => m.role === 'user');
-    const lastUser = userMsgs[userMsgs.length - 1];
-    if (!lastUser) return;
+    const failedMessage = thread.messages.find((m) => m.id === retryBtn.dataset.retryMessageId);
+    const promptText = failedMessage?.meta?.requestForContent
+      || thread.messages.filter((m) => m.role === 'user').at(-1)?.content
+      || '';
+    if (!failedMessage || !promptText) return;
 
-    thread.messages = thread.messages.filter((m) => !m.meta?.failed);
-    const pendingMsgId = `pending-${Date.now()}`;
-    appendThreadMessage(thread, {
-      id: pendingMsgId,
-      role: 'assistant',
-      content: '',
-      meta: { pending: true }
-    });
+    const includeStockContext = failedMessage.meta?.includeStockData ?? shouldIncludeStockDataForSend(thread);
 
-    renderFeed();
     setLoading(true);
-
     try {
-      const requestMessages = buildRequestMessages(thread, shouldIncludeStockDataForSend(thread));
-      const completion = await requestCompletion(requestMessages, thread, pendingMsgId);
+      state.chat = updateThreadMessage(state.chat, thread.id, failedMessage.id, {
+        content: '',
+        meta: {
+          ...(failedMessage.meta || {}),
+          pending: true,
+          failed: false,
+          requestForContent: promptText,
+          includeStockData: includeStockContext
+        }
+      });
+      renderFeed();
+      persist().catch(() => {});
 
-      updateThreadMessage(thread, pendingMsgId, {
+      const activeThread = getActiveThread();
+      const requestMessages = buildRequestMessages(activeThread, includeStockContext);
+      const completion = await requestCompletion(requestMessages, activeThread, failedMessage.id);
+
+      state.chat = updateThreadMessage(state.chat, thread.id, failedMessage.id, {
         content: completion.text,
         meta: {
           pending: false,
           failed: false,
+          requestForContent: promptText,
+          includeStockData: includeStockContext,
           ...completion.meta
         }
       });
-      state.expandedMetaMessageIds.add(pendingMsgId);
+      state.expandedMetaMessageIds.add(failedMessage.id);
     } catch (err) {
-      updateThreadMessage(thread, pendingMsgId, {
+      state.chat = updateThreadMessage(state.chat, thread.id, failedMessage.id, {
         content: `Failed to generate AI response: ${err.message}`,
-        meta: { pending: false, failed: true, error: err.message }
+        meta: {
+          ...(failedMessage.meta || {}),
+          pending: false,
+          failed: true,
+          error: err.message,
+          requestForContent: promptText,
+          includeStockData: includeStockContext
+        }
       });
     } finally {
       setLoading(false);
+      syncIncludeStockDataControl();
       renderFeed();
       renderThreadList();
-      await persist();
+      await persist().catch(() => {});
     }
   }
 });
