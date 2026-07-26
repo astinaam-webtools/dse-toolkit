@@ -51,7 +51,7 @@ A comprehensive, mobile-first toolkit for Dhaka Stock Exchange (DSE) investors. 
 │   ├── app.js            # Glossary logic
 │   ├── marketApp.js      # Market Lens dashboard logic
 │   ├── stockDetailApp.js # Stock details & AI logic
-│   ├── portfolioApp.js   # Portfolio tracker logic
+│   ├── portfoliosApp.js  # Unified Portfolios (stocks + funds)
 │   ├── data/
 │   │   ├── terms.js      # Glossary definitions
 │   │   └── dse-market.json # Processed market data

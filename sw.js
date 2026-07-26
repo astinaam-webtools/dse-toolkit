@@ -1,5 +1,5 @@
-const CACHE_NAME = 'stock-glossary-v46';
-const RUNTIME_CACHE = 'runtime-stock-glossary-v46';
+const CACHE_NAME = 'stock-glossary-v47';
+const RUNTIME_CACHE = 'runtime-stock-glossary-v47';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -19,10 +19,10 @@ const PRECACHE_URLS = [
   './src/app.js',
   './src/marketApp.js',
   './src/stockDetailApp.js',
-  './src/portfolioApp.js',
-  './src/fundsApp.js',
+  './src/portfoliosApp.js',
   './src/settingsApp.js',
   './src/chatApp.js',
+  './src/shell.js',
   './src/navStatus.js',
   './src/swRegister.js',
   './src/mobile-nav.js',
@@ -32,6 +32,7 @@ const PRECACHE_URLS = [
   './src/lib/marketLogic.js',
   './src/lib/portfolioLogic.js',
   './src/lib/fundsLogic.js',
+  './src/lib/portfoliosOverview.js',
   './src/lib/appSettings.js',
   './src/lib/serverClient.js',
   './src/lib/documentGateway.js',

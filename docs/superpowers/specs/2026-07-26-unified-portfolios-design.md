@@ -1,7 +1,7 @@
 # Unified Portfolios Page — Design Spec
 
 **Date:** 2026-07-26  
-**Status:** Approved — implementation plan at `docs/superpowers/plans/2026-07-26-unified-portfolios.md`  
+**Status:** Approved / Implemented — plan at `docs/superpowers/plans/2026-07-26-unified-portfolios.md`  
 **Scope:** Collapse `portfolio.html` (stocks) and `funds.html` (mutual funds) into one Portfolios experience; redesign UI to match the site design system.
 
 ---

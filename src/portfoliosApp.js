@@ -110,7 +110,7 @@ const MODAL_MODE = {
 
 const EDITOR_PRECISION = 4;
 
-/** Same BDT pattern as portfolioApp.js `formatMoney`. */
+/** Same BDT pattern as legacy portfolio formatMoney. */
 const formatCurrency = (value) =>
   `৳ ${Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
@@ -314,6 +314,38 @@ let currentFundId = null;
 let renameTarget = null;
 let lastCostEditedField = 'base';
 let busy = false;
+let holdingsFadeTimer = null;
+
+function prefersReducedMotion() {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function emptyStateCopy(category) {
+  if (category === 'stocks') {
+    return {
+      title: 'No stock holdings',
+      description: 'Add a stock position to start tracking this category.',
+      cta: 'Add stock',
+      onClick: () => openStockModal()
+    };
+  }
+  if (category === 'funds') {
+    return {
+      title: 'No fund holdings',
+      description: 'Add a mutual fund to start tracking this category.',
+      cta: 'Add fund',
+      onClick: () => openAddFund()
+    };
+  }
+  return {
+    title: 'No holdings yet',
+    description: 'Track stocks and mutual funds in one place. Tap + or use the button below.',
+    cta: 'Add holding',
+    onClick: () => handleFabClick()
+  };
+}
 
 const formatTransactionType = (type) => {
   const labels = {
@@ -346,7 +378,7 @@ function setCategory(category) {
   if (category === 'all') url.searchParams.delete('category');
   else url.searchParams.set('category', category);
   history.replaceState({}, '', url);
-  render();
+  render({ animateHoldings: true });
 }
 
 function syncSegment(category) {
@@ -1511,7 +1543,18 @@ function renderOverview(overview) {
   `;
 }
 
-function renderHoldings(rows) {
+function renderEmpty(category) {
+  if (!els.empty) return;
+  const copy = emptyStateCopy(category);
+  els.empty.innerHTML = `
+    <h3 class="empty-state__title">${escapeHtml(copy.title)}</h3>
+    <p class="empty-state__description">${escapeHtml(copy.description)}</p>
+    <button type="button" class="btn btn--solid" id="pf-empty-cta">${escapeHtml(copy.cta)}</button>
+  `;
+  els.empty.querySelector('#pf-empty-cta')?.addEventListener('click', copy.onClick);
+}
+
+function renderHoldings(rows, category) {
   if (!els.holdingsList || !els.empty) return;
 
   holdingRows = rows;
@@ -1521,9 +1564,11 @@ function renderHoldings(rows) {
 
   if (empty) {
     els.holdingsList.innerHTML = '';
+    renderEmpty(category);
     return;
   }
 
+  els.empty.innerHTML = '';
   els.holdingsList.innerHTML = rows
     .map((row) => {
       const badgeClass = row.category === 'fund' ? 'pf-badge--fund' : 'pf-badge--stock';
@@ -1561,7 +1606,7 @@ function renderHoldings(rows) {
   });
 }
 
-function render() {
+function paintPage() {
   const category = getCategory();
   syncSegment(category);
   syncExportImport(category);
@@ -1577,7 +1622,30 @@ function render() {
   }
 
   renderOverview(overview);
-  renderHoldings(rows);
+  renderHoldings(rows, category);
+}
+
+function render({ animateHoldings = false } = {}) {
+  if (holdingsFadeTimer) {
+    clearTimeout(holdingsFadeTimer);
+    holdingsFadeTimer = null;
+  }
+
+  const targets = [els.holdingsList, els.empty].filter(Boolean);
+  targets.forEach((el) => el.classList.remove('is-exit'));
+
+  if (!animateHoldings || prefersReducedMotion() || targets.length === 0) {
+    paintPage();
+    return;
+  }
+
+  targets.forEach((el) => el.classList.add('is-exit'));
+  const exitMs = Math.round(200 * 0.7);
+  holdingsFadeTimer = window.setTimeout(() => {
+    holdingsFadeTimer = null;
+    paintPage();
+    targets.forEach((el) => el.classList.remove('is-exit'));
+  }, exitMs);
 }
 
 function bindStockEditorEvents() {

@@ -3188,10 +3188,27 @@ body.sheet-open { overflow: hidden; }
   outline-offset: 3px;
 }
 
+.pf-holdings-list {
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+
+.pf-holdings-list.is-exit {
+  opacity: 0;
+}
+
 .pf-empty {
   text-align: center;
   padding: var(--s-8) var(--s-4);
   color: var(--text-muted);
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+
+.pf-empty.is-exit {
+  opacity: 0;
+}
+
+.pf-empty .btn {
+  min-width: 12rem;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -3203,7 +3220,9 @@ body.sheet-open { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   .pf-holding,
-  .pf-overview {
+  .pf-overview,
+  .pf-holdings-list,
+  .pf-empty {
     transition: none !important;
   }
 }
