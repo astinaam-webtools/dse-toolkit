@@ -2,6 +2,9 @@
   "plugins": {
     "ponytail/ponytail": {
       "enabled": true
+    },
+    "superpowers": {
+      "enabled": true
     }
   }
 }

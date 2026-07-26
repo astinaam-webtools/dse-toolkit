@@ -64,6 +64,24 @@ const formatTime = (value) => {
   }
 };
 
+const formatRelativeTime = (value) => {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  const diffMs = date.getTime() - Date.now();
+  const diffSec = Math.round(diffMs / 1000);
+  const absSec = Math.abs(diffSec);
+  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+
+  if (absSec < 45) return 'just now';
+  if (absSec < 3600) return rtf.format(Math.round(diffSec / 60), 'minute');
+  if (absSec < 86400) return rtf.format(Math.round(diffSec / 3600), 'hour');
+  if (absSec < 2592000) return rtf.format(Math.round(diffSec / 86400), 'day');
+  if (absSec < 31536000) return rtf.format(Math.round(diffSec / 2592000), 'month');
+  return rtf.format(Math.round(diffSec / 31536000), 'year');
+};
+
 const escapeHtml = (value) =>
   String(value || '')
     .replaceAll('&', '&amp;')
@@ -200,13 +218,16 @@ const persist = async () => {
 
 const renderThreadList = () => {
   const activeId = state.chat.activeThreadId;
-  const html = state.chat.threads
+  const html = [...state.chat.threads]
+    .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0))
     .map((thread) => {
       const activeClass = thread.id === activeId ? 'active' : '';
+      const relative = formatRelativeTime(thread.updatedAt);
+      const absolute = formatTime(thread.updatedAt);
       return `
-        <button class="thread-item ${activeClass}" data-thread-id="${thread.id}" type="button">
+        <button class="thread-item ${activeClass}" data-thread-id="${thread.id}" type="button" title="${escapeHtml(absolute)}">
           <span class="thread-item__title">${escapeHtml(thread.title || 'New Chat')}</span>
-          <span class="thread-item__meta">${escapeHtml(formatTime(thread.updatedAt))}</span>
+          <span class="thread-item__meta">${escapeHtml(relative)}</span>
         </button>
       `;
     })
