@@ -1,5 +1,5 @@
-const CACHE_NAME = 'stock-glossary-v46';
-const RUNTIME_CACHE = 'runtime-stock-glossary-v46';
+const CACHE_NAME = 'stock-glossary-v47';
+const RUNTIME_CACHE = 'runtime-stock-glossary-v47';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -30,6 +30,7 @@ const PRECACHE_URLS = [
   './src/lib/behaviorProfiler.js',
   './src/lib/filterTerms.js',
   './src/lib/marketLogic.js',
+  './src/lib/stockMetricsLayout.js',
   './src/lib/portfolioLogic.js',
   './src/lib/fundsLogic.js',
   './src/lib/appSettings.js',
