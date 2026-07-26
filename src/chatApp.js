@@ -20,7 +20,8 @@ import {
 import {
   buildStockAnalysisPrompt,
   getStockBySymbol,
-  loadMarketDataset
+  loadMarketDataset,
+  retrievePrefilledPrompt
 } from './lib/chatPrompts.js';
 
 const els = {
@@ -86,46 +87,71 @@ const getActiveThread = () =>
 
 const parseBootstrapContext = async () => {
   const symbol = (qs.get('symbol') || '').trim().toUpperCase();
-  if (!symbol) return null;
+  const pk = (qs.get('pk') || qs.get('promptKey') || qs.get('key') || '').trim();
+  const promptParam = (qs.get('prompt') || '').trim();
+  const termParam = (qs.get('term') || '').trim();
 
-  const dataset = await loadMarketDataset();
-  const stock = getStockBySymbol(dataset, symbol);
-  if (!stock) return null;
+  if (symbol) {
+    const dataset = await loadMarketDataset();
+    const stock = getStockBySymbol(dataset, symbol);
+    if (!stock) return null;
 
-  const source = qs.get('source') || 'market';
-  const title = `${stock.symbol} Analysis`;
-  const systemPrompt = buildStockAnalysisPrompt(stock);
+    const source = qs.get('source') || 'market';
+    const title = `${stock.symbol} Analysis`;
+    const systemPrompt = buildStockAnalysisPrompt(stock);
 
-  return {
-    title,
-    context: {
-      symbol: stock.symbol,
-      source,
-      stockName: stock.name
-    },
-    systemPrompt,
-    seedMessage: `Start a fresh analysis for ${stock.symbol} (${stock.name}).`
-  };
+    return {
+      title,
+      context: {
+        symbol: stock.symbol,
+        source,
+        stockName: stock.name
+      },
+      systemPrompt,
+      seedMessage: `Start a fresh analysis for ${stock.symbol} (${stock.name}).`
+    };
+  }
+
+  if (pk) {
+    const storedData = retrievePrefilledPrompt(pk);
+    if (storedData?.prompt) {
+      const title = storedData.term ? `Learn: ${storedData.term}` : 'Term Analysis';
+      return {
+        title,
+        prefilledPrompt: storedData.prompt
+      };
+    }
+  }
+
+  if (promptParam) {
+    const title = termParam ? `Learn: ${termParam}` : 'Term Analysis';
+    return {
+      title,
+      prefilledPrompt: promptParam
+    };
+  }
+
+  return null;
 };
 
 const renderSyncState = async () => {
   const appSettings = getAppSettings();
   if (!appSettings.serverUrl) {
-    els.syncState.textContent = 'Client-only mode: chat saved locally.';
+    if (els.syncState) els.syncState.textContent = 'Client-only mode: chat saved locally.';
     return;
   }
 
   try {
     const conn = await getConnectionState();
     if (conn.code === 'connected' || conn.code === 'pending-sync') {
-      els.syncState.textContent = 'Server connected: chat sync enabled.';
+      if (els.syncState) els.syncState.textContent = 'Server connected: chat sync enabled.';
     } else if (conn.code === 'login-required') {
-      els.syncState.textContent = 'Server set: login required for chat sync.';
+      if (els.syncState) els.syncState.textContent = 'Server set: login required for chat sync.';
     } else {
-      els.syncState.textContent = 'Server unavailable: changes queued locally.';
+      if (els.syncState) els.syncState.textContent = 'Server unavailable: changes queued locally.';
     }
   } catch {
-    els.syncState.textContent = 'Server unavailable: changes queued locally.';
+    if (els.syncState) els.syncState.textContent = 'Server unavailable: changes queued locally.';
   }
 };
 
@@ -477,7 +503,7 @@ const init = async () => {
   if (state.bootstrap) {
     const thread = createThread({
       title: state.bootstrap.title,
-      context: state.bootstrap.context,
+      context: state.bootstrap.context || {},
       systemPrompt: state.bootstrap.systemPrompt
     });
     state.chat.threads.unshift(thread);
@@ -494,6 +520,10 @@ const init = async () => {
 
   if (state.bootstrap?.seedMessage) {
     await sendMessage(state.bootstrap.seedMessage);
+  } else if (state.bootstrap?.prefilledPrompt && els.input) {
+    els.input.value = state.bootstrap.prefilledPrompt;
+    autoResizeComposer();
+    els.input.focus();
   }
 };
 
@@ -565,6 +595,8 @@ els.feed?.addEventListener('click', async (e) => {
     }
     renderFeed();
     return;
+  }
+
   const promptBtn = e.target.closest('.quick-prompt-btn');
   if (promptBtn && els.input) {
     const promptText = promptBtn.getAttribute('data-prompt');

@@ -97,6 +97,62 @@ export const buildStockAnalysisPrompt = (stock) => {
   return lines.join('\n');
 };
 
+const PROMPT_KEY_PREFIX = 'dse_prompt_';
+
+export const storePrefilledPrompt = (promptText, termName = '') => {
+  if (!promptText) return null;
+  const key = `${PROMPT_KEY_PREFIX}${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  const payload = {
+    prompt: promptText,
+    term: termName,
+    createdAt: Date.now()
+  };
+
+  try {
+    const now = Date.now();
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith(PROMPT_KEY_PREFIX)) {
+        try {
+          const item = JSON.parse(localStorage.getItem(k));
+          if (item?.createdAt && now - item.createdAt > 3600000) {
+            localStorage.removeItem(k);
+          }
+        } catch {
+          localStorage.removeItem(k);
+        }
+      }
+    }
+
+    localStorage.setItem(key, JSON.stringify(payload));
+    return key;
+  } catch (err) {
+    console.error('Failed to store prefilled prompt in localStorage:', err);
+    return null;
+  }
+};
+
+export const retrievePrefilledPrompt = (key) => {
+  if (!key) return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    localStorage.removeItem(key);
+    return data;
+  } catch {
+    return null;
+  }
+};
+
+export const buildTermAnalysisPrompt = (term) => {
+  if (!term) {
+    return '';
+  }
+  const shortStr = term.shortForm ? ` (${term.shortForm})` : '';
+  return `Explain "${term.title}"${shortStr} with real-world examples from the Dhaka Stock Exchange (DSE) market. How can DSE investors use this to evaluate stocks?`;
+};
+
 export const buildBootstrapSystemPrompt = (stock) => {
   if (!stock) {
     return 'You are a DSE-focused market assistant. Help the user with concise, evidence-based analysis.';
@@ -108,3 +164,4 @@ export const buildBootstrapSystemPrompt = (stock) => {
     'Keep answers concise, practical, and tied to the provided stock context.'
   ].join(' ');
 };
+

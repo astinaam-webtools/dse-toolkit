@@ -1,6 +1,7 @@
 import { terms } from './data/terms.js';
 import { filterTerms, highlightText, tokenize } from './lib/filterTerms.js';
 import { analyzeStock } from './lib/behaviorProfiler.js';
+import { buildTermAnalysisPrompt, storePrefilledPrompt } from './lib/chatPrompts.js';
 
 const termContainer = document.getElementById('terms');
 const searchInput = document.getElementById('search');
@@ -34,7 +35,11 @@ const renderCards = (dataset, tokens = []) => {
   }
 
   termContainer.innerHTML = dataset
-    .map((term) => `
+    .map((term) => {
+      const promptText = buildTermAnalysisPrompt(term);
+      const termName = term.shortForm || term.title;
+
+      return `
       <article class="term-card">
         <div class="meta">
           <span class="short">${highlightText(term.shortForm, tokens)}</span>
@@ -56,9 +61,17 @@ const renderCards = (dataset, tokens = []) => {
         .map((tag) => `<span class="badge">${tag}</span>`)
         .join('')}
         </div>
-        ${term.chartGuideId ? `<a class="chart-link" href="./guides.html#${term.chartGuideId}" target="_blank" rel="noopener">How to locate & read this on charts →</a>` : ''}
+        <div class="term-card__actions">
+          <a class="term-ai-cta" href="./chat.html" data-prompt="${escapeHtml(promptText)}" data-term="${escapeHtml(termName)}">
+            <span class="term-ai-cta__icon" aria-hidden="true">✨</span>
+            <span>Learn with AI (DSE Examples)</span>
+            <span class="term-ai-cta__arrow" aria-hidden="true">→</span>
+          </a>
+          ${term.chartGuideId ? `<a class="chart-link" href="./guides.html#${term.chartGuideId}" target="_blank" rel="noopener">How to locate & read this on charts →</a>` : ''}
+        </div>
       </article>
-    `)
+    `;
+    })
     .join('');
 
   stats.textContent = `${dataset.length} ${dataset.length === 1 ? 'term' : 'terms'} displayed`;
@@ -67,6 +80,8 @@ const renderCards = (dataset, tokens = []) => {
 const renderFeaturedTerm = () => {
   if (!termContainer || !terms.length) return;
   const randomTerm = terms[Math.floor(Math.random() * terms.length)];
+  const promptText = buildTermAnalysisPrompt(randomTerm);
+  const termName = randomTerm.shortForm || randomTerm.title;
 
   termContainer.innerHTML = `
     <div class="featured-header">
@@ -89,6 +104,13 @@ const renderFeaturedTerm = () => {
         ${(randomTerm.tags || [])
           .map((tag) => `<span class="badge">${tag}</span>`)
           .join('')}
+      </div>
+      <div class="term-card__actions">
+        <a class="term-ai-cta" href="./chat.html" data-prompt="${escapeHtml(promptText)}" data-term="${escapeHtml(termName)}">
+          <span class="term-ai-cta__icon" aria-hidden="true">✨</span>
+          <span>Learn with AI (DSE Examples)</span>
+          <span class="term-ai-cta__arrow" aria-hidden="true">→</span>
+        </a>
       </div>
       <div class="featured-cta">
         <button class="btn" id="show-all-terms">Browse all ${terms.length} terms</button>
@@ -271,6 +293,23 @@ if (termContainer && searchInput) {
 
   renderCategoryChips();
   renderRecentSearches();
+
+  termContainer?.addEventListener('click', (event) => {
+    const cta = event.target.closest('.term-ai-cta');
+    if (!cta) return;
+
+    const promptText = cta.getAttribute('data-prompt');
+    const termName = cta.getAttribute('data-term') || '';
+    if (!promptText) return;
+
+    event.preventDefault();
+    const promptKey = storePrefilledPrompt(promptText, termName);
+    if (promptKey) {
+      window.location.href = `./chat.html?pk=${encodeURIComponent(promptKey)}`;
+    } else {
+      window.location.href = `./chat.html?prompt=${encodeURIComponent(promptText)}&term=${encodeURIComponent(termName)}`;
+    }
+  });
 
   quickTermChips?.addEventListener('click', (event) => {
     const chip = event.target.closest('[data-query]');
