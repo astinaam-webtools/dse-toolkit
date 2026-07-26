@@ -47,6 +47,10 @@
   --accent-soft:  oklch(55% 0.118 158 / 0.12);
   --accent-contrast: oklch(99% 0.005 155);
 
+  /* Category colors — fund hue differs from accent; lightness also differs for CB */
+  --cat-fund:      oklch(42% 0.09 220);
+  --cat-fund-soft: oklch(42% 0.09 220 / 0.14);
+
   /* Semantic data colors (values only) */
   --up:           oklch(62% 0.165 150);
   --up-soft:      oklch(62% 0.165 150 / 0.12);
@@ -156,6 +160,11 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.85rem;
+}
+
+/* Beat component display rules (e.g. .btn { display: inline-flex }) */
+[hidden] {
+  display: none !important;
 }
 
 .btn {
@@ -1608,6 +1617,8 @@ mark.hl {
     --accent:       oklch(68% 0.130 155);
     --accent-hover: oklch(72% 0.132 155);
     --accent-soft:  oklch(68% 0.130 155 / 0.18);
+    --cat-fund:      oklch(78% 0.09 220);
+    --cat-fund-soft: oklch(78% 0.09 220 / 0.18);
     --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.4);
     --shadow-2: 0 4px 14px oklch(0% 0 0 / 0.5);
     --shadow-3: 0 16px 40px oklch(0% 0 0 / 0.6);
@@ -2340,6 +2351,8 @@ body[data-page="ai"] #footer-mount {
 .sheet-overlay[open] { display: flex; }
 .sheet {
   width: min(560px, 100%);
+  max-height: calc(100dvh - var(--s-8));
+  overflow-y: auto;
   background: var(--surface);
   color: var(--text);
   border-top-left-radius: var(--r-xl);
@@ -2349,6 +2362,7 @@ body[data-page="ai"] #footer-mount {
   padding: var(--s-5) var(--s-5) calc(var(--s-6) + env(safe-area-inset-bottom, 0px));
   box-shadow: var(--shadow-3);
   animation: sheet-enter var(--dur-3) var(--ease-out);
+  position: relative;
 }
 .sheet__handle {
   width: 40px;
@@ -2361,6 +2375,16 @@ body[data-page="ai"] #footer-mount {
   font-family: var(--font-display);
   font-size: var(--fs-lg);
   margin: 0 0 var(--s-4);
+}
+.sheet__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+.sheet__head .sheet__title {
+  margin-bottom: 0;
 }
 .sheet__list {
   list-style: none;
@@ -2389,13 +2413,25 @@ body[data-page="ai"] #footer-mount {
   color: var(--text-muted);
   font: inherit;
   font-weight: 600;
-  padding: var(--s-3) var(--s-4);
+  padding: var(--s-2) var(--s-3);
   border-radius: var(--r-sm);
-  margin-top: var(--s-4);
-  width: 100%;
+  margin: 0;
+  width: auto;
+  min-height: 44px;
+  min-width: 44px;
+  flex-shrink: 0;
   cursor: pointer;
 }
 .sheet__close:hover { color: var(--text); border-color: var(--border-strong); }
+.sheet__close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Footer-style close (More sheet) stays full-width under content */
+.sheet--more > .sheet__close {
+  width: 100%;
+  margin-top: var(--s-4);
+}
 
 @keyframes sheet-enter {
   from { transform: translateY(24px); opacity: 0; }
@@ -3142,6 +3178,358 @@ body.sheet-open { overflow: hidden; }
   border-radius: var(--r-sm);
   padding: 2px 6px;
   pointer-events: none;
+}
+
+/* ==========================================
+   Unified Portfolios (Dual Pulse + holdings)
+   ========================================== */
+
+.pf-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--s-4);
+  padding-bottom: calc(var(--s-16) + env(safe-area-inset-bottom));
+}
+
+.pf-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-4);
+}
+
+.pf-header h1 {
+  font-family: var(--font-display);
+  font-size: var(--fs-xl);
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.pf-seg {
+  display: flex;
+  gap: var(--s-1);
+  padding: var(--s-1);
+  background: var(--surface-sunk);
+  border-radius: var(--r-pill);
+  margin-bottom: var(--s-4);
+}
+
+.pf-seg__btn {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: var(--r-pill);
+  background: transparent;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: var(--fs-sm);
+  cursor: pointer;
+}
+
+.pf-seg__btn.is-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-1);
+}
+
+.pf-seg__btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pf-overview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+  box-shadow: var(--shadow-1);
+  margin-bottom: var(--s-5);
+  transition:
+    opacity var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out);
+}
+
+.pf-overview__label {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.pf-overview__value {
+  font-family: var(--font-display);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  margin: var(--s-1) 0;
+}
+
+.pf-pulse {
+  display: flex;
+  height: 6px;
+  border-radius: var(--r-pill);
+  overflow: hidden;
+  background: var(--surface-sunk);
+  margin-top: var(--s-3);
+}
+
+.pf-pulse__stocks,
+.pf-pulse__funds {
+  height: 100%;
+  min-width: 0;
+}
+
+.pf-pulse__stocks {
+  background: var(--accent);
+}
+
+.pf-pulse__funds {
+  background: var(--cat-fund);
+}
+
+.pf-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+  padding-top: var(--s-4);
+  border-top: 1px solid var(--border);
+}
+
+.pf-holdings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+
+.pf-holdings-head h2 {
+  margin: 0;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.pf-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.4rem;
+  min-height: 1.25rem;
+  padding: 0 var(--s-2);
+  border-radius: var(--r-pill);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+}
+
+.pf-holding {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--s-4);
+  margin-bottom: var(--s-2);
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  min-height: 44px;
+  transition:
+    opacity var(--dur-2) var(--ease-out),
+    transform var(--dur-2) var(--ease-out);
+}
+
+.pf-holding:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pf-holding__top {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s-3);
+}
+
+.pf-holding__left {
+  min-width: 0;
+  flex: 1;
+}
+
+.pf-holding__sym {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-holding__meta {
+  font-size: var(--fs-xs);
+  color: var(--text-muted);
+  margin-top: var(--s-1);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pf-holding__bar {
+  height: 4px;
+  background: var(--surface-sunk);
+  border-radius: var(--r-pill);
+  margin-top: var(--s-3);
+  overflow: hidden;
+}
+
+.pf-holding__bar > span {
+  display: block;
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--accent);
+}
+
+.pf-holding__bar > span.is-fund {
+  background: var(--cat-fund);
+}
+
+.pf-badge {
+  display: inline-block;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: var(--r-pill);
+}
+
+.pf-badge--stock {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.pf-badge--fund {
+  background: var(--cat-fund-soft);
+  color: var(--cat-fund);
+}
+
+.pf-fab {
+  position: fixed;
+  right: max(var(--s-4), env(safe-area-inset-right));
+  bottom: calc(72px + env(safe-area-inset-bottom));
+  width: 56px;
+  height: 56px;
+  border-radius: var(--r-pill);
+  border: 0;
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-size: 1.5rem;
+  box-shadow: var(--shadow-3);
+  z-index: 40;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pf-fab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.pf-fab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pf-locked {
+  margin-bottom: var(--s-4);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-strong);
+  background: var(--warning-soft);
+  color: var(--text);
+}
+
+.pf-locked[hidden] {
+  display: none !important;
+}
+
+.pf-locked__title {
+  margin: 0 0 var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+.pf-locked__body {
+  margin: 0 0 var(--s-3);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+
+.pf-fund-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
+
+.pf-fund-stats .metric__value {
+  font-size: var(--fs-md);
+}
+
+@media (max-width: 520px) {
+  .pf-fund-stats {
+    grid-template-columns: 1fr;
+  }
+}
+
+.pf-holdings-list {
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+
+.pf-holdings-list.is-exit {
+  opacity: 0;
+}
+
+.pf-empty {
+  text-align: center;
+  padding: var(--s-8) var(--s-4);
+  color: var(--text-muted);
+  transition: opacity var(--dur-2) var(--ease-out);
+}
+
+.pf-empty.is-exit {
+  opacity: 0;
+}
+
+.pf-empty .btn {
+  min-width: 12rem;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pf-holding:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-2);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pf-holding,
+  .pf-overview,
+  .pf-holdings-list,
+  .pf-empty {
+    transition: none !important;
+  }
 }
 
 
