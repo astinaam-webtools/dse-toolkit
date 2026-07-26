@@ -58,4 +58,7 @@ assets/finalized
 # Cursor workspace data
 data/cursor-workspaces/
 
+# Superpowers brainstorm sessions
+.superpowers/
+
 
