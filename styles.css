@@ -2970,10 +2970,6 @@ body.sheet-open { overflow: hidden; }
   font-weight: 600;
   font-size: var(--fs-sm);
   cursor: pointer;
-  transition:
-    background-color var(--dur-2) var(--ease-out),
-    color var(--dur-2) var(--ease-out),
-    box-shadow var(--dur-2) var(--ease-out);
 }
 
 .pf-seg__btn.is-active {
@@ -3093,8 +3089,6 @@ body.sheet-open { overflow: hidden; }
   font: inherit;
   min-height: 44px;
   transition:
-    border-color var(--dur-2) var(--ease-out),
-    box-shadow var(--dur-2) var(--ease-out),
     opacity var(--dur-2) var(--ease-out),
     transform var(--dur-2) var(--ease-out);
 }
@@ -3209,8 +3203,7 @@ body.sheet-open { overflow: hidden; }
 
 @media (prefers-reduced-motion: reduce) {
   .pf-holding,
-  .pf-overview,
-  .pf-seg__btn {
+  .pf-overview {
     transition: none !important;
   }
 }
