@@ -756,14 +756,15 @@ function handleHoldingEdit() {
     return;
   }
 
-  const located = findStockItem(selectedHolding.portfolioId, selectedHolding.symbol);
+  const { portfolioId } = selectedHolding;
+  const located = findStockItem(portfolioId, selectedHolding.symbol);
   if (!located) {
     alert('Position not found.');
     return;
   }
 
   closeHoldingSheet();
-  openStockModal({ index: located.index, portfolioId: selectedHolding.portfolioId });
+  openStockModal({ index: located.index, portfolioId });
 }
 
 function renderOverview(overview) {
