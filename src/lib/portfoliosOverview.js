@@ -12,12 +12,14 @@ export function buildStockHoldings(stockState, marketData) {
   const stocks = marketData?.stocks || [];
   const rows = [];
   for (const portfolio of listStockPortfolios(stockState)) {
-    for (const item of portfolio.items || []) {
+    const items = portfolio.items || [];
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
       const quote = stocks.find((s) => s.symbol === item.symbol);
       const ltp = (quote?.metrics?.ltp ?? Number(item.average_cost)) || 0;
       const metrics = calculateItemMetrics(item, ltp);
       rows.push({
-        id: `stock:${portfolio.id}:${item.symbol}`,
+        id: `stock:${portfolio.id}:${index}`,
         category: 'stock',
         symbol: item.symbol,
         label: item.symbol,
@@ -30,7 +32,7 @@ export function buildStockHoldings(stockState, marketData) {
         pl: metrics.profitLoss,
         plPct: metrics.profitLossPercentage,
         weightPct: 0,
-        _stockIndex: (portfolio.items || []).indexOf(item)
+        _stockIndex: index
       });
     }
   }

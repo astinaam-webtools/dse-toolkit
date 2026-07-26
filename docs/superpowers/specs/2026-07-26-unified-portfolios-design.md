@@ -147,6 +147,7 @@ Keep **two stores**; unify UI only.
 - Unified localStorage schema.
 - Cross-category named portfolios.
 - Redesign of stock detail page itself (only link into it).
+- Fund NAV history chart remains deferred (stats + transactions only in this cut).
 
 ## 10. Success criteria
 

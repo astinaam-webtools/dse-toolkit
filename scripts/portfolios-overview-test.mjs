@@ -26,6 +26,12 @@ const stockState = {
       average_cost: 250,
       commission_rate: 0,
       commission_included: true
+    }, {
+      symbol: 'GP',
+      quantity: 50,
+      average_cost: 280,
+      commission_rate: 0,
+      commission_included: true
     }]
   }]
 };
@@ -52,10 +58,15 @@ assert(parseCategoryParam('FUNDS') === 'funds', 'normalize funds');
 assert(parseCategoryParam('nope') === 'all', 'invalid → all');
 
 const stockRows = buildStockHoldings(stockState, marketData);
-assert(stockRows.length === 1, 'one stock row');
+assert(stockRows.length === 2, 'two stock rows (duplicate symbols)');
 assert(stockRows[0].category === 'stock', 'stock category');
 assert(stockRows[0].currentValue === 30000, '100 * 300');
 assert(stockRows[0].portfolioName === 'Main Portfolio', 'portfolio name');
+assert(stockRows[0].id === 'stock:s1:0', 'first duplicate id uses index 0');
+assert(stockRows[1].id === 'stock:s1:1', 'second duplicate id uses index 1');
+assert(stockRows[0].id !== stockRows[1].id, 'same-symbol rows keep distinct ids');
+assert(stockRows[0]._stockIndex === 0 && stockRows[1]._stockIndex === 1, 'stock indexes preserved');
+assert(stockRows[1].currentValue === 15000, '50 * 300');
 
 const fundRows = buildFundHoldings(fundsData);
 assert(fundRows.length === 1, 'one fund row');
@@ -65,17 +76,21 @@ assert(Math.round(fundRows[0].currentValue) === 48960, '2400 * 20.4');
 const all = [...stockRows, ...fundRows];
 assert(filterHoldings(all, 'stocks').every((r) => r.category === 'stock'), 'stocks filter');
 assert(filterHoldings(all, 'funds').every((r) => r.category === 'fund'), 'funds filter');
-assert(filterHoldings(all, 'all').length === 2, 'all filter');
+assert(filterHoldings(all, 'all').length === 3, 'all filter');
 
 const overviewAll = buildOverview({ stockState, fundsData, marketData, category: 'all' });
 assert(overviewAll.showSplit === true, 'split on all');
-assert(overviewAll.holdingCount === 2, 'count 2');
-assert(overviewAll.totalValue === stockRows[0].currentValue + fundRows[0].currentValue, 'sum values');
+assert(overviewAll.holdingCount === 3, 'count 3');
+assert(
+  overviewAll.totalValue ===
+    stockRows[0].currentValue + stockRows[1].currentValue + fundRows[0].currentValue,
+  'sum values'
+);
 assert(overviewAll.stocks.sharePct + overviewAll.funds.sharePct === 100 || overviewAll.totalValue === 0, 'shares sum 100');
 
 const overviewStocks = buildOverview({ stockState, fundsData, marketData, category: 'stocks' });
 assert(overviewStocks.showSplit === false, 'no split on stocks');
-assert(overviewStocks.holdingCount === 1, 'stocks count');
+assert(overviewStocks.holdingCount === 2, 'stocks count');
 
 const weighted = withWeights(all, overviewAll.totalValue);
 assert(Math.abs(weighted.reduce((s, r) => s + r.weightPct, 0) - 100) < 0.2, 'weights ~100');

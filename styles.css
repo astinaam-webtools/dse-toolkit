@@ -47,6 +47,10 @@
   --accent-soft:  oklch(55% 0.118 158 / 0.12);
   --accent-contrast: oklch(99% 0.005 155);
 
+  /* Category colors — fund hue differs from accent; lightness also differs for CB */
+  --cat-fund:      oklch(42% 0.09 220);
+  --cat-fund-soft: oklch(42% 0.09 220 / 0.14);
+
   /* Semantic data colors (values only) */
   --up:           oklch(62% 0.165 150);
   --up-soft:      oklch(62% 0.165 150 / 0.12);
@@ -156,6 +160,11 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 0.85rem;
+}
+
+/* Beat component display rules (e.g. .btn { display: inline-flex }) */
+[hidden] {
+  display: none !important;
 }
 
 .btn {
@@ -1389,6 +1398,8 @@ mark.hl {
     --accent:       oklch(68% 0.130 155);
     --accent-hover: oklch(72% 0.132 155);
     --accent-soft:  oklch(68% 0.130 155 / 0.18);
+    --cat-fund:      oklch(78% 0.09 220);
+    --cat-fund-soft: oklch(78% 0.09 220 / 0.18);
     --shadow-1: 0 1px 2px oklch(0% 0 0 / 0.4);
     --shadow-2: 0 4px 14px oklch(0% 0 0 / 0.5);
     --shadow-3: 0 16px 40px oklch(0% 0 0 / 0.6);
@@ -2121,6 +2132,8 @@ body[data-page="ai"] #footer-mount {
 .sheet-overlay[open] { display: flex; }
 .sheet {
   width: min(560px, 100%);
+  max-height: calc(100dvh - var(--s-8));
+  overflow-y: auto;
   background: var(--surface);
   color: var(--text);
   border-top-left-radius: var(--r-xl);
@@ -2130,6 +2143,7 @@ body[data-page="ai"] #footer-mount {
   padding: var(--s-5) var(--s-5) calc(var(--s-6) + env(safe-area-inset-bottom, 0px));
   box-shadow: var(--shadow-3);
   animation: sheet-enter var(--dur-3) var(--ease-out);
+  position: relative;
 }
 .sheet__handle {
   width: 40px;
@@ -2142,6 +2156,16 @@ body[data-page="ai"] #footer-mount {
   font-family: var(--font-display);
   font-size: var(--fs-lg);
   margin: 0 0 var(--s-4);
+}
+.sheet__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-3);
+  margin-bottom: var(--s-3);
+}
+.sheet__head .sheet__title {
+  margin-bottom: 0;
 }
 .sheet__list {
   list-style: none;
@@ -2170,13 +2194,25 @@ body[data-page="ai"] #footer-mount {
   color: var(--text-muted);
   font: inherit;
   font-weight: 600;
-  padding: var(--s-3) var(--s-4);
+  padding: var(--s-2) var(--s-3);
   border-radius: var(--r-sm);
-  margin-top: var(--s-4);
-  width: 100%;
+  margin: 0;
+  width: auto;
+  min-height: 44px;
+  min-width: 44px;
+  flex-shrink: 0;
   cursor: pointer;
 }
 .sheet__close:hover { color: var(--text); border-color: var(--border-strong); }
+.sheet__close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Footer-style close (More sheet) stays full-width under content */
+.sheet--more > .sheet__close {
+  width: 100%;
+  margin-top: var(--s-4);
+}
 
 @keyframes sheet-enter {
   from { transform: translateY(24px); opacity: 0; }
@@ -3031,7 +3067,7 @@ body.sheet-open { overflow: hidden; }
 }
 
 .pf-pulse__funds {
-  background: oklch(55% 0.08 220);
+  background: var(--cat-fund);
 }
 
 .pf-split {
@@ -3141,7 +3177,7 @@ body.sheet-open { overflow: hidden; }
 }
 
 .pf-holding__bar > span.is-fund {
-  background: oklch(55% 0.08 220);
+  background: var(--cat-fund);
 }
 
 .pf-badge {
@@ -3160,8 +3196,8 @@ body.sheet-open { overflow: hidden; }
 }
 
 .pf-badge--fund {
-  background: oklch(55% 0.08 220 / 0.12);
-  color: oklch(45% 0.08 220);
+  background: var(--cat-fund-soft);
+  color: var(--cat-fund);
 }
 
 .pf-fab {
@@ -3186,6 +3222,56 @@ body.sheet-open { overflow: hidden; }
 .pf-fab:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
+}
+
+.pf-fab:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pf-locked {
+  margin-bottom: var(--s-4);
+  padding: var(--s-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-strong);
+  background: var(--warning-soft);
+  color: var(--text);
+}
+
+.pf-locked[hidden] {
+  display: none !important;
+}
+
+.pf-locked__title {
+  margin: 0 0 var(--s-2);
+  font-family: var(--font-display);
+  font-size: var(--fs-md);
+  font-weight: 700;
+}
+
+.pf-locked__body {
+  margin: 0 0 var(--s-3);
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+  line-height: 1.45;
+}
+
+.pf-fund-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-3);
+  margin-top: var(--s-4);
+}
+
+.pf-fund-stats .metric__value {
+  font-size: var(--fs-md);
+}
+
+@media (max-width: 520px) {
+  .pf-fund-stats {
+    grid-template-columns: 1fr;
+  }
 }
 
 .pf-holdings-list {

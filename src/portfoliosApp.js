@@ -63,6 +63,7 @@ export const PF_DOM = {
   },
   holdingSheet: {
     root: 'pf-holding-sheet',
+    heading: 'pf-holding-sheet-heading',
     body: 'pf-holding-sheet-body',
     close: 'pf-holding-sheet-close',
     viewStock: 'pf-holding-view-stock',
@@ -178,6 +179,7 @@ const els = {
   holdingsCount: document.getElementById(PF_DOM.holdingsCount),
   holdingsList: document.getElementById(PF_DOM.holdingsList),
   empty: document.getElementById(PF_DOM.empty),
+  lockedBanner: document.getElementById('pf-locked-banner'),
   manageBtn: document.getElementById(PF_DOM.manageBtn),
   fab: document.getElementById(PF_DOM.fab),
   seg: {
@@ -193,6 +195,7 @@ const els = {
   importFundsFile: document.getElementById(PF_DOM.exportImport.importFundsFile),
   holdingSheet: {
     root: document.getElementById(PF_DOM.holdingSheet.root),
+    heading: document.getElementById(PF_DOM.holdingSheet.heading),
     body: document.getElementById(PF_DOM.holdingSheet.body),
     close: document.getElementById(PF_DOM.holdingSheet.close),
     viewStock: document.getElementById(PF_DOM.holdingSheet.viewStock),
@@ -315,6 +318,9 @@ let renameTarget = null;
 let lastCostEditedField = 'base';
 let busy = false;
 let holdingsFadeTimer = null;
+/** Page gate for server-backed document loads: ready | auth-required | server-unavailable | error */
+let pageState = 'ready';
+let pageMessage = '';
 
 function prefersReducedMotion() {
   return typeof window !== 'undefined'
@@ -386,17 +392,53 @@ function syncSegment(category) {
     if (!btn) continue;
     const active = key === category;
     btn.classList.toggle('is-active', active);
-    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
   }
 }
 
+function isPageLocked() {
+  return (
+    pageState === 'auth-required' ||
+    pageState === 'server-unavailable' ||
+    pageState === 'error'
+  );
+}
+
+function applyPageLockFromError(error, fallbackMessage) {
+  if (error instanceof AuthRequiredError) {
+    pageState = 'auth-required';
+    pageMessage = error.message || 'Server login required.';
+    return;
+  }
+  if (error instanceof ConnectionUnavailableError) {
+    pageState = 'server-unavailable';
+    pageMessage = error.message || 'Server unavailable.';
+    return;
+  }
+  pageState = 'error';
+  pageMessage = error?.message || fallbackMessage;
+}
+
 function syncExportImport(category) {
-  const showStocks = category === 'all' || category === 'stocks';
-  const showFunds = category === 'all' || category === 'funds';
-  if (els.exportStocks) els.exportStocks.hidden = !showStocks;
-  if (els.importStocks) els.importStocks.hidden = !showStocks;
-  if (els.exportFunds) els.exportFunds.hidden = !showFunds;
-  if (els.importFunds) els.importFunds.hidden = !showFunds;
+  const locked = isPageLocked();
+  const showStocks = !locked && (category === 'all' || category === 'stocks');
+  const showFunds = !locked && (category === 'all' || category === 'funds');
+  if (els.exportStocks) {
+    els.exportStocks.hidden = !showStocks;
+    els.exportStocks.disabled = locked;
+  }
+  if (els.importStocks) {
+    els.importStocks.hidden = !showStocks;
+    els.importStocks.disabled = locked;
+  }
+  if (els.exportFunds) {
+    els.exportFunds.hidden = !showFunds;
+    els.exportFunds.disabled = locked;
+  }
+  if (els.importFunds) {
+    els.importFunds.hidden = !showFunds;
+    els.importFunds.disabled = locked;
+  }
 }
 
 function overviewLabel(category) {
@@ -405,28 +447,60 @@ function overviewLabel(category) {
   return 'Combined value';
 }
 
-function openOverlay(overlay) {
+function focusSheet(overlay, preferred) {
+  const sheet = overlay?.querySelector('.sheet[role="dialog"], .sheet');
+  const target =
+    preferred ||
+    sheet?.querySelector('.sheet__close') ||
+    sheet?.querySelector('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])') ||
+    sheet;
+  requestAnimationFrame(() => target?.focus?.());
+}
+
+function openOverlay(overlay, { initialFocus } = {}) {
   if (!overlay) return;
+  if (!overlay.hasAttribute('open')) {
+    overlay._focusReturn = document.activeElement;
+  }
   overlay.hidden = false;
   overlay.setAttribute('open', '');
   document.body.classList.add('sheet-open');
+  focusSheet(overlay, initialFocus);
 }
 
 function closeOverlay(overlay) {
   if (!overlay) return;
+  const returnTo = overlay._focusReturn;
+  overlay._focusReturn = null;
   overlay.hidden = true;
   overlay.removeAttribute('open');
   if (!document.querySelector('.sheet-overlay[open]')) {
     document.body.classList.remove('sheet-open');
   }
+  if (returnTo && typeof returnTo.focus === 'function' && document.contains(returnTo)) {
+    requestAnimationFrame(() => returnTo.focus());
+  }
 }
 
-function findStockItem(portfolioId, symbol) {
+function findStockItem(portfolioId, stockIndex) {
   const portfolio = listPortfolios(stockState).find((entry) => entry.id === portfolioId);
   if (!portfolio) return null;
-  const index = (portfolio.items || []).findIndex((item) => item.symbol === symbol);
-  if (index < 0) return null;
+  const index = Number(stockIndex);
+  if (!Number.isInteger(index) || index < 0 || index >= (portfolio.items || []).length) {
+    return null;
+  }
   return { portfolio, index, item: portfolio.items[index] };
+}
+
+function resolveStockIndex(holding) {
+  if (!holding) return -1;
+  if (Number.isInteger(holding._stockIndex)) return holding._stockIndex;
+  const parts = String(holding.id || '').split(':');
+  if (parts[0] === 'stock' && parts.length >= 3) {
+    const parsed = Number.parseInt(parts[parts.length - 1], 10);
+    if (Number.isInteger(parsed)) return parsed;
+  }
+  return -1;
 }
 
 /** Apply stock mutators against a portfolio id; keep prior activePortfolioId. */
@@ -671,25 +745,30 @@ function openHoldingSheet(row) {
   const badgeClass = row.category === 'fund' ? 'pf-badge--fund' : 'pf-badge--stock';
   const badgeLabel = row.category === 'fund' ? 'Fund' : 'Stock';
 
+  if (els.holdingSheet.heading) {
+    els.holdingSheet.heading.innerHTML = `
+      <p class="eyebrow">${escapeHtml(badgeLabel)} holding</p>
+      <h2 class="sheet__title" id="pf-holding-sheet-title">
+        ${escapeHtml(row.label)}
+        <span class="pf-badge ${badgeClass}">${badgeLabel}</span>
+      </h2>
+      <p class="pf-holding-sheet__portfolio">${escapeHtml(row.portfolioName)}</p>
+    `;
+  }
+
   els.holdingSheet.body.innerHTML = `
-    <p class="eyebrow">${escapeHtml(badgeLabel)} holding</p>
-    <h2 class="sheet__title">
-      ${escapeHtml(row.label)}
-      <span class="pf-badge ${badgeClass}">${badgeLabel}</span>
-    </h2>
-    <p class="pf-holding-sheet__portfolio">${escapeHtml(row.portfolioName)}</p>
     <div class="pf-holding-sheet__metrics">
-      <div class="field">
-        <span class="pf-stock-editor__note">Value</span>
-        <strong>${formatCurrency(row.currentValue)}</strong>
+      <div class="metric">
+        <span class="metric__label">Value</span>
+        <strong class="metric__value">${formatCurrency(row.currentValue)}</strong>
       </div>
-      <div class="field">
-        <span class="pf-stock-editor__note">Cost</span>
-        <strong>${formatCurrency(row.totalCost)}</strong>
+      <div class="metric">
+        <span class="metric__label">Cost</span>
+        <strong class="metric__value">${formatCurrency(row.totalCost)}</strong>
       </div>
-      <div class="field">
-        <span class="pf-stock-editor__note">P/L</span>
-        <strong class="delta ${plTone(row.pl)}">${formatPlLine(row.pl, row.plPct)}</strong>
+      <div class="metric">
+        <span class="metric__label">P/L</span>
+        <strong class="metric__value delta ${plTone(row.pl)}">${formatPlLine(row.pl, row.plPct)}</strong>
       </div>
     </div>
   `;
@@ -704,7 +783,7 @@ function openHoldingSheet(row) {
     }
   }
 
-  openOverlay(els.holdingSheet.root);
+  openOverlay(els.holdingSheet.root, { initialFocus: els.holdingSheet.close });
 }
 
 function closeStockModal() {
@@ -716,6 +795,10 @@ function closeStockModal() {
 
 function openStockModal({ index = -1, portfolioId = null } = {}) {
   if (!els.stock.modal) return;
+  if (isPageLocked()) {
+    alert(pageMessage || 'Portfolio data is locked until the server connection is restored.');
+    return;
+  }
 
   const portfolios = listPortfolios(stockState);
   if (portfolios.length === 0) {
@@ -727,7 +810,6 @@ function openStockModal({ index = -1, portfolioId = null } = {}) {
     portfolioId || getActivePortfolio(stockState)?.id || portfolios[0].id;
   fillPortfolioSelector(editorPortfolioId);
   els.stock.editIndex.value = String(index);
-  openOverlay(els.stock.modal);
 
   if (index === -1) {
     els.stock.title.textContent = 'Add stock';
@@ -736,36 +818,50 @@ function openStockModal({ index = -1, portfolioId = null } = {}) {
     hydrateCostFields({ averageCost: '', commissionRate: '0.4', commissionIncluded: false });
     lastCostEditedField = 'base';
     setModalMode(MODAL_MODE.CREATE);
-    requestAnimationFrame(() => els.stock.symbolInput?.focus());
+    openOverlay(els.stock.modal, { initialFocus: els.stock.symbolInput });
     return;
   }
 
   const item = getEditorItem();
   if (!item) {
-    closeStockModal();
     return;
   }
 
   els.stock.title.textContent = 'Update position';
   els.stock.symbolInput.value = item.symbol;
   setModalMode(MODAL_MODE.EDIT);
-  requestAnimationFrame(() => els.stock.quantityInput?.focus());
+  openOverlay(els.stock.modal, { initialFocus: els.stock.quantityInput });
 }
 
 async function persistStockState(nextState) {
   busy = true;
   try {
     stockState = await savePortfolioStateDocument(nextState);
+    if (
+      pageState === 'auth-required' ||
+      pageState === 'server-unavailable' ||
+      pageState === 'error'
+    ) {
+      pageState = 'ready';
+      pageMessage = '';
+    }
     render();
     if (els.manageSheet.root?.hasAttribute('open')) renderManageSheet();
     return true;
   } catch (error) {
-    let message = error?.message || 'Unable to save the portfolio.';
-    if (error instanceof AuthRequiredError) {
-      message = error.message || 'Server login required.';
-    } else if (error instanceof ConnectionUnavailableError) {
-      message = error.message || 'Server unavailable.';
+    if (
+      error instanceof AuthRequiredError ||
+      error instanceof ConnectionUnavailableError
+    ) {
+      applyPageLockFromError(error, 'Unable to save the portfolio.');
+      render();
     }
+    const message =
+      error instanceof AuthRequiredError
+        ? error.message || 'Server login required.'
+        : error instanceof ConnectionUnavailableError
+          ? error.message || 'Server unavailable.'
+          : error?.message || 'Unable to save the portfolio.';
     console.warn('Stock portfolio save failed', error);
     alert(message);
     return false;
@@ -886,6 +982,14 @@ async function persistFundsData(nextData) {
   busy = true;
   try {
     fundsData = await saveFundsDataDocument(nextData);
+    if (
+      pageState === 'auth-required' ||
+      pageState === 'server-unavailable' ||
+      pageState === 'error'
+    ) {
+      pageState = 'ready';
+      pageMessage = '';
+    }
     render();
     if (els.manageSheet.root?.hasAttribute('open')) renderManageSheet();
     if (els.fund.detailSheet?.hasAttribute('open') && currentFundPortfolioId && currentFundId) {
@@ -893,12 +997,19 @@ async function persistFundsData(nextData) {
     }
     return true;
   } catch (error) {
-    let message = error?.message || 'Unable to save mutual fund data.';
-    if (error instanceof AuthRequiredError) {
-      message = error.message || 'Server login required.';
-    } else if (error instanceof ConnectionUnavailableError) {
-      message = error.message || 'Server unavailable.';
+    if (
+      error instanceof AuthRequiredError ||
+      error instanceof ConnectionUnavailableError
+    ) {
+      applyPageLockFromError(error, 'Unable to save mutual fund data.');
+      render();
     }
+    const message =
+      error instanceof AuthRequiredError
+        ? error.message || 'Server login required.'
+        : error instanceof ConnectionUnavailableError
+          ? error.message || 'Server unavailable.'
+          : error?.message || 'Unable to save mutual fund data.';
     console.warn('Funds save failed', error);
     alert(message);
     return false;
@@ -931,6 +1042,7 @@ function closeTypeSheet() {
 }
 
 function openTypePicker() {
+  if (isPageLocked()) return;
   openOverlay(els.typeSheet.root);
 }
 
@@ -939,6 +1051,10 @@ function closeFundModal() {
 }
 
 function openAddFund({ portfolioId = null } = {}) {
+  if (isPageLocked()) {
+    alert(pageMessage || 'Portfolio data is locked until the server connection is restored.');
+    return;
+  }
   const portfolios = fundsData.portfolios || [];
   if (portfolios.length === 0) {
     alert('Create a fund portfolio before adding funds.');
@@ -950,8 +1066,7 @@ function openAddFund({ portfolioId = null } = {}) {
   if (els.fund.name) els.fund.name.value = '';
   if (els.fund.symbol) els.fund.symbol.value = '';
   if (els.fund.amc) els.fund.amc.value = '';
-  openOverlay(els.fund.modal);
-  requestAnimationFrame(() => els.fund.name?.focus());
+  openOverlay(els.fund.modal, { initialFocus: els.fund.name });
 }
 
 function closeFundDetailSheet() {
@@ -989,7 +1104,7 @@ function renderFundDetailSheet() {
   }
   if (els.fund.fdGain) {
     els.fund.fdGain.textContent = formatPlLine(stats.gainLoss, stats.gainLossPercent);
-    els.fund.fdGain.className = `delta ${plTone(stats.gainLoss)}`;
+    els.fund.fdGain.className = `metric__value delta ${plTone(stats.gainLoss)}`;
   }
 
   if (els.fund.txList) {
@@ -1326,8 +1441,12 @@ function renderManageSheet() {
 }
 
 function openManageSheet() {
+  if (isPageLocked()) {
+    alert(pageMessage || 'Portfolio data is locked until the server connection is restored.');
+    return;
+  }
   renderManageSheet();
-  openOverlay(els.manageSheet.root);
+  openOverlay(els.manageSheet.root, { initialFocus: els.manageSheet.close });
 }
 
 function closeManageSheet() {
@@ -1432,6 +1551,10 @@ function handleImportFunds(event) {
 }
 
 function handleFabClick() {
+  if (isPageLocked()) {
+    alert(pageMessage || 'Portfolio data is locked until the server connection is restored.');
+    return;
+  }
   const category = getCategory();
   if (category === 'stocks') openStockModal();
   else if (category === 'funds') openAddFund();
@@ -1439,7 +1562,7 @@ function handleFabClick() {
 }
 
 async function handleHoldingDelete() {
-  if (!selectedHolding || busy) return;
+  if (!selectedHolding || busy || isPageLocked()) return;
 
   if (selectedHolding.category === 'fund') {
     const fundId = selectedHolding.fundId || selectedHolding.id.split(':')[2];
@@ -1461,7 +1584,7 @@ async function handleHoldingDelete() {
     return;
   }
 
-  const located = findStockItem(selectedHolding.portfolioId, selectedHolding.symbol);
+  const located = findStockItem(selectedHolding.portfolioId, resolveStockIndex(selectedHolding));
   if (!located) {
     alert('Position not found.');
     closeHoldingSheet();
@@ -1477,7 +1600,7 @@ async function handleHoldingDelete() {
 }
 
 function handleHoldingEdit() {
-  if (!selectedHolding) return;
+  if (!selectedHolding || isPageLocked()) return;
 
   if (selectedHolding.category === 'fund') {
     const fundId = selectedHolding.fundId || selectedHolding.id.split(':')[2];
@@ -1488,7 +1611,7 @@ function handleHoldingEdit() {
   }
 
   const { portfolioId } = selectedHolding;
-  const located = findStockItem(portfolioId, selectedHolding.symbol);
+  const located = findStockItem(portfolioId, resolveStockIndex(selectedHolding));
   if (!located) {
     alert('Position not found.');
     return;
@@ -1606,10 +1729,71 @@ function renderHoldings(rows, category) {
   });
 }
 
+function paintLockedBanner() {
+  if (!els.lockedBanner) return;
+  if (!isPageLocked()) {
+    els.lockedBanner.hidden = true;
+    els.lockedBanner.innerHTML = '';
+    return;
+  }
+
+  const title =
+    pageState === 'auth-required'
+      ? 'Server login required'
+      : pageState === 'server-unavailable'
+        ? 'Server unavailable'
+        : 'Unable to load portfolios';
+  const body =
+    pageMessage ||
+    (pageState === 'auth-required'
+      ? 'A server is configured for portfolio data. Log in from Settings before using this page.'
+      : pageState === 'server-unavailable'
+        ? 'The configured server could not be reached. Update the server URL or try again later.'
+        : 'An unexpected error occurred while loading portfolio data.');
+
+  els.lockedBanner.hidden = false;
+  els.lockedBanner.innerHTML = `
+    <p class="pf-locked__title">${escapeHtml(title)}</p>
+    <p class="pf-locked__body">${escapeHtml(body)}</p>
+    <a class="btn btn--solid" href="./settings.html">Open Settings</a>
+  `;
+}
+
 function paintPage() {
   const category = getCategory();
+  const locked = isPageLocked();
   syncSegment(category);
   syncExportImport(category);
+  paintLockedBanner();
+
+  if (els.fab) els.fab.disabled = locked || busy;
+  if (els.manageBtn) els.manageBtn.disabled = locked || busy;
+
+  if (locked) {
+    if (els.holdingsCount) els.holdingsCount.textContent = '0';
+    if (els.overview) {
+      els.overview.innerHTML = `
+        <div class="pf-overview__label">${overviewLabel(category)}</div>
+        <div class="pf-overview__value">${formatCurrency(0)}</div>
+        <div class="delta neutral">${formatPlLine(0, 0)}</div>
+      `;
+    }
+    if (els.holdingsList) {
+      els.holdingsList.hidden = true;
+      els.holdingsList.innerHTML = '';
+    }
+    if (els.empty) {
+      els.empty.hidden = false;
+      els.empty.innerHTML = `
+        <h3 class="empty-state__title">Portfolios locked</h3>
+        <p class="empty-state__description">${escapeHtml(
+          pageMessage || 'Resolve the server connection in Settings to view holdings.'
+        )}</p>
+        <a class="btn btn--solid" href="./settings.html">Open Settings</a>
+      `;
+    }
+    return;
+  }
 
   const overview = buildOverview({ stockState, fundsData, marketData, category });
   const stockRows = buildStockHoldings(stockState, marketData);
@@ -1839,18 +2023,37 @@ async function loadMarketData() {
 }
 
 async function loadDocuments() {
+  pageState = 'ready';
+  pageMessage = '';
+
   try {
     stockState = await loadPortfolioState();
   } catch (error) {
-    console.warn('Stock portfolio load failed; using empty state.', error);
+    console.warn('Stock portfolio load failed.', error);
     stockState = createDefaultPortfolioState();
+    if (
+      error instanceof AuthRequiredError ||
+      error instanceof ConnectionUnavailableError
+    ) {
+      applyPageLockFromError(error, 'Unable to load stock portfolios.');
+    } else {
+      console.warn('Stock portfolio load failed; using empty state.', error);
+    }
   }
 
   try {
     fundsData = await loadFundsDataDocument();
   } catch (error) {
-    console.warn('Funds data load failed; using empty state.', error);
+    console.warn('Funds data load failed.', error);
     fundsData = createEmptyFundsData();
+    if (
+      error instanceof AuthRequiredError ||
+      error instanceof ConnectionUnavailableError
+    ) {
+      applyPageLockFromError(error, 'Unable to load fund portfolios.');
+    } else if (!isPageLocked()) {
+      console.warn('Funds data load failed; using empty state.', error);
+    }
   }
 }
 

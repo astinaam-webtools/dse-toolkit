@@ -197,6 +197,9 @@
     gap: var(--s-3);
     margin-bottom: var(--s-3);
   }
+  .pf-sheet__head .sheet__title {
+    margin-bottom: 0;
+  }
   .pf-holding-sheet__portfolio {
     margin: 0 0 var(--s-4);
     color: var(--text-muted);
@@ -239,11 +242,13 @@
       </div>
     </header>
 
-    <div class="pf-seg" role="tablist" aria-label="Category">
-      <button type="button" class="pf-seg__btn is-active" id="pf-seg-all" data-category="all" role="tab" aria-selected="true">All</button>
-      <button type="button" class="pf-seg__btn" id="pf-seg-stocks" data-category="stocks" role="tab" aria-selected="false">Stocks</button>
-      <button type="button" class="pf-seg__btn" id="pf-seg-funds" data-category="funds" role="tab" aria-selected="false">Funds</button>
+    <div class="pf-seg" aria-label="Category">
+      <button type="button" class="pf-seg__btn is-active" id="pf-seg-all" data-category="all" aria-pressed="true">All</button>
+      <button type="button" class="pf-seg__btn" id="pf-seg-stocks" data-category="stocks" aria-pressed="false">Stocks</button>
+      <button type="button" class="pf-seg__btn" id="pf-seg-funds" data-category="funds" aria-pressed="false">Funds</button>
     </div>
+
+    <div id="pf-locked-banner" class="pf-locked" hidden></div>
 
     <section class="pf-overview" id="pf-overview" aria-live="polite"></section>
 
@@ -257,10 +262,13 @@
     <button type="button" class="pf-fab" id="pf-fab" aria-label="Add holding">+</button>
   </main>
 
-  <div id="pf-holding-sheet" class="sheet-overlay" aria-live="polite">
-    <div class="sheet">
+  <div id="pf-holding-sheet" class="sheet-overlay" aria-live="polite" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pf-holding-sheet-title">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <button type="button" class="sheet__close" id="pf-holding-sheet-close" aria-label="Close holding details">Close</button>
+      <div class="sheet__head pf-sheet__head">
+        <div id="pf-holding-sheet-heading"></div>
+        <button type="button" class="sheet__close" id="pf-holding-sheet-close" aria-label="Close holding details">Close</button>
+      </div>
       <div id="pf-holding-sheet-body"></div>
       <div class="pf-sheet-actions">
         <a id="pf-holding-view-stock" class="btn btn--ghost" href="#" hidden>View stock</a>
@@ -270,12 +278,16 @@
     </div>
   </div>
 
-  <div id="pf-type-sheet" class="sheet-overlay">
-    <div class="sheet">
+  <div id="pf-type-sheet" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pf-type-sheet-title">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <button type="button" class="sheet__close" id="pf-type-sheet-close" aria-label="Close">Close</button>
-      <p class="eyebrow">Add holding</p>
-      <h2 class="sheet__title">What are you adding?</h2>
+      <div class="sheet__head pf-sheet__head">
+        <div>
+          <p class="eyebrow">Add holding</p>
+          <h2 class="sheet__title" id="pf-type-sheet-title">What are you adding?</h2>
+        </div>
+        <button type="button" class="sheet__close" id="pf-type-sheet-close" aria-label="Close">Close</button>
+      </div>
       <div class="pf-type-sheet__choices">
         <button type="button" class="btn btn--solid" id="pf-type-pick-stock">Stock</button>
         <button type="button" class="btn btn--ghost" id="pf-type-pick-fund">Mutual fund</button>
@@ -283,12 +295,16 @@
     </div>
   </div>
 
-  <div id="pf-manage-sheet" class="sheet-overlay">
-    <div class="sheet">
+  <div id="pf-manage-sheet" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pf-manage-sheet-title">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <button type="button" class="sheet__close" id="pf-manage-sheet-close" aria-label="Close manage portfolios">Close</button>
-      <p class="eyebrow">Portfolios</p>
-      <h2 class="sheet__title">Manage</h2>
+      <div class="sheet__head pf-sheet__head">
+        <div>
+          <p class="eyebrow">Portfolios</p>
+          <h2 class="sheet__title" id="pf-manage-sheet-title">Manage</h2>
+        </div>
+        <button type="button" class="sheet__close" id="pf-manage-sheet-close" aria-label="Close manage portfolios">Close</button>
+      </div>
       <div class="pf-manage-sheet__group" id="pf-manage-stocks-section">
         <h3>Stock portfolios</h3>
         <div id="pf-manage-stocks-list"></div>
@@ -302,10 +318,10 @@
     </div>
   </div>
 
-  <div id="stock-modal" class="sheet-overlay" aria-live="polite">
-    <div class="sheet pf-stock-editor__sheet">
+  <div id="stock-modal" class="sheet-overlay" aria-live="polite" hidden>
+    <div class="sheet pf-stock-editor__sheet" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <div class="pf-sheet__head">
+      <div class="pf-sheet__head sheet__head">
         <div>
           <p class="eyebrow">Position editor</p>
           <h2 id="modal-title" class="sheet__title">Add stock</h2>
@@ -397,11 +413,13 @@
     </div>
   </div>
 
-  <div id="modal-fund" class="sheet-overlay">
-    <div class="sheet">
+  <div id="modal-fund" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="pf-fund-modal-title">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <button type="button" class="sheet__close" id="pf-fund-modal-close" aria-label="Close add fund">Close</button>
-      <h2 class="sheet__title">Add fund</h2>
+      <div class="sheet__head pf-sheet__head">
+        <h2 class="sheet__title" id="pf-fund-modal-title">Add fund</h2>
+        <button type="button" class="sheet__close" id="pf-fund-modal-close" aria-label="Close add fund">Close</button>
+      </div>
       <div class="field">
         <label for="fund-portfolio-selector">Portfolio</label>
         <select id="fund-portfolio-selector" class="select"></select>
@@ -426,11 +444,13 @@
     </div>
   </div>
 
-  <div id="modal-tx" class="sheet-overlay">
-    <div class="sheet">
+  <div id="modal-tx" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="tx-modal-title">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <button type="button" class="sheet__close" id="pf-tx-modal-close" aria-label="Close transaction">Close</button>
-      <h2 id="tx-modal-title" class="sheet__title">Add transaction</h2>
+      <div class="sheet__head pf-sheet__head">
+        <h2 id="tx-modal-title" class="sheet__title">Add transaction</h2>
+        <button type="button" class="sheet__close" id="pf-tx-modal-close" aria-label="Close transaction">Close</button>
+      </div>
       <input type="hidden" id="inp-tx-id">
       <div class="field">
         <label for="inp-tx-type">Type</label>
@@ -464,12 +484,16 @@
     </div>
   </div>
 
-  <div id="pf-fund-detail-sheet" class="sheet-overlay">
-    <div class="sheet">
+  <div id="pf-fund-detail-sheet" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="detail-fund-name">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <button type="button" class="sheet__close" id="pf-fund-detail-close" aria-label="Close fund details">Close</button>
-      <h2 id="detail-fund-name" class="sheet__title">Fund</h2>
-      <p id="detail-fund-amc" class="pf-stock-editor__note"></p>
+      <div class="sheet__head pf-sheet__head">
+        <div>
+          <h2 id="detail-fund-name" class="sheet__title">Fund</h2>
+          <p id="detail-fund-amc" class="pf-stock-editor__note"></p>
+        </div>
+        <button type="button" class="sheet__close" id="pf-fund-detail-close" aria-label="Close fund details">Close</button>
+      </div>
       <div class="field">
         <label for="input-current-nav">Current NAV</label>
         <div class="pf-stock-editor__dual">
@@ -479,13 +503,31 @@
         <p id="nav-last-updated" class="pf-stock-editor__note"></p>
       </div>
       <button type="button" class="btn btn--solid" id="btn-update-nav">Update NAV</button>
-      <div class="pf-stock-editor__dual" aria-label="Fund stats">
-        <div><span class="pf-stock-editor__note">Invested</span><strong id="fd-invested">—</strong></div>
-        <div><span class="pf-stock-editor__note">Units</span><strong id="fd-units">—</strong></div>
-        <div><span class="pf-stock-editor__note">Value</span><strong id="fd-value">—</strong></div>
-        <div><span class="pf-stock-editor__note">Avg cost</span><strong id="fd-avg-cost">—</strong></div>
-        <div><span class="pf-stock-editor__note">Dividend reinvest</span><strong id="fd-dividend">—</strong></div>
-        <div><span class="pf-stock-editor__note">Gain/loss</span><strong id="fd-gain">—</strong></div>
+      <div class="pf-fund-stats" aria-label="Fund stats">
+        <div class="metric">
+          <span class="metric__label">Invested</span>
+          <strong class="metric__value" id="fd-invested">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Units</span>
+          <strong class="metric__value" id="fd-units">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Value</span>
+          <strong class="metric__value" id="fd-value">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Avg cost</span>
+          <strong class="metric__value" id="fd-avg-cost">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Dividend reinvest</span>
+          <strong class="metric__value" id="fd-dividend">—</strong>
+        </div>
+        <div class="metric">
+          <span class="metric__label">Gain/loss</span>
+          <strong class="metric__value" id="fd-gain">—</strong>
+        </div>
       </div>
       <ul id="tx-list" class="pf-fund-tx-list"></ul>
       <div class="pf-sheet-actions">
@@ -496,11 +538,13 @@
     </div>
   </div>
 
-  <div id="modal-rename" class="sheet-overlay">
-    <div class="sheet">
+  <div id="modal-rename" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rename-modal-title">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <button type="button" class="sheet__close" id="pf-rename-modal-close" aria-label="Close rename">Close</button>
-      <h2 id="rename-modal-title" class="sheet__title">Rename</h2>
+      <div class="sheet__head pf-sheet__head">
+        <h2 id="rename-modal-title" class="sheet__title">Rename</h2>
+        <button type="button" class="sheet__close" id="pf-rename-modal-close" aria-label="Close rename">Close</button>
+      </div>
       <div class="field">
         <label for="inp-rename-name">Name</label>
         <input type="text" id="inp-rename-name" autocomplete="off">
@@ -516,11 +560,13 @@
     </div>
   </div>
 
-  <div id="modal-portfolio" class="sheet-overlay">
-    <div class="sheet">
+  <div id="modal-portfolio" class="sheet-overlay" hidden>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="portfolio-modal-title">
       <div class="sheet__handle" aria-hidden="true"></div>
-      <button type="button" class="sheet__close" id="pf-portfolio-modal-close" aria-label="Close new portfolio">Close</button>
-      <h2 id="portfolio-modal-title" class="sheet__title">New fund portfolio</h2>
+      <div class="sheet__head pf-sheet__head">
+        <h2 id="portfolio-modal-title" class="sheet__title">New fund portfolio</h2>
+        <button type="button" class="sheet__close" id="pf-portfolio-modal-close" aria-label="Close new portfolio">Close</button>
+      </div>
       <input type="hidden" id="portfolio-modal-kind" value="fund">
       <div class="field">
         <label for="inp-pf-name">Portfolio name</label>
