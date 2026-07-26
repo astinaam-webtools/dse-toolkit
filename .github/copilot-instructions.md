@@ -4,13 +4,12 @@
 - **Tech stack**: Vanilla HTML/CSS/JS, ES modules (package `type: module`). No bundler.
 - **Key files**:
 	- `index.html`: entry point. Loads `./src/app.js` and contains hero + search controls.
-	- `analyzer.html`: dedicated behaviour analyzer page that reuses the shared script.
 	- `market.html`: market dashboard landing (DSE Market view).
-	- `stock.html`: single-stock detail view.
+	- `stock.html`: single-stock detail view with auto-computed behaviour profile and AI chat analysis.
 	- `styles.css`: Inter font, responsive cards, sticky search bar, `.hl` highlight class.
-	- `src/app.js`: Renders cards (when present), runs debounced search, handles analyzer form, registers service worker.
+	- `src/app.js`: Renders cards (when present), runs debounced search, registers service worker.
 	- `src/marketApp.js`: Bootstraps market dashboard UI.
-	- `src/stockDetailApp.js`: Bootstraps stock details view UI.
+	- `src/stockDetailApp.js`: Bootstraps stock details view UI, auto-computes behaviour profile using available metrics.
 	- `src/lib/behaviorProfiler.js`: Pure logic that maps input metrics to behaviour buckets.
 	- `src/lib/marketLogic.js`: Market analysis logic including bucket definitions, stock filtering, and sector heatmap aggregation.
 	- `src/data/terms.js`: Array of term objects (title, shortForm, category, description, whyItMatters, watchFor, tags).
@@ -32,7 +31,7 @@
 - Terms already cover valuation, profitability, governance, DSE-specific rules. Preserve schema when adding entries.
 - Terms can optionally include `chartGuideId` to surface “How to read this on charts” links into `guides.html` anchors.
 - Service worker precaches `index.html`, `guides.html`, styles, JS modules, manifest, favicon, and icons so the glossary loads offline; bump `CACHE_NAME` when changing cached assets.
-- Analyzer form (now on `analyzer.html`) collects key metrics and calls `analyzeStock` to output behaviour buckets with timing guidance.
+- Stock detail page (`stock.html`) auto-computes behaviour buckets (value, growth, income, defensive, cyclical, blue-chip) using available API metrics and displays them inline.
 
 - Market pages (`market.html`, `stock.html`) render using `marketApp.js`/`stockDetailApp.js` and data from `src/data/dse-market.json`.
 - `dse-market.json` is a **minified** build artifact: null metric/delta keys are omitted, numbers are rounded. Treat missing keys as unavailable (`?.` / defaults). Do not pretty-print it back into the repo.

@@ -38,7 +38,6 @@ const PRIMARY_TABS = [
 const MORE_ITEMS = [
   { href: './settings.html',  label: 'Settings' },
   { href: './guides.html',    label: 'Chart Playbook' },
-  { href: './analyzer.html',  label: 'Behavior Analyzer' },
   { href: './privacy.html',   label: 'Privacy Policy' },
   { href: 'https://github.com/astinaam-webtools/dse-toolkit', label: 'GitHub', external: true }
 ];
@@ -55,11 +54,6 @@ const FOOTER_LINKS = [
     href: './guides.html',
     label: 'Chart Playbook',
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 12h6M9 15h4"/></svg>'
-  },
-  {
-    href: './analyzer.html',
-    label: 'Behavior Analyzer',
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 21l-4.35-4.35"/><circle cx="11" cy="11" r="8"/><path d="M11 8v6M8 11h6"/></svg>'
   }
 ];
 

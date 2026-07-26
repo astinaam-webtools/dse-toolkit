@@ -254,11 +254,7 @@ h1 {
   max-width: 960px;
 }
 
-.analyzer-page main {
-  margin: -1rem auto 0;
-  padding: 0 0.5rem 3rem;
-  max-width: 960px;
-}
+
 
 .controls {
   position: sticky;
@@ -654,7 +650,6 @@ input[type='search']:focus {
 }
 
 .chart-cta,
-.analyzer,
 .guide__intro,
 .guide__note {
   margin-top: 2rem;
@@ -665,18 +660,11 @@ input[type='search']:focus {
   box-shadow: var(--shadow);
 }
 
-.chart-cta h2,
-.analyzer h2 {
+.chart-cta h2 {
   margin-top: 0;
 }
 
-.analyzer {
-  padding: clamp(1.5rem, 3vw, 2.25rem);
-}
 
-.analyzer-form {
-  margin-top: 1.25rem;
-}
 
 .form-grid {
   display: grid;
@@ -853,21 +841,29 @@ textarea:disabled,
   text-decoration: underline;
 }
 
-.analyzer-form .btn {
-  width: 100%;
-  margin-top: 0.75rem;
-}
+
 
 .analysis-output {
   margin-top: 1.5rem;
 }
 
 .analysis-summary {
-  background: var(--up-soft);
+  background: var(--accent-soft);
   border-radius: var(--r-md);
   padding: var(--s-4);
-  border: 1px solid var(--up);
-  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  margin-bottom: var(--s-4);
+}
+
+.analysis-summary .muted {
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.analysis-summary h4 {
+  margin: var(--s-1) 0 var(--s-2);
+  font-family: var(--font-display);
 }
 
 .muted {
@@ -877,30 +873,53 @@ textarea:disabled,
 
 .analysis-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: var(--s-3);
 }
 
 .analysis-card {
   background: var(--surface);
-  border-radius: 16px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--border);
-  padding: 1rem;
-  box-shadow: var(--shadow);
+  padding: var(--s-4);
+  box-shadow: var(--shadow-1);
 }
 
 .analysis-card h4 {
-  margin: 0 0 0.35rem 0;
+  margin: 0 0 var(--s-2) 0;
+  font-size: var(--fs-sm);
+  font-family: var(--font-display);
+}
+
+.analysis-card > p {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  margin: 0 0 var(--s-3);
 }
 
 .analysis-card ul {
   padding-left: 1.25rem;
-  margin: 0 0 0.5rem 0;
-  color: var(--muted);
+  margin: 0 0 var(--s-3) 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.analysis-card ul li + li {
+  margin-top: var(--s-1);
 }
 
 .analysis-card .label {
-  margin-top: 0.5rem;
+  font-size: var(--fs-xs);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+  margin: var(--s-3) 0 var(--s-1);
+}
+
+.analysis-card .label + p {
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+  margin: 0;
 }
 
 .guide {

@@ -1,13 +1,10 @@
 import { terms } from './data/terms.js';
 import { filterTerms, highlightText, tokenize } from './lib/filterTerms.js';
-import { analyzeStock } from './lib/behaviorProfiler.js';
 import { buildTermAnalysisPrompt, storePrefilledPrompt } from './lib/chatPrompts.js';
 
 const termContainer = document.getElementById('terms');
 const searchInput = document.getElementById('search');
 const stats = document.getElementById('stats');
-const analyzerForm = document.getElementById('behavior-form');
-const analysisOutput = document.getElementById('analysis-output');
 const marketGlance = document.getElementById('market-glance');
 const quickTermChips = document.getElementById('quick-term-chips');
 const recentSearchesEl = document.getElementById('recent-searches');
@@ -426,63 +423,6 @@ if (termContainer && searchInput) {
   });
 }
 
-
-const renderAnalysis = (result) => {
-  if (!analysisOutput) return;
-  if (!result.matches.length) {
-    analysisOutput.innerHTML = '<p class="muted">Enter realistic values above to see behaviour insights.</p>';
-    return;
-  }
-
-  analysisOutput.innerHTML = `
-    <div class="analysis-summary">
-      <p class="muted">Suggested investing lens:</p>
-      <h3>${result.primary.title}</h3>
-      <p>${result.primary.summary}</p>
-    </div>
-    <div class="analysis-grid">
-      ${result.matches
-      .map(
-        (bucket) => `
-          <article class="analysis-card">
-            <h4>${bucket.title}</h4>
-            <p>${bucket.summary}</p>
-            <ul>
-              ${bucket.triggers.map((tip) => `<li>${tip}</li>`).join('')}
-            </ul>
-            <p class="label">When to invest</p>
-            <p>${bucket.timing}</p>
-          </article>
-        `
-      )
-      .join('')}
-    </div>
-  `;
-};
-
-if (analyzerForm) {
-  analyzerForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    const formData = new FormData(analyzerForm);
-    const inputs = {
-      sector: formData.get('sector') || 'other',
-      marketCap: Number(formData.get('marketCap')) || 0,
-      revenueCagr: Number(formData.get('revenueCagr')) || 0,
-      epsCagr: Number(formData.get('epsCagr')) || 0,
-      dividendYield: Number(formData.get('dividendYield')) || 0,
-      payoutRatio: Number(formData.get('payoutRatio')) || 0,
-      fcfYears: Number(formData.get('fcfYears')) || 0,
-      pe: Number(formData.get('pe')) || 0,
-      pb: Number(formData.get('pb')) || 0,
-      debtToEquity: Number(formData.get('debtToEquity')) || 0,
-      beta: Number(formData.get('beta')) || 0,
-      priceVsHigh: Number(formData.get('priceVsHigh')) || 0
-    };
-
-    const result = analyzeStock(inputs);
-    renderAnalysis(result);
-  });
-}
 
 // Focus search input on pressing '/' when not inside another input
 document.addEventListener('keydown', (e) => {

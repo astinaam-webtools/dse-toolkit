@@ -1,6 +1,28 @@
 const defensiveSectors = new Set(['consumer-staples', 'healthcare', 'utilities', 'telecom']);
 const cyclicalSectors = new Set(['industrials', 'materials', 'consumer-discretionary', 'energy']);
 
+/** Map DSE sector names → profiler slugs */
+export const dseSectorMap = {
+  'Bank': 'financials',
+  'Financial Institutions': 'financials',
+  'Insurance': 'financials',
+  'Stock Brokers': 'financials',
+  'Pharmaceuticals & Chemicals': 'healthcare',
+  'Fuel & Power': 'energy',
+  'Engineering': 'industrials',
+  'Cement': 'materials',
+  'Ceramics Sector': 'materials',
+  'Tannery Industries': 'materials',
+  'Paper & Printing': 'materials',
+  'Food & Allied': 'consumer-staples',
+  'Textile': 'consumer-discretionary',
+  'Jute': 'materials',
+  'IT Sector': 'technology',
+  'Telecommunication': 'telecom',
+  'Travel & Leisure': 'consumer-discretionary',
+  'Services & Real Estate': 'others'
+};
+
 const fmtPercent = (value) => `${Number(value || 0).toFixed(1)}%`;
 
 const bucketLibrary = {

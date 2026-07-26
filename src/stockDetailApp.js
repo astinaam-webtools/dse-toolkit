@@ -1,6 +1,7 @@
 
 import { getAiSettings } from './lib/appSettings.js';
 import { requestServerAiChat, resetCursorSession } from './lib/serverClient.js';
+import { analyzeStock as profileStock, dseSectorMap } from './lib/behaviorProfiler.js';
 
 // State
 let marketData = null;
@@ -16,7 +17,9 @@ const els = {
   change: document.getElementById('stock-change'),
   grid: document.getElementById('metrics-grid'),
   btnAnalyze: document.getElementById('btn-analyze-page'),
-  aiOutput: document.getElementById('ai-output-page')
+  aiOutput: document.getElementById('ai-output-page'),
+  behaviorProfile: document.getElementById('behavior-profile'),
+  behaviorOutput: document.getElementById('behavior-output')
 };
 
 const keyToTerm = {
@@ -97,6 +100,7 @@ const init = async () => {
     }
 
     renderStock(stock);
+    renderBehaviorProfile(stock);
     
     // Setup AI Button
     els.btnAnalyze.onclick = () => analyzeStock(stock);
@@ -193,6 +197,60 @@ const renderChart = (data, isUp) => {
       <polyline points="${points}" fill="none" stroke="${strokeColor}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
     </svg>
   `;
+};
+
+const renderBehaviorProfile = (stock) => {
+  if (!els.behaviorProfile || !els.behaviorOutput) return;
+
+  const m = stock.metrics || {};
+  const inputs = {
+    sector: dseSectorMap[stock.sector] || 'others',
+    marketCap: m.mktCap || 0,
+    pe: m.pe || 0,
+    pb: m.pb || 0,
+    dividendYield: m.dividendYield || 0,
+    debtToEquity: m.debtToEquity || 0,
+    revenueCagr: 0,
+    epsCagr: 0,
+    payoutRatio: 0,
+    fcfYears: 0,
+    beta: 0,
+    priceVsHigh: 0
+  };
+
+  const result = profileStock(inputs);
+  if (!result.matches.length) return;
+
+  els.behaviorProfile.hidden = false;
+
+  const renderCard = (bucket) => `
+    <article class="analysis-card">
+      <h4>${bucket.title}</h4>
+      <p>${bucket.summary}</p>
+      ${bucket.triggers.length ? `
+        <ul>${bucket.triggers.map(t => `<li>${t}</li>`).join('')}</ul>
+      ` : ''}
+      <p class="label">When to invest</p>
+      <p>${bucket.timing}</p>
+    </article>
+  `;
+
+  if (result.matches.length === 1) {
+    els.behaviorOutput.innerHTML = `
+      <div class="analysis-grid">${renderCard(result.primary)}</div>
+    `;
+  } else {
+    els.behaviorOutput.innerHTML = `
+      <div class="analysis-summary">
+        <p class="muted">Primary investing lens</p>
+        <h4>${result.primary.title}</h4>
+        <p>${result.primary.summary}</p>
+      </div>
+      <div class="analysis-grid">
+        ${result.matches.slice(1).map(renderCard).join('')}
+      </div>
+    `;
+  }
 };
 
 const requestAiCompletion = async ({ aiSettings, messages, onDelta = null }) => {

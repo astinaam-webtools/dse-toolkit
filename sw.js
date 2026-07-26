@@ -3,7 +3,6 @@ const RUNTIME_CACHE = 'runtime-stock-glossary-v46';
 const PRECACHE_URLS = [
   './',
   './index.html',
-  './analyzer.html',
   './guides.html',
   './chat.html',
   './market.html',
