@@ -1,7 +1,7 @@
 # Stock Detail Page Redesign — Design Spec
 
 **Date:** 2026-07-26  
-**Status:** Draft — awaiting user review of this written spec  
+**Status:** Approved — implementation plan at `docs/superpowers/plans/2026-07-26-stock-detail-redesign.md`  
 **Scope:** Redesign `stock.html` / `src/stockDetailApp.js` layout for hierarchy, chart context, and null-safe field display.  
 **Mockups:** `.superpowers/brainstorm/407837-1785074067/content/stock-layouts.html`, `stock-layout-a-v2.html`
 
