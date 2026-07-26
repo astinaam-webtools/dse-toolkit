@@ -138,6 +138,24 @@
     gap: var(--s-3);
     margin-bottom: var(--s-3);
   }
+  .pf-holding-sheet__portfolio {
+    margin: 0 0 var(--s-4);
+    color: var(--text-muted);
+    font-size: var(--fs-sm);
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+  .pf-holding-sheet__metrics {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-3);
+  }
+  .pf-holding-sheet__metrics .field {
+    margin: 0;
+  }
+  @media (max-width: 520px) {
+    .pf-holding-sheet__metrics { grid-template-columns: 1fr; }
+  }
   @media (max-width: 820px) {
     .pf-stock-editor__grid { grid-template-columns: 1fr; }
   }
