@@ -1,7 +1,11 @@
-
 import { getAiSettings } from './lib/appSettings.js';
 import { requestServerAiChat, resetCursorSession } from './lib/serverClient.js';
 import { analyzeStock as profileStock, dseSectorMap } from './lib/behaviorProfiler.js';
+import {
+  sparklineRange,
+  buildTradingStrip,
+  buildMetricGroups
+} from './lib/stockMetricsLayout.js';
 
 // State
 let marketData = null;
@@ -15,7 +19,14 @@ const els = {
   sector: document.getElementById('stock-sector'),
   price: document.getElementById('stock-price'),
   change: document.getElementById('stock-change'),
-  grid: document.getElementById('metrics-grid'),
+  chartContainer: document.getElementById('chart-container'),
+  chartRange: document.getElementById('chart-range'),
+  chartLow: document.getElementById('chart-low'),
+  chartHigh: document.getElementById('chart-high'),
+  chartSessions: document.getElementById('chart-sessions'),
+  chartSpan: document.getElementById('chart-span'),
+  strip: document.getElementById('trading-strip'),
+  groups: document.getElementById('metrics-groups'),
   btnAnalyze: document.getElementById('btn-analyze-page'),
   aiOutput: document.getElementById('ai-output-page'),
   behaviorProfile: document.getElementById('behavior-profile'),
@@ -126,8 +137,8 @@ const renderStock = (stock) => {
   els.change.textContent = hasChange
     ? `${change > 0 ? '+' : ''}${change.toFixed(2)}%`
     : '—';
-  els.change.style.color = !hasChange ? '' : change >= 0 ? '#10b981' : '#ef4444';
-  
+  els.change.style.color = !hasChange ? '' : change >= 0 ? 'var(--up)' : 'var(--down)';
+
   // Render Chart after layout is fully calculated
   // Use double requestAnimationFrame to ensure layout is complete
   requestAnimationFrame(() => {
@@ -136,44 +147,69 @@ const renderStock = (stock) => {
     });
   });
 
-  // Metrics Grid — absent keys mean null was omitted at build time
-  const formatKey = (key) => {
-    return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-  };
+  const range = sparklineRange(stock.sparkline);
+  if (range) {
+    els.chartRange.hidden = false;
+    els.chartContainer.classList.remove('is-empty');
+    els.chartLow.textContent = range.low.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    els.chartHigh.textContent = range.high.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    els.chartSessions.textContent = `${range.sessions} sessions`;
+    els.chartSpan.textContent = range.span.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  } else {
+    els.chartRange.hidden = true;
+    els.chartContainer.classList.add('is-empty');
+  }
 
-  const metricsHtml = Object.entries(stock.metrics || {}).map(([key, value]) => {
-    if (value === null || value === undefined) return '';
-    
-    let displayValue = value;
-    if (typeof value === 'number') {
-      displayValue = value.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    }
-    
-    const termQuery = keyToTerm[key] || formatKey(key);
-    // Manually construct query to ensure %20 encoding for spaces (cleaner URL)
-    const link = `index.html?q=${encodeURIComponent(termQuery)}&ref=stock&symbol=${stock.symbol}`;
+  const strip = buildTradingStrip(stock.metrics);
+  if (strip.length) {
+    els.strip.hidden = false;
+    els.strip.style.gridTemplateColumns = `repeat(${strip.length}, minmax(0, 1fr))`;
+    els.strip.innerHTML = strip.map((cell) => `
+    <div class="stock-strip__item">
+      <span class="stock-strip__label">${cell.label}</span>
+      <span class="stock-strip__value">${cell.display}</span>
+    </div>
+  `).join('');
+  } else {
+    els.strip.hidden = true;
+    els.strip.innerHTML = '';
+    els.strip.style.gridTemplateColumns = '';
+  }
 
-    return `
-      <div class="metric-card">
-        <div class="metric-label">
-          <a href="${link}" style="text-decoration: none; color: inherit; border-bottom: 1px dotted #999;">
-            ${formatKey(key)}
-          </a>
+  const formatKeyFallback = (key) => key.replace(/([A-Z])/g, ' $1').replace(/^./, (s) => s.toUpperCase());
+
+  els.groups.innerHTML = buildMetricGroups(stock.metrics).map((group) => `
+  <section class="stock-group" aria-labelledby="stock-group-${group.id}">
+    <div class="stock-group__head" id="stock-group-${group.id}">
+      <span>${group.title}</span>
+      <span class="stock-group__count">${group.rows.length}</span>
+    </div>
+    ${group.rows.map((row) => {
+      const termQuery = keyToTerm[row.key] || formatKeyFallback(row.key);
+      const link = `index.html?q=${encodeURIComponent(termQuery)}&ref=stock&symbol=${encodeURIComponent(stock.symbol)}`;
+      const elevated = row.elevated ? ' stock-group__row--elevated' : '';
+      return `
+        <div class="stock-group__row${elevated}">
+          <span class="stock-group__key">
+            <a href="${link}">${row.label}</a>
+          </span>
+          <span class="stock-group__val">${row.display}</span>
         </div>
-        <div class="metric-value">${displayValue}</div>
-      </div>
-    `;
-  }).join('');
-  
-  els.grid.innerHTML = metricsHtml;
+      `;
+    }).join('')}
+  </section>
+`).join('');
 };
 
 const renderChart = (data, isUp) => {
-  const container = document.getElementById('chart-container');
+  const container = els.chartContainer;
   if (!data || data.length < 2) {
+    container.classList.add('is-empty');
     container.innerHTML = '<p style="color: var(--muted);">No chart data available</p>';
     return;
   }
+
+  container.classList.remove('is-empty');
 
   // Use clientWidth with fallback, accounting for padding
   const containerWidth = container.clientWidth || container.offsetWidth || 300;
