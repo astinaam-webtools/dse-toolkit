@@ -11,17 +11,37 @@ import {
   withWeights
 } from './lib/portfoliosOverview.js';
 import { loadPortfolioState, savePortfolioStateDocument } from './lib/portfolioStore.js';
-import { loadFundsDataDocument } from './lib/fundsStore.js';
+import { loadFundsDataDocument, saveFundsDataDocument } from './lib/fundsStore.js';
 import {
   addStock,
   createDefaultPortfolioState,
+  createPortfolio,
+  deletePortfolio,
   deleteStock,
+  exportToCSV,
   getActivePortfolio,
+  importPortfolioData,
   listPortfolios,
+  renamePortfolio,
   switchPortfolio,
   updateStock
 } from './lib/portfolioLogic.js';
-import { createEmptyFundsData } from './lib/fundsLogic.js';
+import {
+  addFund,
+  addTransaction,
+  calculateFundStats,
+  createEmptyFundsData,
+  createPortfolio as createFundPortfolio,
+  deleteFund,
+  deletePortfolio as deleteFundPortfolio,
+  deleteTransaction,
+  editTransaction,
+  parseImportedFundsData,
+  renameFund,
+  renamePortfolio as renameFundPortfolio,
+  serializeFundsData,
+  updateNav
+} from './lib/fundsLogic.js';
 import { AuthRequiredError, ConnectionUnavailableError } from './lib/serverClient.js';
 
 export const PF_DOM = {
@@ -169,6 +189,8 @@ const els = {
   importStocks: document.getElementById(PF_DOM.exportImport.importStocks),
   exportFunds: document.getElementById(PF_DOM.exportImport.exportFunds),
   importFunds: document.getElementById(PF_DOM.exportImport.importFunds),
+  importStocksFile: document.getElementById(PF_DOM.exportImport.importStocksFile),
+  importFundsFile: document.getElementById(PF_DOM.exportImport.importFundsFile),
   holdingSheet: {
     root: document.getElementById(PF_DOM.holdingSheet.root),
     body: document.getElementById(PF_DOM.holdingSheet.body),
@@ -176,6 +198,77 @@ const els = {
     viewStock: document.getElementById(PF_DOM.holdingSheet.viewStock),
     edit: document.getElementById(PF_DOM.holdingSheet.edit),
     delete: document.getElementById(PF_DOM.holdingSheet.delete),
+  },
+  typeSheet: {
+    root: document.getElementById(PF_DOM.typeSheet.root),
+    close: document.getElementById(PF_DOM.typeSheet.close),
+    pickStock: document.getElementById(PF_DOM.typeSheet.pickStock),
+    pickFund: document.getElementById(PF_DOM.typeSheet.pickFund),
+  },
+  manageSheet: {
+    root: document.getElementById(PF_DOM.manageSheet.root),
+    close: document.getElementById(PF_DOM.manageSheet.close),
+    stocksSection: document.getElementById(PF_DOM.manageSheet.stocksSection),
+    stocksList: document.getElementById(PF_DOM.manageSheet.stocksList),
+    createStock: document.getElementById(PF_DOM.manageSheet.createStock),
+    fundsSection: document.getElementById(PF_DOM.manageSheet.fundsSection),
+    fundsList: document.getElementById(PF_DOM.manageSheet.fundsList),
+    createFund: document.getElementById(PF_DOM.manageSheet.createFund),
+  },
+  fund: {
+    modal: document.getElementById(PF_DOM.fund.modal),
+    close: document.getElementById('pf-fund-modal-close'),
+    cancel: document.getElementById('pf-fund-modal-cancel'),
+    save: document.getElementById('btn-save-fund'),
+    portfolioSelector: document.getElementById('fund-portfolio-selector'),
+    name: document.getElementById('inp-fund-name'),
+    symbol: document.getElementById('inp-fund-symbol'),
+    amc: document.getElementById('inp-fund-amc'),
+    txModal: document.getElementById(PF_DOM.fund.txModal),
+    txClose: document.getElementById('pf-tx-modal-close'),
+    txCancel: document.getElementById('pf-tx-modal-cancel'),
+    txTitle: document.getElementById('tx-modal-title'),
+    txId: document.getElementById('inp-tx-id'),
+    txType: document.getElementById('inp-tx-type'),
+    txDate: document.getElementById('inp-tx-date'),
+    txUnits: document.getElementById('inp-tx-units'),
+    txPrice: document.getElementById('inp-tx-price'),
+    txTotal: document.getElementById('inp-tx-total'),
+    txSave: document.getElementById('btn-save-tx'),
+    txDelete: document.getElementById('btn-delete-tx'),
+    renameModal: document.getElementById(PF_DOM.fund.renameModal),
+    renameClose: document.getElementById('pf-rename-modal-close'),
+    renameCancel: document.getElementById('pf-rename-modal-cancel'),
+    renameTitle: document.getElementById('rename-modal-title'),
+    renameName: document.getElementById('inp-rename-name'),
+    renameSymbolGroup: document.getElementById('grp-rename-symbol'),
+    renameSymbol: document.getElementById('inp-rename-symbol'),
+    renameSave: document.getElementById('btn-save-rename'),
+    portfolioModal: document.getElementById(PF_DOM.fund.portfolioModal),
+    portfolioClose: document.getElementById('pf-portfolio-modal-close'),
+    portfolioCancel: document.getElementById('pf-portfolio-modal-cancel'),
+    portfolioTitle: document.getElementById('portfolio-modal-title'),
+    portfolioKind: document.getElementById('portfolio-modal-kind'),
+    portfolioName: document.getElementById('inp-pf-name'),
+    portfolioSave: document.getElementById('btn-save-pf'),
+    detailSheet: document.getElementById(PF_DOM.fund.detailSheet),
+    detailClose: document.getElementById('pf-fund-detail-close'),
+    detailName: document.getElementById('detail-fund-name'),
+    detailAmc: document.getElementById('detail-fund-amc'),
+    navInput: document.getElementById('input-current-nav'),
+    navDate: document.getElementById('input-nav-date'),
+    navLastUpdated: document.getElementById('nav-last-updated'),
+    updateNav: document.getElementById('btn-update-nav'),
+    fdInvested: document.getElementById('fd-invested'),
+    fdUnits: document.getElementById('fd-units'),
+    fdValue: document.getElementById('fd-value'),
+    fdAvgCost: document.getElementById('fd-avg-cost'),
+    fdDividend: document.getElementById('fd-dividend'),
+    fdGain: document.getElementById('fd-gain'),
+    txList: document.getElementById('tx-list'),
+    renameFundBtn: document.getElementById('btn-rename-fund'),
+    deleteFundBtn: document.getElementById('btn-delete-fund'),
+    addTxBtn: document.getElementById(PF_DOM.fund.addTx),
   },
   stock: {
     modal: document.getElementById(PF_DOM.stockModal.root),
@@ -214,8 +307,35 @@ let holdingRows = [];
 let selectedHolding = null;
 /** Portfolio id targeted by the stock editor (row / selector), without requiring UI active switch. */
 let editorPortfolioId = null;
+/** Fund portfolio + fund currently open in the fund detail sheet. */
+let currentFundPortfolioId = null;
+let currentFundId = null;
+/** Rename target: stock-portfolio | fund-portfolio | fund */
+let renameTarget = null;
 let lastCostEditedField = 'base';
 let busy = false;
+
+const formatTransactionType = (type) => {
+  const labels = {
+    BUY: 'Buy / SIP',
+    SELL: 'Sell / redeem',
+    DIVIDEND_REINVEST: 'Dividend reinvest / CIP'
+  };
+  return labels[type] || String(type || '').replaceAll('_', ' ');
+};
+
+const todayIsoDate = () => new Date().toISOString().split('T')[0];
+
+const downloadBlob = (blob, filename) => {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  URL.revokeObjectURL(url);
+};
 
 function getCategory() {
   return parseCategoryParam(new URL(location.href).searchParams.get('category'));
@@ -605,6 +725,7 @@ async function persistStockState(nextState) {
   try {
     stockState = await savePortfolioStateDocument(nextState);
     render();
+    if (els.manageSheet.root?.hasAttribute('open')) renderManageSheet();
     return true;
   } catch (error) {
     let message = error?.message || 'Unable to save the portfolio.';
@@ -721,11 +842,586 @@ async function handleStockDeleteFromModal() {
   }
 }
 
+function findFund(portfolioId, fundId) {
+  const portfolio = (fundsData.portfolios || []).find((entry) => entry.id === portfolioId);
+  if (!portfolio) return null;
+  const fund = (portfolio.funds || []).find((entry) => entry.id === fundId);
+  if (!fund) return null;
+  return { portfolio, fund };
+}
+
+async function persistFundsData(nextData) {
+  busy = true;
+  try {
+    fundsData = await saveFundsDataDocument(nextData);
+    render();
+    if (els.manageSheet.root?.hasAttribute('open')) renderManageSheet();
+    if (els.fund.detailSheet?.hasAttribute('open') && currentFundPortfolioId && currentFundId) {
+      renderFundDetailSheet();
+    }
+    return true;
+  } catch (error) {
+    let message = error?.message || 'Unable to save mutual fund data.';
+    if (error instanceof AuthRequiredError) {
+      message = error.message || 'Server login required.';
+    } else if (error instanceof ConnectionUnavailableError) {
+      message = error.message || 'Server unavailable.';
+    }
+    console.warn('Funds save failed', error);
+    alert(message);
+    return false;
+  } finally {
+    busy = false;
+  }
+}
+
+function fillFundPortfolioSelector(selectedId) {
+  const selector = els.fund.portfolioSelector;
+  if (!selector) return;
+  const portfolios = fundsData.portfolios || [];
+  const preferred =
+    selectedId ||
+    currentFundPortfolioId ||
+    fundsData.activePortfolioId ||
+    portfolios[0]?.id ||
+    '';
+  selector.innerHTML = portfolios
+    .map(
+      (portfolio) =>
+        `<option value="${escapeHtml(portfolio.id)}">${escapeHtml(portfolio.name)}</option>`
+    )
+    .join('');
+  if (preferred) selector.value = preferred;
+}
+
+function closeTypeSheet() {
+  closeOverlay(els.typeSheet.root);
+}
+
+function openTypePicker() {
+  openOverlay(els.typeSheet.root);
+}
+
+function closeFundModal() {
+  closeOverlay(els.fund.modal);
+}
+
+function openAddFund({ portfolioId = null } = {}) {
+  const portfolios = fundsData.portfolios || [];
+  if (portfolios.length === 0) {
+    alert('Create a fund portfolio before adding funds.');
+    openCreatePortfolioModal('fund');
+    return;
+  }
+
+  fillFundPortfolioSelector(portfolioId);
+  if (els.fund.name) els.fund.name.value = '';
+  if (els.fund.symbol) els.fund.symbol.value = '';
+  if (els.fund.amc) els.fund.amc.value = '';
+  openOverlay(els.fund.modal);
+  requestAnimationFrame(() => els.fund.name?.focus());
+}
+
+function closeFundDetailSheet() {
+  currentFundPortfolioId = null;
+  currentFundId = null;
+  closeOverlay(els.fund.detailSheet);
+}
+
+function renderFundDetailSheet() {
+  const located = findFund(currentFundPortfolioId, currentFundId);
+  if (!located || !els.fund.detailSheet) {
+    closeFundDetailSheet();
+    return;
+  }
+
+  const { fund } = located;
+  if (els.fund.detailName) els.fund.detailName.textContent = fund.name;
+  if (els.fund.detailAmc) els.fund.detailAmc.textContent = fund.amc || '';
+  if (els.fund.navInput) els.fund.navInput.value = fund.current_nav || '';
+  if (els.fund.navDate) els.fund.navDate.value = todayIsoDate();
+  if (els.fund.navLastUpdated) {
+    const lastUpdate = fund.last_updated
+      ? new Date(fund.last_updated).toLocaleDateString()
+      : 'Never';
+    els.fund.navLastUpdated.textContent = `Last updated: ${lastUpdate}`;
+  }
+
+  const stats = calculateFundStats(fund);
+  if (els.fund.fdInvested) els.fund.fdInvested.textContent = formatCurrency(stats.totalCost);
+  if (els.fund.fdUnits) els.fund.fdUnits.textContent = stats.totalUnits.toFixed(2);
+  if (els.fund.fdValue) els.fund.fdValue.textContent = formatCurrency(stats.currentValue);
+  if (els.fund.fdAvgCost) els.fund.fdAvgCost.textContent = formatCurrency(stats.avgCost);
+  if (els.fund.fdDividend) {
+    els.fund.fdDividend.textContent = formatCurrency(stats.totalDividendReinvest);
+  }
+  if (els.fund.fdGain) {
+    els.fund.fdGain.textContent = formatPlLine(stats.gainLoss, stats.gainLossPercent);
+    els.fund.fdGain.className = `delta ${plTone(stats.gainLoss)}`;
+  }
+
+  if (els.fund.txList) {
+    const transactions = [...(fund.transactions || [])].reverse();
+    if (transactions.length === 0) {
+      els.fund.txList.innerHTML =
+        '<li class="pf-stock-editor__note">No transactions yet.</li>';
+    } else {
+      els.fund.txList.innerHTML = transactions
+        .map(
+          (transaction) => `
+            <li>
+              <button type="button" class="pf-tx-item" data-tx-id="${escapeHtml(transaction.id)}">
+                <div>
+                  <div>${escapeHtml(formatTransactionType(transaction.type))}</div>
+                  <div class="pf-tx-item__sub">${escapeHtml(
+                    new Date(transaction.date).toLocaleDateString()
+                  )} @ ${escapeHtml(String(transaction.price_per_unit))}</div>
+                </div>
+                <div>
+                  <div>${escapeHtml(String(transaction.units))} units</div>
+                  <div class="pf-tx-item__sub">${formatCurrency(transaction.total_cost)}</div>
+                </div>
+              </button>
+            </li>
+          `
+        )
+        .join('');
+
+      els.fund.txList.querySelectorAll('.pf-tx-item').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const transaction = fund.transactions.find((entry) => entry.id === btn.dataset.txId);
+          if (transaction) openTransactionModal(transaction);
+        });
+      });
+    }
+  }
+}
+
+function openFundDetailSheet(portfolioId, fundId) {
+  currentFundPortfolioId = portfolioId;
+  currentFundId = fundId;
+  if (!findFund(portfolioId, fundId)) {
+    alert('Fund not found.');
+    return;
+  }
+  renderFundDetailSheet();
+  openOverlay(els.fund.detailSheet);
+}
+
+function closeTxModal() {
+  closeOverlay(els.fund.txModal);
+}
+
+function openTransactionModal(transaction = null) {
+  if (!currentFundPortfolioId || !currentFundId) return;
+
+  if (els.fund.txTitle) {
+    els.fund.txTitle.textContent = transaction ? 'Edit transaction' : 'Add transaction';
+  }
+  if (els.fund.txId) els.fund.txId.value = transaction?.id || '';
+  if (els.fund.txType) els.fund.txType.value = transaction?.type || 'BUY';
+  if (els.fund.txDate) els.fund.txDate.value = transaction?.date || todayIsoDate();
+  if (els.fund.txUnits) els.fund.txUnits.value = transaction?.units ?? '';
+  if (els.fund.txPrice) els.fund.txPrice.value = transaction?.price_per_unit ?? '';
+  if (els.fund.txTotal) els.fund.txTotal.value = transaction?.total_cost ?? '';
+  if (els.fund.txDelete) els.fund.txDelete.hidden = !transaction;
+  openOverlay(els.fund.txModal);
+}
+
+function closeRenameModal() {
+  renameTarget = null;
+  closeOverlay(els.fund.renameModal);
+}
+
+function openRenameModal(target) {
+  renameTarget = target;
+  const showSymbol = target.type === 'fund';
+  if (els.fund.renameSymbolGroup) els.fund.renameSymbolGroup.hidden = !showSymbol;
+
+  if (target.type === 'stock-portfolio') {
+    const portfolio = listPortfolios(stockState).find((entry) => entry.id === target.id);
+    if (els.fund.renameTitle) els.fund.renameTitle.textContent = 'Rename stock portfolio';
+    if (els.fund.renameName) els.fund.renameName.value = portfolio?.name || '';
+  } else if (target.type === 'fund-portfolio') {
+    const portfolio = (fundsData.portfolios || []).find((entry) => entry.id === target.id);
+    if (els.fund.renameTitle) els.fund.renameTitle.textContent = 'Rename fund portfolio';
+    if (els.fund.renameName) els.fund.renameName.value = portfolio?.name || '';
+  } else {
+    const located = findFund(target.portfolioId, target.id);
+    if (els.fund.renameTitle) els.fund.renameTitle.textContent = 'Rename fund';
+    if (els.fund.renameName) els.fund.renameName.value = located?.fund?.name || '';
+    if (els.fund.renameSymbol) els.fund.renameSymbol.value = located?.fund?.symbol || '';
+  }
+
+  openOverlay(els.fund.renameModal);
+  requestAnimationFrame(() => els.fund.renameName?.focus());
+}
+
+function closeCreatePortfolioModal() {
+  closeOverlay(els.fund.portfolioModal);
+}
+
+function openCreatePortfolioModal(kind) {
+  if (els.fund.portfolioKind) els.fund.portfolioKind.value = kind;
+  if (els.fund.portfolioTitle) {
+    els.fund.portfolioTitle.textContent =
+      kind === 'stock' ? 'New stock portfolio' : 'New fund portfolio';
+  }
+  if (els.fund.portfolioName) els.fund.portfolioName.value = '';
+  openOverlay(els.fund.portfolioModal);
+  requestAnimationFrame(() => els.fund.portfolioName?.focus());
+}
+
+async function handleSaveFund() {
+  if (busy) return;
+  const name = els.fund.name?.value.trim() || '';
+  const symbol = els.fund.symbol?.value.trim() || '';
+  const amc = els.fund.amc?.value.trim() || '';
+  const portfolioId =
+    els.fund.portfolioSelector?.value ||
+    fundsData.activePortfolioId ||
+    fundsData.portfolios?.[0]?.id;
+
+  if (!name) {
+    alert('Name required');
+    els.fund.name?.focus();
+    return;
+  }
+  if (!portfolioId) {
+    alert('Create a fund portfolio before adding funds.');
+    return;
+  }
+
+  const saved = await persistFundsData(addFund(fundsData, portfolioId, name, amc, symbol));
+  if (saved) {
+    closeFundModal();
+    const portfolio = fundsData.portfolios.find((entry) => entry.id === portfolioId);
+    const created = portfolio?.funds?.[portfolio.funds.length - 1];
+    if (created) openFundDetailSheet(portfolioId, created.id);
+  }
+}
+
+async function handleUpdateNav() {
+  if (busy || !currentFundPortfolioId || !currentFundId) return;
+  const nav = els.fund.navInput?.value;
+  const date = els.fund.navDate?.value || todayIsoDate();
+  if (!nav) {
+    alert('Please enter NAV');
+    els.fund.navInput?.focus();
+    return;
+  }
+  await persistFundsData(updateNav(fundsData, currentFundPortfolioId, currentFundId, nav, date));
+}
+
+async function handleDeleteFundFromDetail() {
+  if (busy || !currentFundPortfolioId || !currentFundId) return;
+  if (!confirm('Are you sure you want to delete this fund and all its transactions?')) return;
+
+  const saved = await persistFundsData(
+    deleteFund(fundsData, currentFundPortfolioId, currentFundId)
+  );
+  if (saved) {
+    closeFundDetailSheet();
+    closeHoldingSheet();
+  }
+}
+
+async function handleSaveTransaction() {
+  if (busy || !currentFundPortfolioId || !currentFundId) return;
+
+  const id = els.fund.txId?.value || '';
+  const type = els.fund.txType?.value || 'BUY';
+  const date = els.fund.txDate?.value || '';
+  const units = els.fund.txUnits?.value || '';
+  const price = els.fund.txPrice?.value || '';
+  const total = els.fund.txTotal?.value || '';
+
+  if (!date || !units || !price || !total) {
+    alert('All fields required');
+    return;
+  }
+
+  const transactionData = {
+    type,
+    date,
+    units,
+    price_per_unit: price,
+    total_cost: total
+  };
+  const nextData = id
+    ? editTransaction(fundsData, currentFundPortfolioId, currentFundId, id, transactionData)
+    : addTransaction(fundsData, currentFundPortfolioId, currentFundId, transactionData);
+
+  const saved = await persistFundsData(nextData);
+  if (saved) closeTxModal();
+}
+
+async function handleDeleteTransaction() {
+  if (busy || !currentFundPortfolioId || !currentFundId) return;
+  const id = els.fund.txId?.value || '';
+  if (!id || !confirm('Are you sure you want to delete this transaction?')) return;
+
+  const saved = await persistFundsData(
+    deleteTransaction(fundsData, currentFundPortfolioId, currentFundId, id)
+  );
+  if (saved) closeTxModal();
+}
+
+async function handleSaveRename() {
+  if (busy || !renameTarget) return;
+  const name = els.fund.renameName?.value.trim() || '';
+  if (!name) {
+    alert('Name required');
+    els.fund.renameName?.focus();
+    return;
+  }
+
+  let saved = false;
+  if (renameTarget.type === 'stock-portfolio') {
+    saved = await persistStockState(renamePortfolio(stockState, renameTarget.id, name));
+  } else if (renameTarget.type === 'fund-portfolio') {
+    saved = await persistFundsData(renameFundPortfolio(fundsData, renameTarget.id, name));
+  } else {
+    const symbol = els.fund.renameSymbol?.value.trim() || '';
+    saved = await persistFundsData(
+      renameFund(fundsData, renameTarget.portfolioId, renameTarget.id, name, symbol)
+    );
+  }
+
+  if (saved) {
+    closeRenameModal();
+    if (els.manageSheet.root?.hasAttribute('open')) renderManageSheet();
+  }
+}
+
+async function handleCreatePortfolio() {
+  if (busy) return;
+  const kind = els.fund.portfolioKind?.value || 'fund';
+  const name = els.fund.portfolioName?.value.trim() || '';
+  if (!name) {
+    alert('Name required');
+    els.fund.portfolioName?.focus();
+    return;
+  }
+
+  const saved =
+    kind === 'stock'
+      ? await persistStockState(createPortfolio(stockState, name))
+      : await persistFundsData(createFundPortfolio(fundsData, name));
+
+  if (saved) {
+    closeCreatePortfolioModal();
+    if (els.manageSheet.root?.hasAttribute('open')) renderManageSheet();
+  }
+}
+
+function renderManageList(kind) {
+  if (kind === 'stocks') {
+    const portfolios = listPortfolios(stockState);
+    const activeId = stockState.activePortfolioId;
+    if (!els.manageSheet.stocksList) return;
+    els.manageSheet.stocksList.innerHTML = portfolios
+      .map((portfolio) => {
+        const isActive = portfolio.id === activeId;
+        const canDelete = portfolios.length > 1;
+        return `
+          <div class="pf-manage-row" data-id="${escapeHtml(portfolio.id)}">
+            <div class="pf-manage-row__meta">
+              <div class="pf-manage-row__name">${escapeHtml(portfolio.name)}${
+                isActive ? ' · Active' : ''
+              }</div>
+              <div class="pf-manage-row__sub">${portfolio.items?.length || 0} positions</div>
+            </div>
+            <div class="pf-manage-row__actions">
+              ${
+                isActive
+                  ? ''
+                  : `<button type="button" class="btn btn--ghost" data-action="activate-stock">Set active</button>`
+              }
+              <button type="button" class="btn btn--ghost" data-action="rename-stock">Rename</button>
+              ${
+                canDelete
+                  ? `<button type="button" class="btn btn--danger" data-action="delete-stock">Delete</button>`
+                  : ''
+              }
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+    return;
+  }
+
+  const portfolios = fundsData.portfolios || [];
+  const activeId = fundsData.activePortfolioId;
+  if (!els.manageSheet.fundsList) return;
+  els.manageSheet.fundsList.innerHTML = portfolios
+    .map((portfolio) => {
+      const isActive = portfolio.id === activeId;
+      return `
+        <div class="pf-manage-row" data-id="${escapeHtml(portfolio.id)}">
+          <div class="pf-manage-row__meta">
+            <div class="pf-manage-row__name">${escapeHtml(portfolio.name)}${
+              isActive ? ' · Active' : ''
+            }</div>
+            <div class="pf-manage-row__sub">${portfolio.funds?.length || 0} funds</div>
+          </div>
+          <div class="pf-manage-row__actions">
+            ${
+              isActive
+                ? ''
+                : `<button type="button" class="btn btn--ghost" data-action="activate-fund">Set active</button>`
+            }
+            <button type="button" class="btn btn--ghost" data-action="rename-fund-portfolio">Rename</button>
+            <button type="button" class="btn btn--danger" data-action="delete-fund-portfolio">Delete</button>
+          </div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+function renderManageSheet() {
+  const category = getCategory();
+  const showStocks = category === 'all' || category === 'stocks';
+  const showFunds = category === 'all' || category === 'funds';
+
+  if (els.manageSheet.stocksSection) els.manageSheet.stocksSection.hidden = !showStocks;
+  if (els.manageSheet.fundsSection) els.manageSheet.fundsSection.hidden = !showFunds;
+
+  if (showStocks) renderManageList('stocks');
+  if (showFunds) renderManageList('funds');
+}
+
+function openManageSheet() {
+  renderManageSheet();
+  openOverlay(els.manageSheet.root);
+}
+
+function closeManageSheet() {
+  closeOverlay(els.manageSheet.root);
+}
+
+async function handleManageAction(event) {
+  const btn = event.target.closest('button[data-action]');
+  if (!btn || busy) return;
+  const row = btn.closest('.pf-manage-row');
+  const id = row?.dataset.id;
+  if (!id) return;
+  const action = btn.dataset.action;
+
+  if (action === 'activate-stock') {
+    await persistStockState(switchPortfolio(stockState, id));
+    renderManageSheet();
+    return;
+  }
+  if (action === 'rename-stock') {
+    openRenameModal({ type: 'stock-portfolio', id });
+    return;
+  }
+  if (action === 'delete-stock') {
+    if (!confirm('Are you sure you want to delete this entire portfolio? This cannot be undone.')) {
+      return;
+    }
+    await persistStockState(deletePortfolio(stockState, id));
+    renderManageSheet();
+    return;
+  }
+  if (action === 'activate-fund') {
+    await persistFundsData({ ...fundsData, activePortfolioId: id });
+    renderManageSheet();
+    return;
+  }
+  if (action === 'rename-fund-portfolio') {
+    openRenameModal({ type: 'fund-portfolio', id });
+    return;
+  }
+  if (action === 'delete-fund-portfolio') {
+    if (!confirm('Are you sure you want to delete this portfolio?')) return;
+    await persistFundsData(deleteFundPortfolio(fundsData, id));
+    renderManageSheet();
+  }
+}
+
+function handleExportStocks() {
+  const csv = exportToCSV(stockState);
+  if (!csv) {
+    alert('Portfolio is empty');
+    return;
+  }
+  const active = getActivePortfolio(stockState);
+  const name = (active?.name || 'portfolio').replace(/\s+/g, '_');
+  downloadBlob(new Blob([csv], { type: 'text/csv' }), `${name}_${todayIsoDate()}.csv`);
+}
+
+function handleImportStocks(event) {
+  const file = event.target.files?.[0];
+  if (!file || busy) return;
+
+  const reader = new FileReader();
+  reader.onload = async (loadEvent) => {
+    try {
+      const result = importPortfolioData(stockState, file.name, loadEvent.target.result);
+      const saved = await persistStockState(result.state);
+      if (saved) alert(result.message);
+    } catch (error) {
+      alert(error.message || 'Import failed.');
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function handleExportFunds() {
+  downloadBlob(
+    new Blob([serializeFundsData(fundsData)], { type: 'application/json' }),
+    `dse-mutual-funds-${todayIsoDate()}.json`
+  );
+}
+
+function handleImportFunds(event) {
+  const file = event.target.files?.[0];
+  if (!file || busy) return;
+
+  const reader = new FileReader();
+  reader.onload = async (loadEvent) => {
+    try {
+      const nextData = parseImportedFundsData(loadEvent.target.result);
+      const saved = await persistFundsData(nextData);
+      if (saved) alert('Import successful!');
+    } catch (error) {
+      alert(`Import failed: ${error.message}`);
+    } finally {
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function handleFabClick() {
+  const category = getCategory();
+  if (category === 'stocks') openStockModal();
+  else if (category === 'funds') openAddFund();
+  else openTypePicker();
+}
+
 async function handleHoldingDelete() {
   if (!selectedHolding || busy) return;
 
-  if (selectedHolding.category !== 'stock') {
-    console.warn('Fund delete — deferred to Task 7', selectedHolding.id);
+  if (selectedHolding.category === 'fund') {
+    const fundId = selectedHolding.fundId || selectedHolding.id.split(':')[2];
+    if (
+      !confirm(
+        `Delete ${selectedHolding.label} from ${selectedHolding.portfolioName}? This removes the fund and all transactions.`
+      )
+    ) {
+      return;
+    }
+    const saved = await persistFundsData(
+      deleteFund(fundsData, selectedHolding.portfolioId, fundId)
+    );
+    if (saved) closeHoldingSheet();
     return;
   }
 
@@ -751,8 +1447,11 @@ async function handleHoldingDelete() {
 function handleHoldingEdit() {
   if (!selectedHolding) return;
 
-  if (selectedHolding.category !== 'stock') {
-    console.warn('Fund edit — deferred to Task 7', selectedHolding.id);
+  if (selectedHolding.category === 'fund') {
+    const fundId = selectedHolding.fundId || selectedHolding.id.split(':')[2];
+    const { portfolioId } = selectedHolding;
+    closeHoldingSheet();
+    openFundDetailSheet(portfolioId, fundId);
     return;
   }
 
@@ -881,10 +1580,6 @@ function render() {
   renderHoldings(rows);
 }
 
-function stubSoon(label) {
-  console.warn(`${label} — deferred to Task 6–7`);
-}
-
 function bindStockEditorEvents() {
   if (!els.stock.form) return;
   els.stock.form.noValidate = true;
@@ -940,23 +1635,99 @@ function bindStockEditorEvents() {
   });
 }
 
+function bindFundEvents() {
+  els.typeSheet.close?.addEventListener('click', closeTypeSheet);
+  els.typeSheet.root?.addEventListener('click', (event) => {
+    if (event.target === els.typeSheet.root) closeTypeSheet();
+  });
+  els.typeSheet.pickStock?.addEventListener('click', () => {
+    closeTypeSheet();
+    openStockModal();
+  });
+  els.typeSheet.pickFund?.addEventListener('click', () => {
+    closeTypeSheet();
+    openAddFund();
+  });
+
+  els.manageBtn?.addEventListener('click', openManageSheet);
+  els.manageSheet.close?.addEventListener('click', closeManageSheet);
+  els.manageSheet.root?.addEventListener('click', (event) => {
+    if (event.target === els.manageSheet.root) closeManageSheet();
+  });
+  els.manageSheet.createStock?.addEventListener('click', () => openCreatePortfolioModal('stock'));
+  els.manageSheet.createFund?.addEventListener('click', () => openCreatePortfolioModal('fund'));
+  els.manageSheet.stocksList?.addEventListener('click', handleManageAction);
+  els.manageSheet.fundsList?.addEventListener('click', handleManageAction);
+
+  els.exportStocks?.addEventListener('click', handleExportStocks);
+  els.importStocks?.addEventListener('click', () => els.importStocksFile?.click());
+  els.importStocksFile?.addEventListener('change', handleImportStocks);
+  els.exportFunds?.addEventListener('click', handleExportFunds);
+  els.importFunds?.addEventListener('click', () => els.importFundsFile?.click());
+  els.importFundsFile?.addEventListener('change', handleImportFunds);
+
+  els.fund.close?.addEventListener('click', closeFundModal);
+  els.fund.cancel?.addEventListener('click', closeFundModal);
+  els.fund.save?.addEventListener('click', handleSaveFund);
+  els.fund.modal?.addEventListener('click', (event) => {
+    if (event.target === els.fund.modal) closeFundModal();
+  });
+
+  els.fund.detailClose?.addEventListener('click', closeFundDetailSheet);
+  els.fund.detailSheet?.addEventListener('click', (event) => {
+    if (event.target === els.fund.detailSheet) closeFundDetailSheet();
+  });
+  els.fund.updateNav?.addEventListener('click', handleUpdateNav);
+  els.fund.renameFundBtn?.addEventListener('click', () => {
+    if (!currentFundPortfolioId || !currentFundId) return;
+    openRenameModal({
+      type: 'fund',
+      id: currentFundId,
+      portfolioId: currentFundPortfolioId
+    });
+  });
+  els.fund.deleteFundBtn?.addEventListener('click', handleDeleteFundFromDetail);
+  els.fund.addTxBtn?.addEventListener('click', () => openTransactionModal());
+
+  els.fund.txClose?.addEventListener('click', closeTxModal);
+  els.fund.txCancel?.addEventListener('click', closeTxModal);
+  els.fund.txSave?.addEventListener('click', handleSaveTransaction);
+  els.fund.txDelete?.addEventListener('click', handleDeleteTransaction);
+  els.fund.txModal?.addEventListener('click', (event) => {
+    if (event.target === els.fund.txModal) closeTxModal();
+  });
+
+  const autoCalcTxTotal = () => {
+    const units = Number.parseFloat(els.fund.txUnits?.value) || 0;
+    const price = Number.parseFloat(els.fund.txPrice?.value) || 0;
+    if (units && price && els.fund.txTotal) {
+      els.fund.txTotal.value = (units * price).toFixed(2);
+    }
+  };
+  els.fund.txUnits?.addEventListener('input', autoCalcTxTotal);
+  els.fund.txPrice?.addEventListener('input', autoCalcTxTotal);
+
+  els.fund.renameClose?.addEventListener('click', closeRenameModal);
+  els.fund.renameCancel?.addEventListener('click', closeRenameModal);
+  els.fund.renameSave?.addEventListener('click', handleSaveRename);
+  els.fund.renameModal?.addEventListener('click', (event) => {
+    if (event.target === els.fund.renameModal) closeRenameModal();
+  });
+
+  els.fund.portfolioClose?.addEventListener('click', closeCreatePortfolioModal);
+  els.fund.portfolioCancel?.addEventListener('click', closeCreatePortfolioModal);
+  els.fund.portfolioSave?.addEventListener('click', handleCreatePortfolio);
+  els.fund.portfolioModal?.addEventListener('click', (event) => {
+    if (event.target === els.fund.portfolioModal) closeCreatePortfolioModal();
+  });
+}
+
 function bindEvents() {
   for (const [key, btn] of Object.entries(els.seg)) {
     btn?.addEventListener('click', () => setCategory(key));
   }
 
-  els.manageBtn?.addEventListener('click', () => stubSoon('Manage portfolios'));
-  els.fab?.addEventListener('click', () => {
-    if (getCategory() === 'stocks') {
-      openStockModal();
-      return;
-    }
-    stubSoon('Add holding FAB');
-  });
-  els.exportStocks?.addEventListener('click', () => stubSoon('Export stocks'));
-  els.importStocks?.addEventListener('click', () => stubSoon('Import stocks'));
-  els.exportFunds?.addEventListener('click', () => stubSoon('Export funds'));
-  els.importFunds?.addEventListener('click', () => stubSoon('Import funds'));
+  els.fab?.addEventListener('click', handleFabClick);
 
   els.holdingSheet.close?.addEventListener('click', closeHoldingSheet);
   els.holdingSheet.root?.addEventListener('click', (event) => {
@@ -966,10 +1737,18 @@ function bindEvents() {
   els.holdingSheet.delete?.addEventListener('click', handleHoldingDelete);
 
   bindStockEditorEvents();
+  bindFundEvents();
 
   window.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
-    if (els.stock.modal?.hasAttribute('open')) closeStockModal();
+    if (els.fund.txModal?.hasAttribute('open')) closeTxModal();
+    else if (els.fund.renameModal?.hasAttribute('open')) closeRenameModal();
+    else if (els.fund.portfolioModal?.hasAttribute('open')) closeCreatePortfolioModal();
+    else if (els.fund.modal?.hasAttribute('open')) closeFundModal();
+    else if (els.fund.detailSheet?.hasAttribute('open')) closeFundDetailSheet();
+    else if (els.typeSheet.root?.hasAttribute('open')) closeTypeSheet();
+    else if (els.manageSheet.root?.hasAttribute('open')) closeManageSheet();
+    else if (els.stock.modal?.hasAttribute('open')) closeStockModal();
     else if (els.holdingSheet.root?.hasAttribute('open')) closeHoldingSheet();
   });
 }

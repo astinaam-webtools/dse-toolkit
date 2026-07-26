@@ -125,6 +125,65 @@
     letter-spacing: 0.05em;
     color: var(--text-muted);
   }
+  .pf-manage-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .pf-manage-row__meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    min-width: 0;
+  }
+  .pf-manage-row__name {
+    font-weight: 700;
+    overflow-wrap: anywhere;
+  }
+  .pf-manage-row__sub {
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+  }
+  .pf-manage-row__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+  }
+  .pf-manage-row__actions .btn {
+    min-height: 44px;
+  }
+  .pf-fund-tx-list {
+    list-style: none;
+    margin: var(--s-4) 0 0;
+    padding: 0;
+  }
+  .pf-tx-item {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s-3);
+    align-items: flex-start;
+    width: 100%;
+    min-height: 44px;
+    padding: var(--s-3) 0;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+  .pf-tx-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .pf-tx-item__sub {
+    color: var(--text-muted);
+    font-size: var(--fs-xs);
+  }
   .pf-header__actions {
     display: flex;
     flex-wrap: wrap;
@@ -344,6 +403,10 @@
       <button type="button" class="sheet__close" id="pf-fund-modal-close" aria-label="Close add fund">Close</button>
       <h2 class="sheet__title">Add fund</h2>
       <div class="field">
+        <label for="fund-portfolio-selector">Portfolio</label>
+        <select id="fund-portfolio-selector" class="select"></select>
+      </div>
+      <div class="field">
         <label for="inp-fund-name">Fund name</label>
         <input type="text" id="inp-fund-name" placeholder="e.g. 1st Mutual Fund" autocomplete="off">
       </div>
@@ -457,7 +520,8 @@
     <div class="sheet">
       <div class="sheet__handle" aria-hidden="true"></div>
       <button type="button" class="sheet__close" id="pf-portfolio-modal-close" aria-label="Close new portfolio">Close</button>
-      <h2 class="sheet__title">New fund portfolio</h2>
+      <h2 id="portfolio-modal-title" class="sheet__title">New fund portfolio</h2>
+      <input type="hidden" id="portfolio-modal-kind" value="fund">
       <div class="field">
         <label for="inp-pf-name">Portfolio name</label>
         <input type="text" id="inp-pf-name" placeholder="e.g. Retirement" autocomplete="off">
