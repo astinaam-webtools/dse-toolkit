@@ -35,19 +35,30 @@
       </header>
 
       <main>
-        <div class="detail-section" style="padding-bottom: 0;">
-          <div id="chart-container">
-            <!-- Chart will be injected here -->
+        <div class="stock-chart" id="chart-wrap">
+          <div id="chart-container" class="stock-chart__canvas"></div>
+          <div id="chart-range" class="stock-range" hidden>
+            <div class="stock-range__end">
+              <span class="stock-range__label">Low</span>
+              <span id="chart-low" class="stock-range__value"></span>
+            </div>
+            <div class="stock-range__mid">
+              <span id="chart-sessions"></span>
+              <span id="chart-span" class="stock-range__span"></span>
+            </div>
+            <div class="stock-range__end stock-range__end--right">
+              <span class="stock-range__label">High</span>
+              <span id="chart-high" class="stock-range__value"></span>
+            </div>
           </div>
         </div>
 
-        <div class="detail-grid" id="metrics-grid">
-          <!-- Metrics will be populated here -->
-        </div>
-        
+        <div id="trading-strip" class="stock-strip" hidden></div>
+        <div id="metrics-groups" class="stock-groups"></div>
+
         <div class="detail-section">
-           <h3>AI Analysis</h3>
-           <button class="btn btn--ai" id="btn-analyze-page">
+          <h3>AI Analysis</h3>
+          <button class="btn btn--ai" id="btn-analyze-page">
             ✨ Start AI Chat Analysis
           </button>
         </div>
