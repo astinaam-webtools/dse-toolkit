@@ -331,6 +331,7 @@ export async function runCursorChat({
       let usage = { inputTokens: 0, outputTokens: 0, reasoningTokens: 0 };
 
       if (agentInstance && typeof agentInstance.prompt === 'function') {
+        let timeoutId;
         const result = await Promise.race([
           agentInstance.prompt(promptText, {
             model: modelParams.length > 0 ? { id: model, params: modelParams } : model,
@@ -341,10 +342,13 @@ export async function runCursorChat({
               }
             }
           }),
-          new Promise((_, reject) =>
-            setTimeout(() => reject(new Error(`Cursor chat timed out after ${config.cursorChatTimeoutMs}ms`)), config.cursorChatTimeoutMs)
-          )
-        ]);
+          new Promise((_, reject) => {
+            timeoutId = setTimeout(
+              () => reject(new Error(`Cursor chat timed out after ${config.cursorChatTimeoutMs}ms`)),
+              config.cursorChatTimeoutMs
+            );
+          })
+        ]).finally(() => clearTimeout(timeoutId));
 
         if (result.status === 'error') {
           const err = new Error(result.error || 'Cursor agent returned an error status');
