@@ -1155,6 +1155,80 @@ mark.hl {
   font-variant-numeric: tabular-nums;
 }
 
+.stock-chart__controls {
+  margin-top: var(--s-3);
+}
+
+.stock-chart__presets {
+  gap: var(--s-2);
+}
+
+.stock-chart__chip {
+  position: relative;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0.5rem 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.stock-chart__chip.chip--accent,
+.stock-chart__chip[aria-pressed='true'] {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: transparent;
+}
+
+.stock-chart__custom {
+  margin-top: var(--s-3);
+  display: grid;
+  gap: var(--s-3);
+}
+
+.stock-chart__custom[hidden] {
+  display: none;
+}
+
+.stock-chart__custom-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s-3);
+}
+
+.stock-chart__custom .field {
+  margin-bottom: 0;
+}
+
+.stock-chart__custom .input {
+  min-height: 44px;
+}
+
+.stock-chart__custom .btn {
+  min-height: 44px;
+  justify-self: start;
+}
+
+.stock-chart__status {
+  margin: var(--s-2) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--text-muted);
+}
+
+.stock-chart__status[hidden] {
+  display: none;
+}
+
+.stock-chart__status.is-error {
+  color: var(--down);
+}
+
+@media (max-width: 360px) {
+  .stock-chart__custom-fields {
+    grid-template-columns: 1fr;
+  }
+}
+
 .stock-strip {
   display: grid;
   gap: var(--s-2);

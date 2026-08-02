@@ -51,6 +51,31 @@
               <span id="chart-high" class="stock-range__value"></span>
             </div>
           </div>
+          <div class="stock-chart__controls" aria-label="Chart range">
+            <div class="chip-row stock-chart__presets" role="group" aria-label="Range presets" id="chart-presets">
+              <button type="button" class="chip chip--accent stock-chart__chip" data-range="default" aria-pressed="true">Default</button>
+              <button type="button" class="chip stock-chart__chip" data-range="1m" aria-pressed="false">1M</button>
+              <button type="button" class="chip stock-chart__chip" data-range="3m" aria-pressed="false">3M</button>
+              <button type="button" class="chip stock-chart__chip" data-range="6m" aria-pressed="false">6M</button>
+              <button type="button" class="chip stock-chart__chip" data-range="ytd" aria-pressed="false">YTD</button>
+              <button type="button" class="chip stock-chart__chip" data-range="all" aria-pressed="false">All</button>
+              <button type="button" class="chip stock-chart__chip" data-range="custom" aria-pressed="false">Custom</button>
+            </div>
+            <div id="chart-custom" class="stock-chart__custom" hidden>
+              <div class="stock-chart__custom-fields">
+                <div class="field">
+                  <label for="chart-from">From</label>
+                  <input type="date" id="chart-from" class="input" autocomplete="off">
+                </div>
+                <div class="field">
+                  <label for="chart-to">To</label>
+                  <input type="date" id="chart-to" class="input" autocomplete="off">
+                </div>
+              </div>
+              <button type="button" class="btn btn--solid btn--sm" id="chart-custom-apply">Apply</button>
+            </div>
+            <p id="chart-range-status" class="stock-chart__status" role="status" aria-live="polite" hidden></p>
+          </div>
         </div>
 
         <div id="trading-strip" class="stock-strip" hidden></div>

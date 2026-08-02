@@ -1,12 +1,14 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { synthesizeBar, safeHistorySymbol } from '../src/lib/stockHistory.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const DATA_DIR = path.join(__dirname, '../data/dse');
 const OUTPUT_FILE = path.join(__dirname, '../src/data/dse-market.json');
+const HISTORY_DIR = path.join(__dirname, '../src/data/history');
 
 const DATE_FILE_RE = /^\d{4}-\d{2}-\d{2}\.csv$/;
 const REQUIRED_HEADERS = ['Symbol'];
@@ -376,6 +378,53 @@ const buildMarketData = async () => {
       ? sparklineFiles[sparklineFiles.length - 1].replace(/\.csv$/i, '')
       : latestDate;
 
+    // 3b. Full per-stock OHLC history (all usable files)
+    console.log(`Building per-stock history from ${usableFiles.length} files...`);
+    const historyBySymbol = new Map(); // Symbol -> { prevClose, sessions: [], lastDate }
+
+    for (const file of usableFiles) {
+      const dateKey = file.replace(/\.csv$/i, '');
+      const data = await parseCSV(path.join(DATA_DIR, file));
+      if (data.length === 0) continue;
+
+      data.forEach((row) => {
+        const symbol = safeHistorySymbol(row.Symbol);
+        if (!symbol) return;
+        let entry = historyBySymbol.get(symbol);
+        if (!entry) {
+          entry = { prevClose: null, sessions: [], lastDate: null };
+          historyBySymbol.set(symbol, entry);
+        }
+        const bar = synthesizeBar(
+          entry.prevClose,
+          row.LTP,
+          row.Close,
+          row['Volume(Qty)']
+        );
+        if (!bar) return;
+
+        const tuple = [
+          dateKey,
+          roundNumber(bar.open),
+          roundNumber(bar.high),
+          roundNumber(bar.low),
+          roundNumber(bar.close),
+          roundNumber(bar.volume)
+        ];
+
+        // Deduplicate: last row for symbol+date wins; keep open from first row that day
+        if (entry.lastDate === dateKey && entry.sessions.length > 0) {
+          const keptOpen = entry.sessions[entry.sessions.length - 1][1];
+          tuple[1] = keptOpen;
+          entry.sessions[entry.sessions.length - 1] = tuple;
+        } else {
+          entry.sessions.push(tuple);
+          entry.lastDate = dateKey;
+        }
+        entry.prevClose = bar.close;
+      });
+    }
+
     // 4. Transform to final JSON schema
     const stocks = currentData
       .filter((row) => row && row.Symbol)
@@ -481,6 +530,44 @@ const buildMarketData = async () => {
     console.log(`Successfully generated ${OUTPUT_FILE}`);
     console.log(`Total stocks: ${stocks.length}`);
     console.log(`Output size: ${(payload.length / 1024).toFixed(1)} KB (minified, nulls omitted)`);
+
+    // 6. Write per-stock history (write first, then remove stale — never wipe-then-write)
+    await fs.mkdir(HISTORY_DIR, { recursive: true });
+    const existingHistory = await fs.readdir(HISTORY_DIR);
+    const latestSymbols = new Set(
+      stocks.map((s) => safeHistorySymbol(s.symbol)).filter(Boolean)
+    );
+    let historyFiles = 0;
+    let historyBytes = 0;
+    const writtenFiles = new Set();
+
+    for (const symbol of latestSymbols) {
+      const entry = historyBySymbol.get(symbol);
+      if (!entry || entry.sessions.length === 0) continue;
+      const sessions = entry.sessions;
+      const historyPayload = JSON.stringify({
+        symbol,
+        from: sessions[0][0],
+        to: sessions[sessions.length - 1][0],
+        sessions
+      });
+      const fileName = `${symbol}.json`;
+      const outPath = path.join(HISTORY_DIR, fileName);
+      await fs.writeFile(outPath, historyPayload);
+      writtenFiles.add(fileName);
+      historyFiles += 1;
+      historyBytes += historyPayload.length;
+    }
+
+    await Promise.all(
+      existingHistory
+        .filter((f) => f.endsWith('.json') && !writtenFiles.has(f))
+        .map((f) => fs.unlink(path.join(HISTORY_DIR, f)))
+    );
+
+    console.log(
+      `History: ${historyFiles} files in ${HISTORY_DIR} (${(historyBytes / 1024).toFixed(1)} KB)`
+    );
   } catch (error) {
     console.error('Build failed:', error);
     process.exit(1);
