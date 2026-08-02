@@ -71,9 +71,10 @@ The project uses a static data generation approach:
 2.  **Processing**: Run `npm run build:data` to process these CSVs.
     -   Parses the latest CSV.
     -   Calculates price/volume deltas for available history windows (1d…15y); omits nulls.
-    -   Generates sparkline history from the last 30 files.
+    -   Generates sparkline history from the last 30 files into `src/data/dse-market.json`.
+    -   Writes full per-stock OHLC history to `src/data/history/{SYMBOL}.json` (lazy-loaded on the stock detail page for longer ranges).
     -   Outputs compact `src/data/dse-market.json` (minified, rounded numbers, no null keys).
-3.  **Frontend**: The app fetches this JSON file to render the dashboard and stock pages. Missing metric/delta keys mean the value was unavailable.
+3.  **Frontend**: The app fetches this JSON file to render the dashboard and stock pages. Missing metric/delta keys mean the value was unavailable. Stock detail range presets (beyond Default) fetch that symbol’s history file.
 
 ## Local Development
 

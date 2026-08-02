@@ -8,9 +8,23 @@ import {
   buildTradingStrip,
   buildMetricGroups
 } from './lib/stockMetricsLayout.js';
+import {
+  filterSessions,
+  closesFromSessions,
+  sessionDate
+} from './lib/stockHistory.js';
 
 // State
 let marketData = null;
+let currentStock = null;
+let chartIsUp = true;
+let activeRange = 'default';
+let historyCache = null; // loaded history JSON for currentStock
+let historyLoadPromise = null;
+let rangeRequestId = 0;
+
+const HISTORY_REMOTE_BASE =
+  'https://astinaam-webtools.github.io/dse-toolkit/src/data/history';
 
 // DOM Elements
 const els = {
@@ -27,6 +41,12 @@ const els = {
   chartHigh: document.getElementById('chart-high'),
   chartSessions: document.getElementById('chart-sessions'),
   chartSpan: document.getElementById('chart-span'),
+  chartPresets: document.getElementById('chart-presets'),
+  chartCustom: document.getElementById('chart-custom'),
+  chartFrom: document.getElementById('chart-from'),
+  chartTo: document.getElementById('chart-to'),
+  chartCustomApply: document.getElementById('chart-custom-apply'),
+  chartRangeStatus: document.getElementById('chart-range-status'),
   strip: document.getElementById('trading-strip'),
   groups: document.getElementById('metrics-groups'),
   btnAnalyze: document.getElementById('btn-analyze-page'),
@@ -135,8 +155,13 @@ const init = async () => {
       return;
     }
 
+    currentStock = stock;
+    historyCache = null;
+    historyLoadPromise = null;
+    activeRange = 'default';
     renderStock(stock);
     renderBehaviorProfile(stock);
+    setupChartRangeControls();
     
     // Setup AI Button
     els.btnAnalyze.onclick = () => analyzeStock(stock);
@@ -147,6 +172,212 @@ const init = async () => {
     els.content.hidden = true;
     els.loading.textContent = 'Error loading market data.';
   }
+};
+
+const setRangeStatus = (message, isError = false) => {
+  if (!els.chartRangeStatus) return;
+  if (!message) {
+    els.chartRangeStatus.hidden = true;
+    els.chartRangeStatus.textContent = '';
+    els.chartRangeStatus.classList.remove('is-error');
+    return;
+  }
+  els.chartRangeStatus.hidden = false;
+  els.chartRangeStatus.textContent = message;
+  els.chartRangeStatus.classList.toggle('is-error', isError);
+};
+
+const syncPresetButtons = () => {
+  if (!els.chartPresets) return;
+  els.chartPresets.querySelectorAll('[data-range]').forEach((btn) => {
+    const selected = btn.dataset.range === activeRange;
+    btn.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    btn.classList.toggle('chip--accent', selected);
+  });
+  if (els.chartCustom) {
+    els.chartCustom.hidden = activeRange !== 'custom';
+  }
+};
+
+const updateRangeBar = (closes, from, to) => {
+  const range = sparklineRange(closes);
+  if (!range) {
+    els.chartRange.hidden = true;
+    els.chartContainer.classList.add('is-empty');
+    return;
+  }
+  els.chartRange.hidden = false;
+  els.chartContainer.classList.remove('is-empty');
+  els.chartLow.textContent = range.low.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  els.chartHigh.textContent = range.high.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  const period = formatSparklinePeriod(from, to);
+  const detail = formatSparklinePeriodDetail(from, to);
+  els.chartSessions.textContent = period || `${range.sessions} sessions`;
+  els.chartSpan.textContent = `Δ ${range.span.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
+  els.chartRange.title = detail
+    ? `${detail} · ${range.sessions} sessions`
+    : `${range.sessions} sessions`;
+};
+
+const paintDefaultChart = () => {
+  if (!currentStock) return;
+  const meta = marketData?.metadata || {};
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      renderChart(currentStock.sparkline, chartIsUp);
+    });
+  });
+  updateRangeBar(currentStock.sparkline, meta.sparklineFrom, meta.sparklineTo);
+};
+
+const loadStockHistory = async (symbol) => {
+  if (historyCache?.symbol === symbol) return historyCache;
+  if (historyLoadPromise) return historyLoadPromise;
+
+  const encoded = encodeURIComponent(symbol);
+  const remoteUrl = `${HISTORY_REMOTE_BASE}/${encoded}.json`;
+  const localUrl = `./src/data/history/${encoded}.json`;
+
+  historyLoadPromise = (async () => {
+    const fetchJson = async (url) => {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`History fetch failed: ${url}`);
+      return response.json();
+    };
+
+    // Local-first so a slow/hanging remote cannot block
+    let data = null;
+    try {
+      data = await fetchJson(localUrl);
+    } catch {
+      data = await fetchJson(remoteUrl);
+    }
+
+    if (!data?.sessions || !Array.isArray(data.sessions)) {
+      throw new Error('Invalid history payload');
+    }
+    if (data.symbol && data.symbol !== symbol) {
+      throw new Error('History symbol mismatch');
+    }
+
+    historyCache = data;
+    return data;
+  })();
+
+  try {
+    return await historyLoadPromise;
+  } finally {
+    historyLoadPromise = null;
+  }
+};
+
+const applyHistoryRange = async ({ preset, from, to } = {}) => {
+  if (!currentStock) return;
+  const requestId = ++rangeRequestId;
+  setRangeStatus('Loading history…');
+  try {
+    const history = await loadStockHistory(currentStock.symbol);
+    if (requestId !== rangeRequestId) return;
+
+    const filtered = filterSessions(history.sessions, {
+      preset: preset && preset !== 'custom' ? preset : undefined,
+      from,
+      to,
+      endDate: history.to,
+      historyFrom: history.from
+    });
+    const closes = closesFromSessions(filtered);
+    if (requestId !== rangeRequestId) return;
+
+    if (closes.length < 2) {
+      setRangeStatus('No sessions in that range.', true);
+      return;
+    }
+    const rangeFrom = sessionDate(filtered[0]) || from || history.from;
+    const rangeTo = sessionDate(filtered[filtered.length - 1]) || to || history.to;
+    renderChart(closes, chartIsUp);
+    updateRangeBar(closes, rangeFrom, rangeTo);
+    setRangeStatus('');
+  } catch (err) {
+    if (requestId !== rangeRequestId) return;
+    console.warn(err);
+    setRangeStatus('Could not load history for this range.', true);
+  }
+};
+
+const setupChartRangeControls = () => {
+  if (!els.chartPresets) return;
+  syncPresetButtons();
+
+  els.chartPresets.addEventListener('click', async (event) => {
+    const btn = event.target.closest('[data-range]');
+    if (!btn || !els.chartPresets.contains(btn)) return;
+    const next = btn.dataset.range;
+    activeRange = next;
+    syncPresetButtons();
+
+    if (next === 'default') {
+      rangeRequestId += 1;
+      setRangeStatus('');
+      paintDefaultChart();
+      return;
+    }
+
+    if (next === 'custom') {
+      const requestId = ++rangeRequestId;
+      if (historyCache) {
+        if (els.chartFrom && !els.chartFrom.value) els.chartFrom.value = historyCache.from;
+        if (els.chartTo && !els.chartTo.value) els.chartTo.value = historyCache.to;
+        if (els.chartFrom) {
+          els.chartFrom.min = historyCache.from;
+          els.chartFrom.max = historyCache.to;
+        }
+        if (els.chartTo) {
+          els.chartTo.min = historyCache.from;
+          els.chartTo.max = historyCache.to;
+        }
+      } else {
+        try {
+          const history = await loadStockHistory(currentStock.symbol);
+          if (requestId !== rangeRequestId) return;
+          if (els.chartFrom) {
+            els.chartFrom.value = history.from;
+            els.chartFrom.min = history.from;
+            els.chartFrom.max = history.to;
+          }
+          if (els.chartTo) {
+            els.chartTo.value = history.to;
+            els.chartTo.min = history.from;
+            els.chartTo.max = history.to;
+          }
+          setRangeStatus('');
+        } catch (err) {
+          if (requestId !== rangeRequestId) return;
+          console.warn(err);
+          setRangeStatus('Could not load history for custom range.', true);
+        }
+      }
+      return;
+    }
+
+    await applyHistoryRange({ preset: next });
+  });
+
+  els.chartCustomApply?.addEventListener('click', async () => {
+    const from = els.chartFrom?.value;
+    const to = els.chartTo?.value;
+    if (!from || !to) {
+      setRangeStatus('Pick both From and To dates.', true);
+      return;
+    }
+    if (from > to) {
+      setRangeStatus('From must be on or before To.', true);
+      return;
+    }
+    activeRange = 'custom';
+    syncPresetButtons();
+    await applyHistoryRange({ from, to });
+  });
 };
 
 const renderStock = (stock) => {
@@ -166,32 +397,8 @@ const renderStock = (stock) => {
     : '—';
   els.change.style.color = !hasChange ? '' : change >= 0 ? 'var(--up)' : 'var(--down)';
 
-  // Render Chart after layout is fully calculated
-  // Use double requestAnimationFrame to ensure layout is complete
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      renderChart(stock.sparkline, !hasChange || change >= 0);
-    });
-  });
-
-  const range = sparklineRange(stock.sparkline);
-  if (range) {
-    els.chartRange.hidden = false;
-    els.chartContainer.classList.remove('is-empty');
-    els.chartLow.textContent = range.low.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    els.chartHigh.textContent = range.high.toLocaleString(undefined, { maximumFractionDigits: 2 });
-    const meta = marketData?.metadata || {};
-    const period = formatSparklinePeriod(meta.sparklineFrom, meta.sparklineTo);
-    const detail = formatSparklinePeriodDetail(meta.sparklineFrom, meta.sparklineTo);
-    els.chartSessions.textContent = period || `${range.sessions} sessions`;
-    els.chartSpan.textContent = `Δ ${range.span.toLocaleString(undefined, { maximumFractionDigits: 2 })}`;
-    els.chartRange.title = detail
-      ? `${detail} · ${range.sessions} sessions`
-      : `${range.sessions} sessions`;
-  } else {
-    els.chartRange.hidden = true;
-    els.chartContainer.classList.add('is-empty');
-  }
+  chartIsUp = !hasChange || change >= 0;
+  paintDefaultChart();
 
   const strip = buildTradingStrip(stock.metrics);
   if (strip.length) {

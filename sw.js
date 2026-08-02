@@ -1,5 +1,5 @@
-const CACHE_NAME = 'stock-glossary-v52';
-const RUNTIME_CACHE = 'runtime-stock-glossary-v52';
+const CACHE_NAME = 'stock-glossary-v53';
+const RUNTIME_CACHE = 'runtime-stock-glossary-v53';
 const PRECACHE_URLS = [
   './',
   './index.html',
@@ -30,6 +30,7 @@ const PRECACHE_URLS = [
   './src/lib/filterTerms.js',
   './src/lib/marketLogic.js',
   './src/lib/stockMetricsLayout.js',
+  './src/lib/stockHistory.js',
   './src/lib/portfolioLogic.js',
   './src/lib/fundsLogic.js',
   './src/lib/portfoliosOverview.js',
@@ -74,12 +75,17 @@ self.addEventListener('fetch', (event) => {
   if (url.origin !== self.location.origin) return;
 
   // Network-first for dynamic market data to avoid stale caches
-  if (url.pathname.endsWith('/src/data/dse-market.json')) {
+  if (
+    url.pathname.endsWith('/src/data/dse-market.json') ||
+    /\/src\/data\/history\/[^/]+\.json$/.test(url.pathname)
+  ) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          const copy = response.clone();
-          caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+          if (response && response.ok) {
+            const copy = response.clone();
+            caches.open(RUNTIME_CACHE).then((cache) => cache.put(request, copy));
+          }
           return response;
         })
         .catch(async () => {
